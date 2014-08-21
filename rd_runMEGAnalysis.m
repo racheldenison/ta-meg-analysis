@@ -1,23 +1,30 @@
 % rd_runMEGAnalysis.m
 
 %% Setup
-filename = '/Volumes/RACHO/Data/NYU/R0890_20140806/R0890_TAPilot_8.06.14/R0890_TAPilot_8.06.14.sqd';
+% filename = '/Volumes/RACHO/Data/NYU/R0890_20140806/R0890_TAPilot_8.06.14/R0890_TAPilot_8.06.14.sqd';
+filename = '/Volumes/RACHO/Data/NYU/R0817_TAPilot_8.20.14/R0817_TAPilot_8.20.14.sqd';
 % trigChan = 160:167;
 trigChan = [160:163 166]; % stim/blank blocks
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
-badChannels = [10 11 115];
+% badChannels = [10 11 115]; % R0890
+badChannels = [115 152]; % R0817, also 152 looks dead
 tstart = 1000; % ms
-tstop = 6000; % ms
+tstop = 6500; % ms
 t = tstart:tstop;
 
 % trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR',...
 %     'targetL','targetR','blank'};
 trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 
+saveFigs = 1;
+
+% load data header for plotting topologies
+load data/data_hdr.mat
+
 %% Get the data
 trigMean = [];
-trigs = [];
+triggers = [];
 for iChSet = 1:numel(channelSets)
     allChannels = channelSets{iChSet};
     channels = setdiff(allChannels,badChannels);
@@ -46,16 +53,19 @@ f = Fs/2*linspace(0,1,nfft/2+1);
 amps = abs(Y(1:nfft/2+1,:,:));
 
 %% Plot trial average and single-sided amplitude spectrum
+% figure
 for iTrig = 1:nTrigs
     figure
     % time
     subplot(2,1,1)
+%     hold on
     plot(repmat(t',1,nChannels), trigMean(:,:,iTrig))
     xlabel('time (ms)')
     ylabel('amplitude')
     title(trigNames{iTrig})
     % frequency
     subplot(2,1,2)
+%     hold on
     plot(repmat(f',1,nChannels), amps(:,:,iTrig))
     xlim([1 200])
     ylim([0 20])
@@ -83,7 +93,7 @@ for iF = 1:numel(ssvepFreqs)
 end
 
 %% Convert to 157 channels
-freqToPlot = 20;
+freqToPlot = 40;
 freqIdx = find(ssvepFreqs==freqToPlot);
 peakM = squeeze(peakMeans(freqIdx,:,:))';
 inds = setdiff(0:156,badChannels)+1;
@@ -122,37 +132,42 @@ for iTrig = 1:nTrigs
     sensorData = peakMeans157(iTrig,:);
     figure
     fH = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
-    set(gca,'CLim',[0 3])
+%     set(gca,'CLim',[0 3])
+    set(gca,'CLim',[0 10])
 end
 
 % left-right
 figure
 ssm_plotOnMesh(peakStimLRDiff157, 'L-R', [], data_hdr, '2d');
-set(gca,'CLim',[-2 2])
+% set(gca,'CLim',[-2 2])
+set(gca,'CLim',[-5 5])
 
+attLims = [-3 3]; % [-.5 .5]
 % att in - att out
 figure
 ssm_plotOnMesh(peakAttInOutDiff157, 'in-out', [], data_hdr, '2d');
-set(gca,'CLim',[-.5 .5])
+set(gca,'CLim', attLims)
     
 % left stim: att in - att out
 figure
 ssm_plotOnMesh(peakAttInOutDiffStimL157, 'L stim: in-out', [], data_hdr, '2d');
-set(gca,'CLim',[-.5 .5])
+set(gca,'CLim', attLims)
 
 % right stim: att in - att out
 figure
 ssm_plotOnMesh(peakAttInOutDiffStimR157, 'R stim: in-out', [], data_hdr, '2d');
-set(gca,'CLim',[-.5 .5])
+set(gca,'CLim', attLims)
 
 % att effect L stim - att effect R stim
 figure
 ssm_plotOnMesh(peakAttInOutDiffStimLRDiff157, 'att effect L - att effect R', [], data_hdr, '2d');
-set(gca,'CLim',[-.5 .5])
+set(gca,'CLim', attLims)
 
 % save figs
-figNames = [trigNames {'LRDiff','AttInOutDiff','LStimAttInOutDiff','RStimAttInOutDiff','AttEffectLRDiff'}];
-rd_saveAllFigs([],figNames,sprintf('ssvef%dHz', freqToPlot))
+if saveFigs
+    figNames = [trigNames {'LRDiff','AttInOutDiff','LStimAttInOutDiff','RStimAttInOutDiff','AttEffectLRDiff'}];
+    rd_saveAllFigs([],figNames,sprintf('ssvef%dHz', freqToPlot))
+end
 
 %% Find the channels with high SSVEP SNR
 peakSignal = mean(peakMeans(:,:,1:4),3); % freqs x channels
