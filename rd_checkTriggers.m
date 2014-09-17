@@ -1,24 +1,44 @@
-function rd_checkTriggers(fileName, trigChans)
+function f = rd_checkTriggers(fileName, trigChans, verbose)
+% function rd_checkTriggers(fileName, [trigChans], [verbose])
 
-% %% setup
-% exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-% sessionDir = 'R0890_20140806';
-% dataFile = 'R0890_TAPilot_8.06.14.sqd';
-% fileName = sprintf('%s/%s/%s', exptDir, sessionDir, dataFile);
-% 
-% trigChans = 160:166;
+% INPUTS:
+% fileName is the path to the sqd file
+% trigChans (optional) is the trigger channels to plot. Default is 160:167.
+% verbose (optional) [1 or 0] specify whether to print the trigger count 
+%     for each channel
+%
+% OUTPUTS:
+% f is a figure handle for the generated plot
+
+%% deal with inputs
+if nargin<2 || isempty(trigChans)
+    trigChans = 160:167; % all trigger channels
+end
+if nargin<3 || isempty(verbose)
+    verbose = 1;
+end
 
 %% plot triggers from each channel
-figure
+f = figure;
 hold all
 
 for iTrig = 1:numel(trigChans)
-    triggers = all_trigger(fileName, trigChans(iTrig));
-    trigTimes = triggers(:,1);
-
-    plot(trigTimes, ones(size(trigTimes))+iTrig-1, '.')
-    
-    fprintf('Channel %d: %d triggers\n', trigChans(iTrig), numel(trigTimes))
+    try
+        triggers = all_trigger(fileName, trigChans(iTrig));
+        trigTimes = triggers(:,1);
+        
+        plot(trigTimes, ones(size(trigTimes))+iTrig-1, '.')
+        
+        if verbose
+            fprintf('Channel %d: %d triggers\n', trigChans(iTrig), numel(trigTimes))
+        end
+    catch err
+        if strcmp(err.identifier, 'MATLAB:badsubscript')
+            if verbose
+                fprintf('Channel %d: 0 triggers\n', trigChans(iTrig))
+            end
+        end
+    end 
 end
 ylim([0 10])
 xlabel('time')
