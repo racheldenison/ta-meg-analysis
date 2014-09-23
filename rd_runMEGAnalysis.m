@@ -74,10 +74,10 @@ for iTrig = 1:nTrigs
 end
 
 %% Get the component peaks
-ssvepFreqs = [15 20 30 40];
+ssvefFreqs = [15 20 30 40];
 freqWindow = 0.2; % +/- this window value
-for iF = 1:numel(ssvepFreqs)
-    freq = ssvepFreqs(iF);
+for iF = 1:numel(ssvefFreqs)
+    freq = ssvefFreqs(iF);
     inFreqRange = f<freq+freqWindow & f>freq-freqWindow;
     peakFreqs{iF} = f(inFreqRange);
     peakVals{iF} = amps(inFreqRange,:,:);
@@ -85,8 +85,8 @@ for iF = 1:numel(ssvepFreqs)
 end
 
 %% Plot peak freq image
-for iF = 1:numel(ssvepFreqs)
-    freq = ssvepFreqs(iF);
+for iF = 1:numel(ssvefFreqs)
+    freq = ssvefFreqs(iF);
     figure
     imagesc(squeeze(peakMeans(iF,:,:)))
     title(sprintf('frequency = %d',freq))
@@ -94,7 +94,7 @@ end
 
 %% Convert to 157 channels
 freqToPlot = 40;
-freqIdx = find(ssvepFreqs==freqToPlot);
+freqIdx = find(ssvefFreqs==freqToPlot);
 peakM = squeeze(peakMeans(freqIdx,:,:))';
 inds = setdiff(0:156,badChannels)+1;
 peakMeans157 = to157chan(peakM,inds,'zeros');
@@ -167,7 +167,7 @@ if saveFigs
     rd_saveAllFigs([],figNames,sprintf('ssvef%dHz', freqToPlot))
 end
 
-%% Find the channels with high SSVEP SNR
+%% Find the channels with high SSVEF SNR
 peakSignal = mean(peakMeans(:,:,1:4),3); % freqs x channels
 peakNoise = mean(peakMeans(:,:,5),3); % freqs x channels
 peakSNR = (peakSignal./peakNoise)';
@@ -179,11 +179,11 @@ imagesc(peakSNR)
 figure
 hist(peakSNRAllFlickers)
 
-%% Plot selected channels for all ssvep freqs, all conditions
+%% Plot selected channels for all ssvef freqs, all conditions
 % channelsToPlot = find(peakSNRAllFlickers>10);
 channelsToPlot = [14 15 26 1 50 39];
-for iF = 1:numel(ssvepFreqs)
-    freq = ssvepFreqs(iF);
+for iF = 1:numel(ssvefFreqs)
+    freq = ssvefFreqs(iF);
     figure
     bar(squeeze(peakMeans(iF,channelsToPlot,:)))
     set(gca,'XTickLabel',channelsToPlot)
