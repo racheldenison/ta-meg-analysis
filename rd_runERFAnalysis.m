@@ -1,16 +1,22 @@
 % rd_runERFAnalysis.m
 
 %% Setup
-filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/R0890_TAPilot_8.06.14.sqd';
+% desk
+% filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/R0890_TAPilot_8.06.14.sqd';
+filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/R0817_TAPilot_8.20.14.sqd';
+
+% racho
 % filename = '/Volumes/RACHO/Data/NYU/R0890_20140806/R0890_TAPilot_8.06.14/R0890_TAPilot_8.06.14.sqd';
 % filename = '/Volumes/RACHO/Data/NYU/R0817_TAPilot_8.20.14/R0817_TAPilot_8.20.14.sqd';
+
 % trigChan = 160:167;
 trigChan = 164:165; % targets
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
 % badChannels = [10 11 115]; % R0890, 48-->49, 150-->152
-badChannels = [10 11 115 49 152];
-% badChannels = [115 152]; % R0817
+% badChannels = [10 11 115 49 152]; % R0890
+badChannels = [115 152]; % R0817
+
 tstart = -1000; % for targets
 tstop = 2000;
 t = tstart:tstop;
@@ -78,7 +84,7 @@ for iTrig = 1:nTrigs
 end
 
 %% Get some time series peaks
-times = [228 475];
+times = [188 228 282 475];
 timeWindow = 5; % +/- this window value
 for iT = 1:numel(times)
     time = times(iT);
@@ -87,7 +93,7 @@ for iT = 1:numel(times)
 end
 
 %% Convert to 157 channels
-timeToPlot = 475;
+timeToPlot = 228;
 timeIdx = find(times==timeToPlot);
 peakTM = squeeze(peakTMeans(timeIdx,:,:))';
 inds = setdiff(0:156,badChannels)+1;
@@ -146,7 +152,7 @@ for iTrig = 1:nTrigs
     ylim([0 40])
     xlabel('Frequency (Hz)')
     ylabel('|Y(f)|')
-    title(trigNames{iTrig})
+    title(sprintf('single trial FFT average, %s',trigNames{iTrig}))
 end
 
 %% Get the component peaks
@@ -174,10 +180,17 @@ highSNRChannels = peakSNRAll>snrThresh;
 % for each flicker frequency, across trigger types
 figure
 imagesc(mean(peakSNR,3)')
+set(gca,'XTick',1:numel(ssvefFreqs))
+set(gca,'XTickLabel',ssvefFreqs)
+xlabel('frequency (Hz)')
+ylabel('channel')
+title('SNR (ssvef/non-ssvef amplitude)')
 
 % across flicker frequencies
 figure
 hist(peakSNRAll)
+xlabel('SNR (ssvef/non-ssvef amplitude)')
+ylabel('number of channels')
 
 %% Convert SNR to 157 channels and plot on mesh
 peakSNRAll157 = to157chan(peakSNRAll,inds,'zeros');

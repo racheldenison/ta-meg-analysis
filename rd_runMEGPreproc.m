@@ -1,9 +1,14 @@
-% rd_runMEGPreproc.m
+% rd_runMEGPreprocTrials.m
 
 %% Setup
+% desk
+% filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/R0817_TAPilot_8.20.14.sqd';
+filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/R0890_TAPilot_8.06.14_run1.sqd';
+
+% racho
 % filename = '/Volumes/RACHO/Data/NYU/R0890_20140806/R0890_TAPilot_8.06.14/R0890_TAPilot_8.06.14.sqd';
 % filename = '/Volumes/RACHO/Data/NYU/R0817_TAPilot_8.20.14/R0817_TAPilot_8.20.14.sqd';
-filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/R0817_TAPilot_8.20.14.sqd';
+
 % trigChan = 160:167;
 trigChan = [160:163 166]; % stim/blank blocks
 megChannels = 0:156;
@@ -71,6 +76,5 @@ if plotFigs
     % Plot photodiode
     figure
     plot(squeeze(mean(pdData,3)))
-    
 end
 
