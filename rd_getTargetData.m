@@ -1,4 +1,4 @@
-function [trigMean triggers Fs] =  rd_getTargetData(filename, trigChan, channels, tstart, tstop)
+function [trigMean, triggers, Fs, data, trigEvents] =  rd_getTargetData(filename, trigChan, channels, tstart, tstop)
 
 
 %% get data around each trigger
