@@ -1,4 +1,4 @@
-% rd_runMEGPreproc.m
+% rd_MEGPreproc.m
 
 %% Setup
 % desk
