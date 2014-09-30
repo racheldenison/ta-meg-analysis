@@ -90,7 +90,7 @@ for iSegment = 1:nSegments
 	segment = sqdread(fileName, 'Samples', [segmentStartTimes(iSegment) segmentEndTimes(iSegment)]);
     
     % new segment file name
-    segmentFileName = sprintf('%s_%s%d.sqd', fileName(1:end-4), segmentLabel, iSegment);
+    segmentFileName = sprintf('%s_%s%02d.sqd', fileName(1:end-4), segmentLabel, iSegment);
     
     % write segment file 
     fprintf('Writing sqd: %s %d\n', segmentLabel, iSegment) 
