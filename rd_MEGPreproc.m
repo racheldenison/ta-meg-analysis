@@ -1,10 +1,10 @@
-% rd_MEGPreproc.m
+function rd_MEGPreproc(filename, figDir)
 
 %% Setup
 % desk
 % filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/R0817_TAPilot_8.20.14.sqd';
-filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/R0890_TAPilot_8.06.14_run02.sqd';
-figDir = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/figures';
+% filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/R0890_TAPilot_8.06.14_run01.sqd';
+% figDir = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/figures';
 
 % racho
 % filename = '/Volumes/RACHO/Data/NYU/R0890_20140806/R0890_TAPilot_8.06.14/R0890_TAPilot_8.06.14.sqd';
@@ -209,6 +209,9 @@ sqdwrite(filename, interpFile, 'data', data);
 if exist(tspcaFile,'file')
     delete(tspcaFile);
 end
+
+%% finally, check the triggers
+rd_checkTriggers(filename);
 
 %% save figs
 if saveFigs

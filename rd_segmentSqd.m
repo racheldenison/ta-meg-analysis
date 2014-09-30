@@ -1,4 +1,6 @@
-% rd_segmentSqd.m
+function nRuns = rd_segmentSqd(fileName)
+%
+% function nRuns = rd_segmentSqd(fileName)
 %
 % Chunk data into smaller segments. Segments data between runs, based on 
 % triggers.
@@ -8,10 +10,10 @@
 
 %% setup
 % file in
-exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0890_20140806';
-dataFile = 'R0890_TAPilot_8.06.14.sqd';
-fileName = sprintf('%s/%s/%s', exptDir, sessionDir, dataFile);
+% exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
+% sessionDir = 'R0890_20140806';
+% dataFile = 'R0890_TAPilot_8.06.14.sqd';
+% fileName = sprintf('%s/%s/%s', exptDir, sessionDir, dataFile);
 
 % file out
 segmentLabel = 'run';
@@ -25,7 +27,7 @@ segmentCushion = 5; % used only if 'selectData'
 
 % experiment info
 nTrigsPerRun = 9;
-nRuns = 15;
+nRuns = 18;
 nRunsPerSegment = 1;
 trialDur = 7;
 
@@ -45,6 +47,9 @@ if nTrigs~=nTrigsExpected
     figure
     plot(triggers(:,1),triggers(:,2),'.')
     title('original triggers')
+    
+    fprintf('\nExiting to allow manual adjustments ...\n')
+    return
 end
 
 %% exclude stray triggers
