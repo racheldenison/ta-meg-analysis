@@ -1,14 +1,32 @@
 % rd_runMEGAnalysis.m
 
 %% Setup
-filename = '/Volumes/RACHO/Data/NYU/R0890_20140806/R0890_TAPilot_8.06.14/R0890_TAPilot_8.06.14.sqd';
-% filename = '/Volumes/RACHO/Data/NYU/R0817_TAPilot_8.20.14/R0817_TAPilot_8.20.14.sqd';
+exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
+sessionDir = 'R0817_20140820';
+fileBase = 'R0817_TAPilot_8.20.14';
+analStr = 'eti';
+
+dataDir = sprintf('%s/%s', exptDir, sessionDir);
+
+switch analStr
+    case ''
+        filename = sprintf('%s/%s.sqd', dataDir, fileBase);
+        figDir = sprintf('%s/figures', dataDir);
+    otherwise
+        filename = sprintf('%s/%s_%s.sqd', dataDir, fileBase, analStr);
+        figDir = sprintf('%s/figures/%s', dataDir, analStr);
+end
+if ~exist(figDir,'dir')
+    mkdir(figDir)
+end
+
 % trigChan = 160:167;
 trigChan = [160:163 166]; % stim/blank blocks
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
-badChannels = [10 11 115]; % R0890
+% badChannels = [10 11 115]; % R0890
 % badChannels = [115 152]; % R0817, also 152 looks dead
+badChannels = [];
 tstart = 1000; % ms
 tstop = 6500; % ms
 t = tstart:tstop;
@@ -93,7 +111,7 @@ for iF = 1:numel(ssvefFreqs)
 end
 
 %% Convert to 157 channels
-freqToPlot = 40;
+freqToPlot = 30;
 freqIdx = find(ssvefFreqs==freqToPlot);
 peakM = squeeze(peakMeans(freqIdx,:,:))';
 inds = setdiff(0:156,badChannels)+1;
@@ -164,7 +182,8 @@ set(gca,'CLim', attLims)
 % save figs
 if saveFigs
     figNames = [trigNames {'LRDiff','AttInOutDiff','LStimAttInOutDiff','RStimAttInOutDiff','AttEffectLRDiff'}];
-    rd_saveAllFigs([],figNames,sprintf('ssvef%dHz', freqToPlot))
+    figPrefix = sprintf('ssvef%dHz', freqToPlot);
+    rd_saveAllFigs([],figNames,figPrefix,figDir)
 end
 
 %% Find the channels with high SSVEF SNR
