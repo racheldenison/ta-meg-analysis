@@ -35,7 +35,7 @@ t = tstart:tstop;
 %     'targetL','targetR','blank'};
 trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 
-saveFigs = 0;
+saveFigs = 1;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
@@ -72,8 +72,9 @@ amps = 2*abs(Y(1:nfft/2+1,:,:)); % Multiply by 2 since only half the energy is i
 
 %% Plot trial average and single-sided amplitude spectrum
 % figure
+fH = [];
 for iTrig = 1:nTrigs
-    figure
+    fH(iTrig) = figure;
     % time
     subplot(2,1,1)
 %     hold on
@@ -91,6 +92,10 @@ for iTrig = 1:nTrigs
     ylabel('|Y(f)|')
 end
 
+if saveFigs
+    rd_saveAllFigs(fH, trigNames, 'plot_tsFFT', figDir);
+end
+
 %% Get the component peaks
 ssvefFreqs = [15 20 30 40];
 freqWindow = 0.2; % +/- this window value
@@ -103,15 +108,20 @@ for iF = 1:numel(ssvefFreqs)
 end
 
 %% Plot peak freq image
+fH = [];
 for iF = 1:numel(ssvefFreqs)
     freq = ssvefFreqs(iF);
-    figure
+    fH(iF) = figure;
     imagesc(squeeze(peakMeans(iF,:,:)))
     title(sprintf('frequency = %d',freq))
+    freqNames{iF} = sprintf('peakAmp%dHz', freq);
+end
+if saveFigs
+    rd_saveAllFigs(fH, freqNames, 'im', figDir)
 end
 
 %% Convert to 157 channels
-freqToPlot = 30;
+freqToPlot = 40;
 freqIdx = find(ssvefFreqs==freqToPlot);
 peakM = squeeze(peakMeans(freqIdx,:,:))';
 inds = setdiff(0:156,badChannels)+1;
@@ -146,6 +156,7 @@ peakAttInOutDiffStimLRDiff157 = peakAttInOutDiffStimL157 - peakAttInOutDiffStimR
 
 %% Plot on mesh
 % all conditions separately
+fH = [];
 for iTrig = 1:nTrigs
     sensorData = peakMeans157(iTrig,:);
     figure
@@ -182,7 +193,7 @@ set(gca,'CLim', attLims)
 % save figs
 if saveFigs
     figNames = [trigNames {'LRDiff','AttInOutDiff','LStimAttInOutDiff','RStimAttInOutDiff','AttEffectLRDiff'}];
-    figPrefix = sprintf('ssvef%dHz', freqToPlot);
+    figPrefix = sprintf('map_ssvef%dHz', freqToPlot);
     rd_saveAllFigs([],figNames,figPrefix,figDir)
 end
 
