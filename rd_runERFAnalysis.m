@@ -1,13 +1,24 @@
 % rd_runERFAnalysis.m
 
 %% Setup
-% desk
-% filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/R0890_TAPilot_8.06.14.sqd';
-filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/R0817_TAPilot_8.20.14.sqd';
+exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
+sessionDir = 'R0817_20140820';
+fileBase = 'R0817_TAPilot_8.20.14';
+analStr = 'eti';
 
-% racho
-% filename = '/Volumes/RACHO/Data/NYU/R0890_20140806/R0890_TAPilot_8.06.14/R0890_TAPilot_8.06.14.sqd';
-% filename = '/Volumes/RACHO/Data/NYU/R0817_TAPilot_8.20.14/R0817_TAPilot_8.20.14.sqd';
+dataDir = sprintf('%s/%s', exptDir, sessionDir);
+
+switch analStr
+    case ''
+        filename = sprintf('%s/%s.sqd', dataDir, fileBase);
+        figDir = sprintf('%s/figures', dataDir);
+    otherwise
+        filename = sprintf('%s/%s_%s.sqd', dataDir, fileBase, analStr);
+        figDir = sprintf('%s/figures/%s', dataDir, analStr);
+end
+if ~exist(figDir,'dir')
+    mkdir(figDir)
+end
 
 % trigChan = 160:167;
 trigChan = 164:165; % targets
@@ -16,6 +27,7 @@ channelSets = {0:39,40:79,80:119,120:156};
 % badChannels = [10 11 115]; % R0890, 48-->49, 150-->152
 % badChannels = [10 11 115 49 152]; % R0890
 badChannels = [115 152]; % R0817
+% badChannels = [];
 
 tstart = -1000; % for targets
 tstop = 2000;
@@ -26,7 +38,7 @@ t = tstart:tstop;
 % trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 trigNames = {'targetL','targetR'};
 
-saveFigs = 0;
+saveFigs = 1;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
@@ -66,8 +78,9 @@ f = Fs/2*linspace(0,1,nfft/2+1);
 amps = 2*abs(Y(1:nfft/2+1,:,:));
 
 %% Plot trial average and single-sided amplitude spectrum
+fH = [];
 for iTrig = 1:nTrigs
-    figure
+    fH(iTrig) = figure;
     % time
     subplot(2,1,1)
     plot(repmat(t',1,nChannels), trigMean(:,:,iTrig))
@@ -81,6 +94,10 @@ for iTrig = 1:nTrigs
     ylim([0 20])
     xlabel('Frequency (Hz)')
     ylabel('|Y(f)|')
+end
+
+if saveFigs
+    rd_saveAllFigs(fH, trigNames, 'plot_tsFFT', figDir);
 end
 
 %% Get some time series peaks
@@ -101,11 +118,16 @@ peakTMeans157 = to157chan(peakTM,inds,'zeros');
 
 %% Plot on mesh
 % all conditions separately
+fH = [];
 for iTrig = 1:nTrigs
     sensorData = peakTMeans157(iTrig,:);
     figure
-    fH = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
-%     set(gca,'CLim',[0 3])
+    fH(iTrig) = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
+    set(gca,'CLim',[-150 150])
+end
+if saveFigs
+    figPrefix = sprintf('map_amp%dms', timeToPlot);
+    rd_saveAllFigs(fH,trigNames,figPrefix,figDir)
 end
 
 %% ANALYZE SINGLE TRIAL DATA
@@ -144,8 +166,9 @@ end
 
 %% Plot single-sided amplitude spectrum for single trial data average
 % figure
+fH = [];
 for iTrig = 1:nTrigs
-    figure
+    fH(iTrig) = figure;
     % frequency
     plot(repmat(f',1,nChannels), dataAmpsMean(:,:,iTrig))
     xlim([1 200])
@@ -153,6 +176,9 @@ for iTrig = 1:nTrigs
     xlabel('Frequency (Hz)')
     ylabel('|Y(f)|')
     title(sprintf('single trial FFT average, %s',trigNames{iTrig}))
+end
+if saveFigs
+    rd_saveAllFigs(fH,trigNames,'plot_singleTrialFFT',figDir)
 end
 
 %% Get the component peaks
@@ -185,23 +211,34 @@ set(gca,'XTickLabel',ssvefFreqs)
 xlabel('frequency (Hz)')
 ylabel('channel')
 title('SNR (ssvef/non-ssvef amplitude)')
+colorbar
+if saveFigs
+    rd_saveAllFigs(gcf,{'singleTrialSSVEFSNR'},'im',figDir)
+end
 
 % across flicker frequencies
 figure
 hist(peakSNRAll)
 xlabel('SNR (ssvef/non-ssvef amplitude)')
 ylabel('number of channels')
+if saveFigs
+    rd_saveAllFigs(gcf,{'singleTrialSSVEFSNR'},'hist',figDir)
+end
 
 %% Convert SNR to 157 channels and plot on mesh
 peakSNRAll157 = to157chan(peakSNRAll,inds,'zeros');
 
 figure
 fH = ssm_plotOnMesh(peakSNRAll157, 'peak SNR all flickers', [], data_hdr, '2d');
-set(gca,'CLim',[0 2])
+set(gca,'CLim',[0 4])
+if saveFigs
+    rd_saveAllFigs(gcf,{'singleTrialSSVEFSNR'},'map',figDir)
+end
 
 %% Plot ERF of high SNR channels
+fH = [];
 for iTrig = 1:nTrigs
-    figure
+    fH(iTrig) = figure;
     % time
     subplot(2,1,1)
     plot(repmat(t',1,nnz(highSNRChannels)), trigMean(:,highSNRChannels,iTrig))
@@ -216,6 +253,9 @@ for iTrig = 1:nTrigs
     xlabel('Frequency (Hz)')
     ylabel('|Y(f)|')
 end
+if saveFigs
+    rd_saveAllFigs(fH,trigNames,'plot_tsFFTHighSNRChannels',figDir)
+end
 
 % time, mean across channels
 figure
@@ -223,4 +263,7 @@ plot(t',squeeze(mean(trigMean(:,highSNRChannels,:),2)))
 xlabel('time (ms)')
 ylabel('amplitude')
 legend(trigNames)
+if saveFigs
+    rd_saveAllFigs(gcf,{'erfHighSNRChannels'},'plot',figDir)
+end
 
