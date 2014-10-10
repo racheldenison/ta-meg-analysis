@@ -2,16 +2,16 @@
 
 %% Setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0817_20140820';
-fileBase = 'R0817_TAPilot_8.20.14';
-analStr = 'eti';
+sessionDir = 'R0890_20140806';
+fileBase = 'R0890_TAPilot_8.06.14';
+analStr = '';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
 switch analStr
     case ''
         filename = sprintf('%s/%s.sqd', dataDir, fileBase);
-        figDir = sprintf('%s/figures', dataDir);
+        figDir = sprintf('%s/figures/raw', dataDir);
     otherwise
         filename = sprintf('%s/%s_%s.sqd', dataDir, fileBase, analStr);
         figDir = sprintf('%s/figures/%s', dataDir, analStr);
@@ -28,6 +28,12 @@ channelSets = {0:39,40:79,80:119,120:156};
 % badChannels = [10 11 115 49 152]; % R0890
 badChannels = [115 152]; % R0817
 % badChannels = [];
+
+% handpicked L/R channels
+highSNRChannelsL = [26 60 14 92]; % R0890
+highSNRChannelsR = [1 50 7 8]; % R0890
+% highSNRChannelsL = [92 60 15 14]; % R0817
+% highSNRChannelsR = [51 1 50 39]; % R0817
 
 tstart = -1000; % for targets
 tstop = 2000;
@@ -255,6 +261,7 @@ for iTrig = 1:nTrigs
 end
 if saveFigs
     rd_saveAllFigs(fH,trigNames,'plot_tsFFTHighSNRChannels',figDir)
+%     rd_saveAllFigs(fH,trigNames,'plot_tsFFTPickedChannelsR',figDir)
 end
 
 % time, mean across channels
@@ -265,5 +272,6 @@ ylabel('amplitude')
 legend(trigNames)
 if saveFigs
     rd_saveAllFigs(gcf,{'erfHighSNRChannels'},'plot',figDir)
+%     rd_saveAllFigs(gcf,{'erfPickedChannelsR'},'plot',figDir)
 end
 

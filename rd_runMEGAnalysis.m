@@ -2,8 +2,8 @@
 
 %% Setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0817_20140820';
-fileBase = 'R0817_TAPilot_8.20.14';
+sessionDir = 'R0890_20140806';
+fileBase = 'R0817_TAPilot_8.06.14';
 analStr = 'eti';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -121,7 +121,7 @@ if saveFigs
 end
 
 %% Convert to 157 channels
-freqToPlot = 40;
+freqToPlot = 30;
 freqIdx = find(ssvefFreqs==freqToPlot);
 peakM = squeeze(peakMeans(freqIdx,:,:))';
 inds = setdiff(0:156,badChannels)+1;
