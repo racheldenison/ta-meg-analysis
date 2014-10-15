@@ -63,7 +63,7 @@ analStr = [analStr 'e'];
 
 % convert to time x trials x channels
 data = permute(data,[1 3 2]);
-data = meg_environmental_denoising(data, plotFigs);
+data = meg_environmental_denoising(data, refChannels+1, megChannels+1, plotFigs);
 data = permute(data,[1 3 2]); % convert back
 
 %% Line noise filter
