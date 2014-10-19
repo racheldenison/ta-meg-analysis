@@ -1,4 +1,4 @@
-% rd_runERFAnalysis.m
+% rd_ERFAnalysis.m
 
 %% Setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';

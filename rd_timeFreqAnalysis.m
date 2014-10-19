@@ -1,7 +1,6 @@
-% wavelet_example.m
+% rd_timeFreqAnalysis.m
 
 % single-trial target data
-% can use trigData from rd_runERFAnalysis.m
 %% setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0890_20140806';

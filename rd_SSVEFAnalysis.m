@@ -1,4 +1,4 @@
-% rd_runMEGAnalysis.m
+% rd_SSVEFAnalysis.m
 
 %% Setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
