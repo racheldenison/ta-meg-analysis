@@ -2,8 +2,8 @@
 
 %% Setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0817_20140820';
-fileBase = 'R0817_TAPilot_8.20.14';
+sessionDir = 'R0890_20140806';
+fileBase = 'R0890_TAPilot_8.06.14';
 analStr = 'eti';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -11,9 +11,11 @@ dataDir = sprintf('%s/%s', exptDir, sessionDir);
 switch analStr
     case ''
         filename = sprintf('%s/%s.sqd', dataDir, fileBase);
+        savename = sprintf('%s/mat/%s_ssvef_workspace.mat', dataDir, fileBase);
         figDir = sprintf('%s/figures/raw', dataDir);
     otherwise
         filename = sprintf('%s/%s_%s.sqd', dataDir, fileBase, analStr);
+        savename = sprintf('%s/mat/%s_%s_ssvef_workspace.mat', dataDir, fileBase, analStr);
         figDir = sprintf('%s/figures/%s', dataDir, analStr);
 end
 if ~exist(figDir,'dir')
@@ -24,8 +26,8 @@ end
 trigChan = [160:163 166]; % stim/blank blocks
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
-% badChannels = [10 11 115]; % R0890
-badChannels = [115 152]; % R0817, also 152 looks dead
+badChannels = [10 11 115]; % R0890
+% badChannels = [115 152]; % R0817, also 152 looks dead
 % badChannels = [];
 tstart = 1000; % ms
 tstop = 6500; % ms
@@ -35,7 +37,8 @@ t = tstart:tstop;
 %     'targetL','targetR','blank'};
 trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 
-saveFigs = 0;
+saveData = 1;
+saveFigs = 1;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
@@ -55,6 +58,11 @@ end
 nSamples = size(trigMean,1);
 nChannels = size(trigMean,2);
 nTrigs = size(trigMean,3);
+
+%% Save the data
+if saveData
+    save(savename);
+end
 
 %% Find noisy channels
 varCutoff = 100;
@@ -77,14 +85,14 @@ for iTrig = 1:nTrigs
     fH(iTrig) = figure;
     % time
     subplot(2,1,1)
-%     hold on
+    %     hold on
     plot(repmat(t',1,nChannels), trigMean(:,:,iTrig))
     xlabel('time (ms)')
     ylabel('amplitude')
     title(trigNames{iTrig})
     % frequency
     subplot(2,1,2)
-%     hold on
+    %     hold on
     plot(repmat(f',1,nChannels), amps(:,:,iTrig))
     xlim([1 200])
     ylim([0 20])
@@ -121,80 +129,83 @@ if saveFigs
 end
 
 %% Convert to 157 channels
-freqToPlot = 40;
-freqIdx = find(ssvefFreqs==freqToPlot);
-peakM = squeeze(peakMeans(freqIdx,:,:))';
-inds = setdiff(0:156,badChannels)+1;
-peakMeans157 = to157chan(peakM,inds,'zeros');
-
-fastLRContrast = [.5 .5 -.5 -.5 0];
-slowLRContrast = -fastLRContrast;
-fastAttInOutContrast = [.5 -.5 -.5 .5 0];
-slowAttInOutContrast = -fastAttInOutContrast;
-fastAttInOutStimLContrast = [1 -1 0 0 0];
-fastAttInOutStimRContrast = [0 0 -1 1 0];
-slowAttInOutStimLContrast = [0 0 1 -1 0];
-slowAttInOutStimRContrast = [-1 1 0 0 0];
-
-if mod(freqToPlot,15)==0
-    lrContrast = slowLRContrast;
-    attInOutContrast = slowAttInOutContrast;
-    attInOutStimLContrast = slowAttInOutStimLContrast;
-    attInOutStimRContrast = slowAttInOutStimRContrast;
-elseif mod(freqToPlot,20)==0
-    lrContrast = fastLRContrast;
-    attInOutContrast = fastAttInOutContrast;
-    attInOutStimLContrast = fastAttInOutStimLContrast;
-    attInOutStimRContrast = fastAttInOutStimRContrast;
-end
-
-peakStimLRDiff157 = (peakMeans157'*lrContrast')';
-peakAttInOutDiff157 = (peakMeans157'*attInOutContrast')';
-peakAttInOutDiffStimL157 = (peakMeans157'*attInOutStimLContrast')';
-peakAttInOutDiffStimR157 = (peakMeans157'*attInOutStimRContrast')';
-peakAttInOutDiffStimLRDiff157 = peakAttInOutDiffStimL157 - peakAttInOutDiffStimR157;
-
-%% Plot on mesh
-% all conditions separately
-fH = [];
-for iTrig = 1:nTrigs
-    sensorData = peakMeans157(iTrig,:);
-    figure
-    fH = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
-    set(gca,'CLim',[0 10])
-end
-
-% left-right
-figure
-ssm_plotOnMesh(peakStimLRDiff157, 'L-R', [], data_hdr, '2d');
-set(gca,'CLim',[-5 5])
-
-attLims = [-3 3];
-% att in - att out
-figure
-ssm_plotOnMesh(peakAttInOutDiff157, 'in-out', [], data_hdr, '2d');
-set(gca,'CLim', attLims)
+for iF = 1:numel(ssvefFreqs)
+    freqToPlot = ssvefFreqs(iF);
+    % freqToPlot = 40;
+    freqIdx = find(ssvefFreqs==freqToPlot);
+    peakM = squeeze(peakMeans(freqIdx,:,:))';
+    inds = setdiff(0:156,badChannels)+1;
+    peakMeans157 = to157chan(peakM,inds,'zeros');
     
-% left stim: att in - att out
-figure
-ssm_plotOnMesh(peakAttInOutDiffStimL157, 'L stim: in-out', [], data_hdr, '2d');
-set(gca,'CLim', attLims)
-
-% right stim: att in - att out
-figure
-ssm_plotOnMesh(peakAttInOutDiffStimR157, 'R stim: in-out', [], data_hdr, '2d');
-set(gca,'CLim', attLims)
-
-% att effect L stim - att effect R stim
-figure
-ssm_plotOnMesh(peakAttInOutDiffStimLRDiff157, 'att effect L - att effect R', [], data_hdr, '2d');
-set(gca,'CLim', attLims)
-
-% save figs
-if saveFigs
-    figNames = [trigNames {'LRDiff','AttInOutDiff','LStimAttInOutDiff','RStimAttInOutDiff','AttEffectLRDiff'}];
-    figPrefix = sprintf('map_ssvef%dHz', freqToPlot);
-    rd_saveAllFigs([],figNames,figPrefix,figDir)
+    fastLRContrast = [.5 .5 -.5 -.5 0];
+    slowLRContrast = -fastLRContrast;
+    fastAttInOutContrast = [.5 -.5 -.5 .5 0];
+    slowAttInOutContrast = -fastAttInOutContrast;
+    fastAttInOutStimLContrast = [1 -1 0 0 0];
+    fastAttInOutStimRContrast = [0 0 -1 1 0];
+    slowAttInOutStimLContrast = [0 0 1 -1 0];
+    slowAttInOutStimRContrast = [-1 1 0 0 0];
+    
+    if mod(freqToPlot,15)==0
+        lrContrast = slowLRContrast;
+        attInOutContrast = slowAttInOutContrast;
+        attInOutStimLContrast = slowAttInOutStimLContrast;
+        attInOutStimRContrast = slowAttInOutStimRContrast;
+    elseif mod(freqToPlot,20)==0
+        lrContrast = fastLRContrast;
+        attInOutContrast = fastAttInOutContrast;
+        attInOutStimLContrast = fastAttInOutStimLContrast;
+        attInOutStimRContrast = fastAttInOutStimRContrast;
+    end
+    
+    peakStimLRDiff157 = (peakMeans157'*lrContrast')';
+    peakAttInOutDiff157 = (peakMeans157'*attInOutContrast')';
+    peakAttInOutDiffStimL157 = (peakMeans157'*attInOutStimLContrast')';
+    peakAttInOutDiffStimR157 = (peakMeans157'*attInOutStimRContrast')';
+    peakAttInOutDiffStimLRDiff157 = peakAttInOutDiffStimL157 - peakAttInOutDiffStimR157;
+    
+    %% Plot on mesh
+    % all conditions separately
+    fH = [];
+    for iTrig = 1:nTrigs
+        sensorData = peakMeans157(iTrig,:);
+        figure
+        fH(iTrig) = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
+        set(gca,'CLim',[0 5])
+    end
+    
+    % left-right
+    figure
+    fH(end+1) = ssm_plotOnMesh(peakStimLRDiff157, 'L-R', [], data_hdr, '2d');
+    set(gca,'CLim',[-3 3])
+    
+    attLims = [-1 1];
+    % att in - att out
+    figure
+    fH(end+1) = ssm_plotOnMesh(peakAttInOutDiff157, 'in-out', [], data_hdr, '2d');
+    set(gca,'CLim', attLims)
+    
+    % left stim: att in - att out
+    figure
+    fH(end+1) = ssm_plotOnMesh(peakAttInOutDiffStimL157, 'L stim: in-out', [], data_hdr, '2d');
+    set(gca,'CLim', attLims)
+    
+    % right stim: att in - att out
+    figure
+    fH(end+1) = ssm_plotOnMesh(peakAttInOutDiffStimR157, 'R stim: in-out', [], data_hdr, '2d');
+    set(gca,'CLim', attLims)
+    
+    % att effect L stim - att effect R stim
+    figure
+    fH(end+1) = ssm_plotOnMesh(peakAttInOutDiffStimLRDiff157, 'att effect L - att effect R', [], data_hdr, '2d');
+    set(gca,'CLim', attLims)
+    
+    % save figs
+    if saveFigs
+        figNames = [trigNames {'LRDiff','AttInOutDiff','LStimAttInOutDiff','RStimAttInOutDiff','AttEffectLRDiff'}];
+        figPrefix = sprintf('map_ssvef%dHz', freqToPlot);
+        rd_saveAllFigs(fH,figNames,figPrefix,figDir)
+    end
 end
 
 %% Find the channels with high SSVEF SNR

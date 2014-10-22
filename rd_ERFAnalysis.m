@@ -4,16 +4,18 @@
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0890_20140806';
 fileBase = 'R0890_TAPilot_8.06.14';
-analStr = '';
+analStr = 'eti';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
 switch analStr
     case ''
         filename = sprintf('%s/%s.sqd', dataDir, fileBase);
+        savename = sprintf('%s/mat/%s_erf_workspace.mat', dataDir, fileBase);
         figDir = sprintf('%s/figures/raw', dataDir);
     otherwise
         filename = sprintf('%s/%s_%s.sqd', dataDir, fileBase, analStr);
+        savename = sprintf('%s/mat/%s_%s_erf_workspace.mat', dataDir, fileBase, analStr);
         figDir = sprintf('%s/figures/%s', dataDir, analStr);
 end
 if ~exist(figDir,'dir')
@@ -25,8 +27,8 @@ trigChan = 164:165; % targets
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
 % badChannels = [10 11 115]; % R0890, 48-->49, 150-->152
-% badChannels = [10 11 115 49 152]; % R0890
-badChannels = [115 152]; % R0817
+badChannels = [10 11 115 49 152]; % R0890
+% badChannels = [115 152]; % R0817
 % badChannels = [];
 
 % handpicked L/R channels
@@ -34,6 +36,8 @@ highSNRChannelsL = [26 60 14 92]; % R0890
 highSNRChannelsR = [1 50 7 8]; % R0890
 % highSNRChannelsL = [92 60 15 14]; % R0817
 % highSNRChannelsR = [51 1 50 39]; % R0817
+pickedChannels = {highSNRChannelsL, highSNRChannelsR};
+pickedChannelsLabels = {'L','R'};
 
 tstart = -1000; % for targets
 tstop = 2000;
@@ -44,6 +48,7 @@ t = tstart:tstop;
 % trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 trigNames = {'targetL','targetR'};
 
+saveData = 1;
 saveFigs = 1;
 
 % load data header for plotting topologies
@@ -64,6 +69,11 @@ end
 nSamples = size(trigMean,1);
 nChannels = size(trigMean,2);
 nTrigs = size(trigMean,3);
+
+%% Save the data
+if saveData
+    save(savename);
+end
 
 %% ANALYZE THE MEAN TIMESERIES FOR EACH TRIGGER TYPE
 %% Baseline
@@ -107,7 +117,7 @@ if saveFigs
 end
 
 %% Get some time series peaks
-times = [188 228 282 475];
+times = [228 475];
 timeWindow = 5; % +/- this window value
 for iT = 1:numel(times)
     time = times(iT);
@@ -116,24 +126,27 @@ for iT = 1:numel(times)
 end
 
 %% Convert to 157 channels
-timeToPlot = 228;
-timeIdx = find(times==timeToPlot);
-peakTM = squeeze(peakTMeans(timeIdx,:,:))';
-inds = setdiff(0:156,badChannels)+1;
-peakTMeans157 = to157chan(peakTM,inds,'zeros');
-
-%% Plot on mesh
-% all conditions separately
-fH = [];
-for iTrig = 1:nTrigs
-    sensorData = peakTMeans157(iTrig,:);
-    figure
-    fH(iTrig) = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
-    set(gca,'CLim',[-150 150])
-end
-if saveFigs
-    figPrefix = sprintf('map_amp%dms', timeToPlot);
-    rd_saveAllFigs(fH,trigNames,figPrefix,figDir)
+for iT = 1:numel(times)
+    timeToPlot = times(iT);
+    %     timeToPlot = 228;
+    timeIdx = find(times==timeToPlot);
+    peakTM = squeeze(peakTMeans(timeIdx,:,:))';
+    inds = setdiff(0:156,badChannels)+1;
+    peakTMeans157 = to157chan(peakTM,inds,'zeros');
+    
+    %% Plot on mesh
+    % all conditions separately
+    fH = [];
+    for iTrig = 1:nTrigs
+        sensorData = peakTMeans157(iTrig,:);
+        figure
+        fH(iTrig) = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
+        set(gca,'CLim',[-150 150])
+    end
+    if saveFigs
+        figPrefix = sprintf('map_amp%dms', timeToPlot);
+        rd_saveAllFigs(fH,trigNames,figPrefix,figDir)
+    end
 end
 
 %% ANALYZE SINGLE TRIAL DATA
@@ -207,7 +220,7 @@ peakSNR = (peakSignal./repmat(peakNoise,numel(ssvefFreqs),1));
 peakSNRAll = mean(mean(peakSNR,3),1);
 
 snrThresh = prctile(peakSNRAll,90);
-highSNRChannels = peakSNRAll>snrThresh;
+highSNRChannels0 = peakSNRAll>snrThresh;
 
 % for each flicker frequency, across trigger types
 figure
@@ -242,36 +255,41 @@ if saveFigs
 end
 
 %% Plot ERF of high SNR channels
-fH = [];
-for iTrig = 1:nTrigs
-    fH(iTrig) = figure;
-    % time
-    subplot(2,1,1)
-    plot(repmat(t',1,nnz(highSNRChannels)), trigMean(:,highSNRChannels,iTrig))
+for iChSet = 1:numel(pickedChannels)
+    highSNRChannels = pickedChannels{iChSet};
+    fH = [];
+    for iTrig = 1:nTrigs
+        fH(iTrig) = figure;
+        % time
+        subplot(2,1,1)
+        plot(repmat(t',1,nnz(highSNRChannels)), trigMean(:,highSNRChannels,iTrig))
+        xlabel('time (ms)')
+        ylabel('amplitude')
+        title(trigNames{iTrig})
+        % frequency
+        subplot(2,1,2)
+        plot(repmat(f',1,nnz(highSNRChannels)), dataAmpsMean(:,highSNRChannels,iTrig))
+        xlim([1 200])
+        ylim([0 40])
+        xlabel('Frequency (Hz)')
+        ylabel('|Y(f)|')
+    end
+    if saveFigs
+        %     rd_saveAllFigs(fH,trigNames,'plot_tsFFTHighSNRChannels',figDir)
+        name = sprintf('plot_tsFFTPickedChannels%s', pickedChannelsLabels{iChSet});
+        rd_saveAllFigs(fH,trigNames,name,figDir)
+    end
+    
+    % time, mean across channels
+    figure
+    plot(t',squeeze(mean(trigMean(:,highSNRChannels,:),2)))
     xlabel('time (ms)')
     ylabel('amplitude')
-    title(trigNames{iTrig})
-    % frequency
-    subplot(2,1,2)
-    plot(repmat(f',1,nnz(highSNRChannels)), dataAmpsMean(:,highSNRChannels,iTrig))
-    xlim([1 200])
-    ylim([0 40])
-    xlabel('Frequency (Hz)')
-    ylabel('|Y(f)|')
-end
-if saveFigs
-    rd_saveAllFigs(fH,trigNames,'plot_tsFFTHighSNRChannels',figDir)
-%     rd_saveAllFigs(fH,trigNames,'plot_tsFFTPickedChannelsR',figDir)
-end
-
-% time, mean across channels
-figure
-plot(t',squeeze(mean(trigMean(:,highSNRChannels,:),2)))
-xlabel('time (ms)')
-ylabel('amplitude')
-legend(trigNames)
-if saveFigs
-    rd_saveAllFigs(gcf,{'erfHighSNRChannels'},'plot',figDir)
-%     rd_saveAllFigs(gcf,{'erfPickedChannelsR'},'plot',figDir)
+    legend(trigNames)
+    if saveFigs
+        %     rd_saveAllFigs(gcf,{'erfHighSNRChannels'},'plot',figDir)
+        name = sprintf('tsFFTPickedChannels%s', pickedChannelsLabels{iChSet});
+        rd_saveAllFigs(gcf,{name},'plot',figDir)
+    end
 end
 
