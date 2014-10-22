@@ -2,8 +2,8 @@
 
 %% Setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0890_20140806';
-fileBase = 'R0817_TAPilot_8.06.14';
+sessionDir = 'R0817_20140820';
+fileBase = 'R0817_TAPilot_8.20.14';
 analStr = 'eti';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -11,7 +11,7 @@ dataDir = sprintf('%s/%s', exptDir, sessionDir);
 switch analStr
     case ''
         filename = sprintf('%s/%s.sqd', dataDir, fileBase);
-        figDir = sprintf('%s/figures', dataDir);
+        figDir = sprintf('%s/figures/raw', dataDir);
     otherwise
         filename = sprintf('%s/%s_%s.sqd', dataDir, fileBase, analStr);
         figDir = sprintf('%s/figures/%s', dataDir, analStr);
@@ -25,8 +25,8 @@ trigChan = [160:163 166]; % stim/blank blocks
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
 % badChannels = [10 11 115]; % R0890
-% badChannels = [115 152]; % R0817, also 152 looks dead
-badChannels = [];
+badChannels = [115 152]; % R0817, also 152 looks dead
+% badChannels = [];
 tstart = 1000; % ms
 tstop = 6500; % ms
 t = tstart:tstop;
@@ -35,7 +35,7 @@ t = tstart:tstop;
 %     'targetL','targetR','blank'};
 trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 
-saveFigs = 1;
+saveFigs = 0;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
@@ -121,7 +121,7 @@ if saveFigs
 end
 
 %% Convert to 157 channels
-freqToPlot = 30;
+freqToPlot = 40;
 freqIdx = find(ssvefFreqs==freqToPlot);
 peakM = squeeze(peakMeans(freqIdx,:,:))';
 inds = setdiff(0:156,badChannels)+1;
