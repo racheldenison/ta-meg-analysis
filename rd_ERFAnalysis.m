@@ -2,8 +2,8 @@
 
 %% Setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0890_20140806';
-fileBase = 'R0890_TAPilot_8.06.14';
+sessionDir = 'R0817_20140820';
+fileBase = 'R0817_TAPilot_8.20.14';
 analStr = 'eti';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -26,16 +26,23 @@ end
 trigChan = 164:165; % targets
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
-% badChannels = [10 11 115]; % R0890, 48-->49, 150-->152
-badChannels = [10 11 115 49 152]; % R0890
-% badChannels = [115 152]; % R0817
+
+% channels
+switch sessionDir
+    case 'R0890_20140806'
+        % badChannels = [10 11 115]; % R0890, 48-->49, 150-->152
+        badChannels = [10 11 115 49 152]; % R0890
+        highSNRChannelsL = [26 60 14 92]; % R0890
+        highSNRChannelsR = [1 50 7 8]; % R0890
+    case 'R0817_20140820'
+        badChannels = [115 152]; % R0817
+        highSNRChannelsL = [92 60 15 14]; % R0817
+        highSNRChannelsR = [51 1 50 39]; % R0817
+    otherwise
+        error('sessionDir not found')
+end
 % badChannels = [];
 
-% handpicked L/R channels
-highSNRChannelsL = [26 60 14 92]; % R0890
-highSNRChannelsR = [1 50 7 8]; % R0890
-% highSNRChannelsL = [92 60 15 14]; % R0817
-% highSNRChannelsR = [51 1 50 39]; % R0817
 pickedChannels = {highSNRChannelsL, highSNRChannelsR};
 pickedChannelsLabels = {'L','R'};
 
@@ -48,8 +55,8 @@ t = tstart:tstop;
 % trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 trigNames = {'targetL','targetR'};
 
-saveData = 1;
-saveFigs = 1;
+saveData = 0;
+saveFigs = 0;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
