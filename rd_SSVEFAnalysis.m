@@ -64,6 +64,19 @@ if saveData
     save(savename);
 end
 
+%%%%% things to set if starting from rd_prepare_vj
+% nSamples = size(trigMean,1);
+% nChannels = size(trigMean,2);
+% nTrigs = size(trigMean,3);
+% Fs = 1000;
+% tstart = 1000; % ms
+% tstop = 6500; % ms
+% t = tstart:tstop;
+% trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
+% saveFigs = 0;
+% badChannels = [];
+% load data/data_hdr.mat
+
 %% Find noisy channels
 varCutoff = 100;
 trigVar = std(trigMean(:,:,1));
