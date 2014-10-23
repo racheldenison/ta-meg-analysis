@@ -5,6 +5,7 @@ exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0817_20140820';
 fileBase = 'R0817_TAPilot_8.20.14';
 analStr = 'eti';
+excludeTrialsFt = 1;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
@@ -80,6 +81,27 @@ nTrigs = size(trigMean,3);
 %% Save the data
 if saveData
     save(savename);
+end
+
+%% Exclude trials manually rejected with ft
+if excludeTrialsFt
+    % load trials_rejected variable from ft manual rejection
+    load([dataDir '/mat/trials_rejected_erf.mat'])
+    
+    includedTrials = logical(ones(size(trigData,3),1));
+    includedTrials(trials_rejected) = 0;
+    
+    trigMean = [];
+    for iTrig = 1:nTrigs
+        trigger = triggers(iTrig);
+        w = trigEvents(:,2)==trigger & includedTrials;
+        trigMean(:,:,iTrig) = mean(trigData(:,:,w),3);
+    end
+    trigData = trigData(:,:,includedTrials);
+    trigEvents = trigEvents(includedTrials,:);
+    
+    % update figDir
+    figDir = [figDir '_ft'];
 end
 
 %% ANALYZE THE MEAN TIMESERIES FOR EACH TRIGGER TYPE
@@ -292,6 +314,7 @@ for iChSet = 1:numel(pickedChannels)
     plot(t',squeeze(mean(trigMean(:,highSNRChannels,:),2)))
     xlabel('time (ms)')
     ylabel('amplitude')
+    ylim([-40 40])
     legend(trigNames)
     if saveFigs
         %     rd_saveAllFigs(gcf,{'erfHighSNRChannels'},'plot',figDir)
