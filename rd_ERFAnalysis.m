@@ -2,8 +2,8 @@
 
 %% Setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0817_20140820';
-fileBase = 'R0817_TAPilot_8.20.14';
+sessionDir = 'R0890_20140806';
+fileBase = 'R0890_TAPilot_8.06.14';
 analStr = 'eti';
 excludeTrialsFt = 1;
 
@@ -57,7 +57,7 @@ t = tstart:tstop;
 trigNames = {'targetL','targetR'};
 
 saveData = 0;
-saveFigs = 0;
+saveFigs = 1;
 
 % load data header for plotting topologies
 load data/data_hdr.mat

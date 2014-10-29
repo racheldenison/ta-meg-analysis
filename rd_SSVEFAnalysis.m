@@ -5,6 +5,7 @@ exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0890_20140806';
 fileBase = 'R0890_TAPilot_8.06.14';
 analStr = 'eti';
+excludeTrialsFt = 1;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
@@ -26,9 +27,18 @@ end
 trigChan = [160:163 166]; % stim/blank blocks
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
-badChannels = [10 11 115]; % R0890
-% badChannels = [115 152]; % R0817, also 152 looks dead
+
+switch sessionDir
+    case 'R0890_20140806'
+        % badChannels = [10 11 115]; % R0890, 48-->49, 150-->152
+        badChannels = [10 11 115 49 152]; % R0890
+    case 'R0817_20140820'
+        badChannels = [115 152]; % R0817
+    otherwise
+        error('sessionDir not found')
+end
 % badChannels = [];
+
 tstart = 1000; % ms
 tstop = 6500; % ms
 t = tstart:tstop;
@@ -37,24 +47,35 @@ t = tstart:tstop;
 %     'targetL','targetR','blank'};
 trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 
-saveData = 1;
+saveData = 0;
 saveFigs = 1;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
 
 %% Get the data
+trigData = [];
 trigMean = [];
 triggers = [];
-for iChSet = 1:numel(channelSets)
-    allChannels = channelSets{iChSet};
-    channels = setdiff(allChannels,badChannels);
-    
-    [trigM trigs Fs] =  rd_getData(filename, trigChan, channels, tstart, tstop);
-    trigMean = cat(2,trigMean,trigM);
-    triggers = cat(2,triggers,trigs); % COME BACK
+if excludeTrialsFt
+    for iChSet = 1:numel(channelSets)
+        allChannels = channelSets{iChSet};
+        channels = setdiff(allChannels,badChannels);
+        
+        [trigM, triggers, Fs, trigD, trigEvents] =  rd_getData(filename, trigChan, channels, tstart, tstop);
+        trigMean = cat(2,trigMean,trigM);
+        trigData = cat(2,trigData,trigD);
+    end
+else
+    for iChSet = 1:numel(channelSets)
+        allChannels = channelSets{iChSet};
+        channels = setdiff(allChannels,badChannels);
+        
+        [trigM trigs Fs] =  rd_getData(filename, trigChan, channels, tstart, tstop);
+        trigMean = cat(2,trigMean,trigM);
+        triggers = cat(2,triggers,trigs); % COME BACK
+    end
 end
-
 nSamples = size(trigMean,1);
 nChannels = size(trigMean,2);
 nTrigs = size(trigMean,3);
@@ -76,6 +97,27 @@ end
 % saveFigs = 0;
 % badChannels = [];
 % load data/data_hdr.mat
+
+%% Exclude trials manually rejected with ft
+if excludeTrialsFt
+    % load trials_rejected variable from ft manual rejection
+    load([dataDir '/mat/trials_rejected_ssvef.mat'])
+    
+    includedTrials = logical(ones(size(trigData,3),1));
+    includedTrials(trials_rejected) = 0;
+    
+    trigMean = [];
+    for iTrig = 1:nTrigs
+        trigger = triggers(iTrig);
+        w = trigEvents(:,2)==trigger & includedTrials;
+        trigMean(:,:,iTrig) = mean(trigData(:,:,w),3);
+    end
+    trigData = trigData(:,:,includedTrials);
+    trigEvents = trigEvents(includedTrials,:);
+    
+    % update figDir
+    figDir = [figDir '_ft'];
+end
 
 %% Find noisy channels
 varCutoff = 100;
@@ -144,7 +186,7 @@ end
 %% Convert to 157 channels
 for iF = 1:numel(ssvefFreqs)
     freqToPlot = ssvefFreqs(iF);
-    % freqToPlot = 40;
+%     freqToPlot = 40;
     freqIdx = find(ssvefFreqs==freqToPlot);
     peakM = squeeze(peakMeans(freqIdx,:,:))';
     inds = setdiff(0:156,badChannels)+1;
@@ -232,6 +274,12 @@ imagesc(peakSNR)
 
 figure
 hist(peakSNRAllFlickers)
+xlabel('peak SNR (mean across flicker frequencies)')
+ylabel('number of channels')
+
+if saveFigs
+    rd_saveAllFigs(gcf, {'peakSNRAllFlickers'}, 'hist', figDir)
+end
 
 %% Plot selected channels for all ssvef freqs, all conditions
 % channelsToPlot = find(peakSNRAllFlickers>10);
