@@ -23,8 +23,8 @@ Fl = 60; % line noise frequency
 applyLineNoiseFilter = 0;
 TSPCA = 1;
 
-plotFigs = 1;
-saveFigs = 1;
+plotFigs = 0;
+saveFigs = 0;
 
 analStr = [];
 
