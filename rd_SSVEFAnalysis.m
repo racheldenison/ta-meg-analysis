@@ -281,6 +281,106 @@ if saveFigs
     rd_saveAllFigs(gcf, {'peakSNRAllFlickers'}, 'hist', figDir)
 end
 
+%% Find weights that maximize some conditions while minimizing others
+condSets{1} = [1 2]; % fast left (collapse across attention conditions)
+condSets{2} = [3 4]; % fast right
+for iCondSet = 1:numel(condSets)
+    condSet = condSets{iCondSet};
+    peakMeansCond(:,:,iCondSet) = mean(peakMeans(:,:,condSet),3);
+end
+
+% one ssvef frequency at a time
+for iF = 1:numel(ssvefFreqs)
+    A = squeeze(peakMeansCond(iF,:,1)); % condition 1
+    B = squeeze(peakMeansCond(iF,:,2)); % condition 2
+    
+    % find leading generalized eigenvector of A and B
+    % to maximize norm(Aw)/norm(Bw), aka maximize condition 1
+    [V,D] = eig(B'*B,A'*A); % X'X so that matrices are square
+    w1 = V(:,1);
+    
+    % to maximize norm(Bw)/norm(Aw), aka maximize condition 2
+    [V,D] = eig(A'*A,B'*B);
+    w2 = V(:,1);
+    
+    % check norm(Aw)/norm(Bw) - should be large for w1
+    ((A*w1)'*(A*w1))/((B*w1)'*(B*w1)) % large
+    ((B*w1)'*(B*w1))/((A*w1)'*(A*w1)) % small
+    
+    % check norm(Bw)/norm(Aw) - should be large for w2
+    ((B*w2)'*(B*w2))/((A*w2)'*(A*w2)) % large
+    ((A*w2)'*(A*w2))/((B*w2)'*(B*w2)) % small
+    
+    % store weights
+    w(:,iF,1) = w1;
+    w(:,iF,2) = w2;
+end
+
+% all frequencies simultaneously
+A = peakMeansCond(:,:,1); % condition 1
+B = peakMeansCond(:,:,2); % condition 2
+
+% find leading generalized eigenvector of A and B
+% to maximize norm(Aw)/norm(Bw), aka maximize condition 1
+[V,D] = eig(B'*B,A'*A); % X'X so that matrices are square
+w1 = V(:,1);
+
+% to maximize norm(Bw)/norm(Aw), aka maximize condition 2
+[V,D] = eig(A'*A,B'*B);
+w2 = V(:,1);
+
+% check norm(Aw)/norm(Bw) - should be large for w1
+((A*w1)'*(A*w1))/((B*w1)'*(B*w1)) % large
+((B*w1)'*(B*w1))/((A*w1)'*(A*w1)) % small
+
+% check norm(Bw)/norm(Aw) - should be large for w2
+((B*w2)'*(B*w2))/((A*w2)'*(A*w2)) % large
+((A*w2)'*(A*w2))/((B*w2)'*(B*w2)) % small
+
+% store weights
+wAll(:,1) = w1;
+wAll(:,2) = w2;
+
+%% Plot weights on mesh
+condNames = {'fastL','fastR'};
+inds = setdiff(0:156,badChannels)+1;
+for iCond = 1:2
+    w157(:,:,iCond) = to157chan(w(:,:,iCond)',inds,'zeros');
+end
+wAll157 = to157chan(wAll',inds,'zeros');
+
+% one frequency at a time
+fH = [];
+for iF = 1:numel(ssvefFreqs)
+    freqToPlot = ssvefFreqs(iF);
+    for iCond = 1:2
+        sensorData = w157(iF,:,iCond);
+        figure
+        fH(iCond) = ssm_plotOnMesh(sensorData, ...
+            sprintf('%d Hz, %s', freqToPlot, condNames{iCond}), [], data_hdr, '2d');
+        set(gca,'CLim',[-1.5 1.5])
+    end
+    if saveFigs
+        figNames = condNames;
+        figPrefix = sprintf('map_weights_ssvef%dHz', freqToPlot);
+        rd_saveAllFigs(fH,figNames,figPrefix,figDir)
+    end
+end
+
+% all frequencies simultaneously
+fH = [];
+for iCond = 1:2
+    sensorData = wAll157(iCond,:);
+    figure
+    fH(iCond) = ssm_plotOnMesh(sensorData, condNames{iCond}, [], data_hdr, '2d');
+    set(gca,'CLim',[-1.5 1.5])
+end
+if saveFigs
+    figNames = condNames;
+    figPrefix = sprintf('map_weights_allSSVEF', freqToPlot);
+    rd_saveAllFigs(fH,figNames,figPrefix,figDir)
+end
+
 %% Plot selected channels for all ssvef freqs, all conditions
 % channelsToPlot = find(peakSNRAllFlickers>10);
 channelsToPlot = [14 15 26 1 50 39];
