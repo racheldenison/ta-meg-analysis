@@ -3,12 +3,8 @@ function rd_MEGPreproc(filename, figDir)
 %% Setup
 % desk
 % filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/R0817_TAPilot_8.20.14.sqd';
-% filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/R0890_TAPilot_8.06.14_run01.sqd';
+% filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/preproc/R0817_TAPilot_8.20.14_run01.sqd';
 % figDir = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/figures';
-
-% racho
-% filename = '/Volumes/RACHO/Data/NYU/R0890_20140806/R0890_TAPilot_8.06.14/R0890_TAPilot_8.06.14.sqd';
-% filename = '/Volumes/RACHO/Data/NYU/R0817_TAPilot_8.20.14/R0817_TAPilot_8.20.14.sqd';
 
 % remember, these channel numbers use zero indexing
 megChannels = 0:156;
@@ -20,11 +16,13 @@ photodiodeChannel = 191;
 
 % preproc options
 Fl = 60; % line noise frequency
+environmentalDenoise = 1;
 applyLineNoiseFilter = 0;
-TSPCA = 1;
+TSPCA = 0;
+interpolate = 0;
 
-plotFigs = 0;
-saveFigs = 0;
+plotFigs = 1;
+saveFigs = 1;
 
 analStr = [];
 
@@ -58,13 +56,15 @@ if plotFigs
 end
 
 %% Denoise using reference channels
-% See also LSdenoise.m
-analStr = [analStr 'e'];
-
-% convert to time x trials x channels
-data = permute(data,[1 3 2]);
-data = meg_environmental_denoising(data, refChannels+1, megChannels+1, plotFigs);
-data = permute(data,[1 3 2]); % convert back
+if environmentalDenoise
+    % See also LSdenoise.m
+    analStr = [analStr 'e'];
+    
+    % convert to time x trials x channels
+    data = permute(data,[1 3 2]);
+    data = meg_environmental_denoising(data, refChannels+1, megChannels+1, plotFigs);
+    data = permute(data,[1 3 2]); % convert back
+end
 
 %% Line noise filter
 if applyLineNoiseFilter
@@ -96,6 +96,15 @@ if plotFigs
         title(sprintf('channel %d', chan))
     end
     xlabel('time (s)')
+end
+
+%% Save data preprocessed up to this point
+preFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
+
+if exist(preFile,'file')
+    error('preFile already exists ... will not overwrite. exiting.')
+else
+    sqdwrite(filename, preFile, 'data', data);
 end
 
 %% Time-shift PCA for environmental denoising
@@ -159,55 +168,57 @@ if TSPCA
 end
 
 %% Interpolate to replace bad channels
-% create dummy ft_data from the original data and update it
-dataset = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
-analStr = [analStr 'i'];
-
-% read data into ft structure in continuous mode by initializing cfg with
-% only the dataset
-% ft data is channels x time
-cfg = [];
-cfg.dataset = dataset;
-ft_data = ft_preprocessing(cfg); % this preserves the data, but scales it by like 10^-13
-ft_data.trial{1} = data'; % so just replace data with the original data
-
-% % interpolate bad channels interpolation
-% % if using 'nearest' or 'average' interpolation, get the neighbours
-% cfg = [];
-% cfg.method = 'distance';
-% [neighbours, cfg] = ft_prepare_neighbours(cfg, ft_data);
-
-cfg = [];
-cfg.badchannel = ft_channelselection(badChannels, ft_data.label);
-cfg.method = 'spline';
-% cfg.neighbours = neighbours; % only needed for nearest and average, not for spline
-ft_data = ft_channelrepair(cfg, ft_data);
-
-% compare before and after interpolation
-if plotFigs
-    figure
-    sampleChannels = badChannels;
-    for iCh = 1:numel(sampleChannels)
-        chan = sampleChannels(iCh);
-        subplot(numel(sampleChannels),1,iCh)
-        hold on
-        plot(t, data(:,chan))
-        plot(t, ft_data.trial{1}(chan,:), 'r')
-        xlabel('time (s)')
-        title(sprintf('channel %d', chan))
+if interpolate
+    % create dummy ft_data from the original data and update it
+    dataset = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
+    analStr = [analStr 'i'];
+    
+    % read data into ft structure in continuous mode by initializing cfg with
+    % only the dataset
+    % ft data is channels x time
+    cfg = [];
+    cfg.dataset = dataset;
+    ft_data = ft_preprocessing(cfg); % this preserves the data, but scales it by like 10^-13
+    ft_data.trial{1} = data'; % so just replace data with the original data
+    
+    % % interpolate bad channels interpolation
+    % % if using 'nearest' or 'average' interpolation, get the neighbours
+    % cfg = [];
+    % cfg.method = 'distance';
+    % [neighbours, cfg] = ft_prepare_neighbours(cfg, ft_data);
+    
+    cfg = [];
+    cfg.badchannel = ft_channelselection(badChannels, ft_data.label);
+    cfg.method = 'spline';
+    % cfg.neighbours = neighbours; % only needed for nearest and average, not for spline
+    ft_data = ft_channelrepair(cfg, ft_data);
+    
+    % compare before and after interpolation
+    if plotFigs
+        figure
+        sampleChannels = badChannels;
+        for iCh = 1:numel(sampleChannels)
+            chan = sampleChannels(iCh);
+            subplot(numel(sampleChannels),1,iCh)
+            hold on
+            plot(t, data(:,chan))
+            plot(t, ft_data.trial{1}(chan,:), 'r')
+            xlabel('time (s)')
+            title(sprintf('channel %d', chan))
+        end
+        legend('before interpolation','after interpolation')
     end
-    legend('before interpolation','after interpolation')
-end
-
-% save the interpolated data
-data(:,1:numel(megChannels)) = ft_data.trial{1}';
-
-interpFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
-sqdwrite(filename, interpFile, 'data', data);
-
-% if we've run the interpolation, then remove just-created tspcaFile
-if exist(tspcaFile,'file')
-    delete(tspcaFile);
+    
+    % save the interpolated data
+    data(:,1:numel(megChannels)) = ft_data.trial{1}';
+    
+    interpFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
+    sqdwrite(filename, interpFile, 'data', data);
+    
+    % if we've run the interpolation, then remove just-created tspcaFile
+    if exist(tspcaFile,'file')
+        delete(tspcaFile);
+    end
 end
 
 %% finally, check the triggers
