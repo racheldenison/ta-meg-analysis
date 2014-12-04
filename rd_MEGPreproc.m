@@ -1,4 +1,4 @@
-function rd_MEGPreproc(filename, figDir)
+function preprocFileName = rd_MEGPreproc(filename, figDir)
 
 %% Setup
 % desk
@@ -18,6 +18,7 @@ photodiodeChannel = 191;
 Fl = 60; % line noise frequency
 environmentalDenoise = 1;
 applyLineNoiseFilter = 0;
+removeBadChannels = 1;
 TSPCA = 0;
 interpolate = 0;
 
@@ -76,26 +77,33 @@ if applyLineNoiseFilter
 end
 
 %% Find bad channels
-% high or low variance across the entire time series
-outlierSDChannels = meg_find_bad_channels(permute(data(:,megChannels+1),[1 3 2]));
-
-% dead or saturating channels for all or portions of the time series
-deadChannels = checkForDeadChannels(filename)+1;
-
-% aggregate the bad channels
-badChannels = unique([outlierSDChannels' deadChannels]);
-nBad = numel(badChannels);
-
-% plot the time series for the bad channels
-if plotFigs
-    figure
-    for iBad = 1:nBad
-        subplot(nBad,1,iBad)
-        chan = badChannels(iBad);
-        plot(t, data(:,chan))
-        title(sprintf('channel %d', chan))
+if removeBadChannels
+    analStr = [analStr 'b'];
+    
+    % high or low variance across the entire time series
+    outlierSDChannels = meg_find_bad_channels(permute(data(:,megChannels+1),[1 3 2]));
+    
+    % dead or saturating channels for all or portions of the time series
+    deadChannels = checkForDeadChannels(filename)+1;
+    
+    % aggregate the bad channels
+    badChannels = unique([outlierSDChannels' deadChannels]);
+    nBad = numel(badChannels);
+    
+    % plot the time series for the bad channels
+    if plotFigs
+        figure
+        for iBad = 1:nBad
+            subplot(nBad,1,iBad)
+            chan = badChannels(iBad);
+            plot(t, data(:,chan))
+            title(sprintf('channel %d', chan))
+        end
+        xlabel('time (s)')
     end
-    xlabel('time (s)')
+    
+    % zero out bad channels
+    data(:,badChannels) = 0;
 end
 
 %% Save data preprocessed up to this point
@@ -119,18 +127,10 @@ end
 if TSPCA
     sizeOfBlocks = 20000;
     shifts = -100:100;
-    sourceFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
+    sourceFile = preFile;
     
     analStr = [analStr 't'];
     tspcaFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
-    
-    % save the current data as an sqd file for sqdDenoise
-    % note this file will be deleted after it has been used
-    if exist(sourceFile,'file')
-        error('sourceFile already exists ... will not overwrite. note that continuing the script will delete this file.')
-    else
-        sqdwrite(filename, sourceFile, 'data', data);
-    end
     
     % run sqd denoise
     % this writes the tspca sqd file
@@ -215,9 +215,12 @@ if interpolate
     interpFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
     sqdwrite(filename, interpFile, 'data', data);
     
-    % if we've run the interpolation, then remove just-created tspcaFile
+    % if we've run the interpolation, then remove just-created tspcaFile.
+    % otherwise, delete the preFile.
     if exist(tspcaFile,'file')
         delete(tspcaFile);
+    else
+        delete(preFile);
     end
 end
 
@@ -227,7 +230,7 @@ rd_checkTriggers(filename);
 %% save figs
 if saveFigs
     runStr = rd_getTag(filename);
-    figSubDir = sprintf('%s/%s', figDir, runStr);
+    figSubDir = sprintf('%s/%s/%s', figDir, analStr, runStr);
     if ~exist(figSubDir,'dir')
         mkdir(figSubDir)
     end
@@ -238,5 +241,10 @@ if saveFigs
     rd_saveAllFigs(f,figNames,[],figSubDir);
     close all
 end
+
+%% return preproc file name
+preprocFileName = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
+
+
 
 
