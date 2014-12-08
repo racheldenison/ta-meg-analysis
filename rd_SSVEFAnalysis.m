@@ -4,7 +4,7 @@
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0817_20140820';
 fileBase = 'R0817_TAPilot_8.20.14';
-analStr = 'raw';
+analStr = ''; % '', 'eti', etc.
 excludeTrialsFt = 0;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -330,16 +330,20 @@ w1 = V(:,1);
 w2 = V(:,1);
 
 % check norm(Aw)/norm(Bw) - should be large for w1
-((A*w1)'*(A*w1))/((B*w1)'*(B*w1)) % large
-((B*w1)'*(B*w1))/((A*w1)'*(A*w1)) % small
+((A*w1)'*(A*w1))/((B*w1)'*(B*w1)); % large
+((B*w1)'*(B*w1))/((A*w1)'*(A*w1)); % small
 
 % check norm(Bw)/norm(Aw) - should be large for w2
-((B*w2)'*(B*w2))/((A*w2)'*(A*w2)) % large
-((A*w2)'*(A*w2))/((B*w2)'*(B*w2)) % small
+((B*w2)'*(B*w2))/((A*w2)'*(A*w2)); % large
+((A*w2)'*(A*w2))/((B*w2)'*(B*w2)); % small
 
 % store weights
 wAll(:,1) = w1;
 wAll(:,2) = w2;
+
+if saveData
+    save([dataDir '/mat/weights.mat'], 'w', 'wAll', 'ssvefFreqs', 'condSets', 'trigNames')
+end
 
 %% Plot weights on mesh
 condNames = {'fastL','fastR'};
