@@ -5,7 +5,7 @@ exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0817_20140820';
 fileBase = 'R0817_TAPilot_8.20.14';
 analStr = 'eti';
-excludeTrialsFt = 0;
+excludeTrialsFt = 1;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
@@ -175,6 +175,36 @@ for iT = 1:numel(times)
     if saveFigs
         figPrefix = sprintf('map_amp%dms', timeToPlot);
         rd_saveAllFigs(fH,trigNames,figPrefix,figDir)
+    end
+end
+
+%% Weighted ERF
+w = load([dataDir '/mat/weights.mat']);
+
+wCondNames = {'fastL','fastR'};
+for iFreq = 1:numel(w.ssvefFreqs)
+    wFreq = w.ssvefFreqs(iFreq);
+    
+    fH = figure;
+    for iCond = 1:numel(wCondNames)
+        wCond = wCondNames{iCond};
+        
+        for iTrig = 1:nTrigs
+            weights = squeeze(w.w(:,iFreq,iCond));
+            weightedERF(:,iTrig) = abs(trigMean(:,:,iTrig))*weights; % may want to abs(trigMean)
+        end
+        
+        subplot(2,1,iCond)
+        plot(t, weightedERF)
+        ylim([-40 40])
+        xlabel('time (ms)')
+        ylabel('abs(amplitude)') % or abs(amplitude)
+        legend(trigNames)
+        title(sprintf('%s, %d Hz weights', wCond, wFreq))
+    end
+    if saveFigs
+        figName = sprintf('weightedAbsERF_%dHzWeights', wFreq); % or weightedAbsERF
+        rd_saveAllFigs(fH, {figName}, 'plot', figDir);
     end
 end
 
