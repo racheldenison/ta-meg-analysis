@@ -1,4 +1,4 @@
-function preprocFileName = rd_MEGPreproc(filename, figDir)
+function preprocFileName = rd_MEGPreproc(filename, figDir, badChannels)
 
 %% Setup
 % desk
@@ -13,6 +13,9 @@ triggerChannels = 160:166;
 photodiodeChannel = 191;
 
 % badChannels = [];
+if nargin < 3
+    badChannels = [];
+end
 
 % preproc options
 Fl = 60; % line noise frequency
@@ -20,7 +23,7 @@ environmentalDenoise = 1;
 applyLineNoiseFilter = 0;
 removeBadChannels = 1;
 TSPCA = 0;
-interpolate = 0;
+interpolate = 1;
 
 plotFigs = 1;
 saveFigs = 1;
@@ -87,7 +90,7 @@ if removeBadChannels
     deadChannels = checkForDeadChannels(filename)+1;
     
     % aggregate the bad channels
-    badChannels = unique([outlierSDChannels' deadChannels]);
+    badChannels = unique([badChannels outlierSDChannels' deadChannels]);
     nBad = numel(badChannels);
     
     % plot the time series for the bad channels
@@ -110,7 +113,7 @@ end
 preFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
 
 if exist(preFile,'file')
-    error('preFile already exists ... will not overwrite. exiting.')
+    error('%s_%s.sqd already exists ... will not overwrite. exiting.', filename(1:end-4), analStr)
 else
     sqdwrite(filename, preFile, 'data', data);
 end
@@ -217,7 +220,7 @@ if interpolate
     
     % if we've run the interpolation, then remove just-created tspcaFile.
     % otherwise, delete the preFile.
-    if exist(tspcaFile,'file')
+    if exist('tspcaFile', 'var') && exist(tspcaFile,'file')
         delete(tspcaFile);
     else
         delete(preFile);
