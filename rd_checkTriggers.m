@@ -27,7 +27,7 @@ for iTrig = 1:numel(trigChans)
         triggers = all_trigger(fileName, trigChans(iTrig));
         trigTimes = triggers(:,1);
         
-        plot(trigTimes, ones(size(trigTimes))+iTrig-1, '.')
+        plot(trigTimes, ones(size(trigTimes))+iTrig-1, '.', 'MarkerSize', 30)
         
         if verbose
             fprintf('Channel %d: %d triggers\n', trigChans(iTrig), numel(trigTimes))

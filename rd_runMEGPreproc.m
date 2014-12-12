@@ -2,8 +2,8 @@
 
 %% setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0890_20140806';
-fileBase = 'R0890_TAPilot_8.06.14';
+sessionDir = 'R0817_20140820';
+fileBase = 'R0817_TAPilot_8.20.14';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc', dataDir);
@@ -36,11 +36,23 @@ else
     runs = 1:nRuns
 end
 
+%% view data
+% % just from run 1
+run1Data = sqdread(sprintf('%s/%s', preprocDir, runFiles(1).name));
+run1Data  = run1Data(:,1:157)';
+
+srate = 1000;
+windowSize = [1 5 2560 1392];
+eegplot(run1Data,'srate',srate,'winlength',20,'dispchans',80,'position',windowSize);
+
+%% manually set bad channels
+badChannels = [98 153]; % in matlab 1-indexing
+
 %% run preproc for each run
 for iRun = 1:nRuns
     run = runs(iRun);
     runFile = sprintf('%s/%s_run%02d.sqd', preprocDir, fileBase, run);
-    preprocFileName = rd_MEGPreproc(runFile, figDir);
+    preprocFileName = rd_MEGPreproc(runFile, figDir, badChannels);
 end
 
 %% combine run files into preprocessed sqd
