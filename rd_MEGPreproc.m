@@ -3,7 +3,7 @@ function preprocFileName = rd_MEGPreproc(filename, figDir, badChannels)
 %% Setup
 % desk
 % filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/R0817_TAPilot_8.20.14.sqd';
-% filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/preproc/R0817_TAPilot_8.20.14_run01.sqd';
+% filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/preproc/R0890_TAPilot_8.06.14_run01.sqd';
 % figDir = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/figures';
 
 % remember, these channel numbers use zero indexing
@@ -23,7 +23,15 @@ environmentalDenoise = 1;
 applyLineNoiseFilter = 0;
 removeBadChannels = 1;
 TSPCA = 0;
+components = 1; % pca/ica
 interpolate = 1;
+
+% trial definition (for pca/ica)
+trialDef.trialFunHandle = @mytrialfun_all;
+trialDef.prestim = 0;
+trialDef.poststim = 5.5;
+trialDef.trig = 167; % blank blocks
+trialDef.nTrigsExpected = [];
 
 plotFigs = 1;
 saveFigs = 1;
@@ -117,6 +125,7 @@ if exist(preFile,'file')
 else
     sqdwrite(filename, preFile, 'data', data);
 end
+dataset = preFile;
 
 %% Time-shift PCA for environmental denoising
 % http://www.isr.umd.edu/Labs/CSSL/simonlab/Denoising.html
@@ -168,12 +177,23 @@ if TSPCA
     
     % remove just-created sourceFile
     delete(sourceFile);
+    
+    dataset = tspcaFile;
+end
+
+%% PCA/ICA
+if components
+    analStr = [analStr 'c'];
+    ft_cleandata = meg_pca_ica(dataset, badChannels, trialDef);
+    data(:,1:157) = ft_cleandata.trial{1}'./1e-13;
+    
+    clear ft_cleandata
 end
 
 %% Interpolate to replace bad channels
 if interpolate
     % create dummy ft_data from the original data and update it
-    dataset = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
+%     dataset = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
     analStr = [analStr 'i'];
     
     % read data into ft structure in continuous mode by initializing cfg with
@@ -225,6 +245,8 @@ if interpolate
     else
         delete(preFile);
     end
+    
+    dataset = interpFile;
 end
 
 %% finally, check the triggers
@@ -247,7 +269,6 @@ end
 
 %% return preproc file name
 preprocFileName = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
-
 
 
 
