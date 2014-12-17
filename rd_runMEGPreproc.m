@@ -46,7 +46,7 @@ windowSize = [1 5 2560 1392];
 eegplot(run1Data,'srate',srate,'winlength',20,'dispchans',80,'position',windowSize);
 
 %% manually set bad channels
-badChannels = [98 153]; % in matlab 1-indexing
+badChannels = []; % in matlab 1-indexing
 
 %% run preproc for each run
 for iRun = 1:nRuns

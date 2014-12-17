@@ -4,8 +4,8 @@
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0817_20140820';
 fileBase = 'R0817_TAPilot_8.20.14';
-analStr = 'eti';
-excludeTrialsFt = 1;
+analStr = 'ebci';
+excludeTrialsFt = 0;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
@@ -56,7 +56,7 @@ t = tstart:tstop;
 % trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 trigNames = {'targetL','targetR'};
 
-saveData = 0;
+saveData = 1;
 saveFigs = 1;
 
 % load data header for plotting topologies
@@ -344,7 +344,7 @@ for iChSet = 1:numel(pickedChannels)
     plot(t',squeeze(mean(trigMean(:,highSNRChannels,:),2)))
     xlabel('time (ms)')
     ylabel('amplitude')
-    ylim([-40 40])
+    ylim([-200 200])
     legend(trigNames)
     if saveFigs
         %     rd_saveAllFigs(gcf,{'erfHighSNRChannels'},'plot',figDir)

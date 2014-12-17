@@ -4,7 +4,7 @@
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0817_20140820';
 fileBase = 'R0817_TAPilot_8.20.14';
-analStr = ''; % '', 'eti', etc.
+analStr = 'ebci'; % '', 'eti', etc.
 excludeTrialsFt = 0;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -47,7 +47,7 @@ t = tstart:tstop;
 %     'targetL','targetR','blank'};
 trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 
-saveData = 0;
+saveData = 1;
 saveFigs = 1;
 
 % load data header for plotting topologies
@@ -226,15 +226,15 @@ for iF = 1:numel(ssvefFreqs)
         sensorData = peakMeans157(iTrig,:);
         figure
         fH(iTrig) = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
-        set(gca,'CLim',[0 5])
+        set(gca,'CLim',[0 15])
     end
     
     % left-right
     figure
     fH(end+1) = ssm_plotOnMesh(peakStimLRDiff157, 'L-R', [], data_hdr, '2d');
-    set(gca,'CLim',[-3 3])
+    set(gca,'CLim',[-10 10])
     
-    attLims = [-1 1];
+    attLims = [-3 3];
     % att in - att out
     figure
     fH(end+1) = ssm_plotOnMesh(peakAttInOutDiff157, 'in-out', [], data_hdr, '2d');
