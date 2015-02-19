@@ -75,17 +75,30 @@ for iTrial = 1:nTrials
         figure
         plot(t, hAmp)
     end
+    
+    %% wavelet
+    [spectrum,freqoi,timeoi] = ft_specest_wavelet(response, t);
+    specAmp = abs(squeeze(spectrum));
+    
+    freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
+    
+    wAmp = specAmp(freqIdx,:);
+    wAmpNorm = wAmp./mean(wAmp(500:1000));
+    wAmps(iTrial,:) = wAmpNorm;
 end
+
+%% Hilbert then average
+meanH = mean(hAmps);
 
 %% average then Hilbert
 meanResponse = mean(responses); % mean of raw time series
 meanResponseF = ft_preproc_bandpassfilter(meanResponse,Fs,Fbp);
 meanResponseFH = abs(hilbert(meanResponseF));
 
-%% Hilbert then average
-meanH = mean(hAmps);
+%% wavelet then average
+meanW = mean(wAmps);
 
-%% average then Wavelet
+%% average then wavelet
 % [spectrum,freqoi,timeoi] = ft_specest_wavelet(dat, time, varargin)
 [spectrum,freqoi,timeoi] = ft_specest_wavelet(meanResponse, t);
 specAmp = abs(squeeze(spectrum));
@@ -116,6 +129,7 @@ plot(t, attnGain, 'g')
 plot(t, meanResponseFH)
 plot(t, meanH, 'r')
 plot(t, wavAmpNorm, 'k')
-legend('true attn gain','average then Hilbert','Hilbert then average','average then wavelet')
+plot(t, meanW, 'c')
+legend('true attn gain','average then Hilbert','Hilbert then average','average then wavelet','wavelet then average')
 
     
