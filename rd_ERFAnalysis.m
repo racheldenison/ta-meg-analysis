@@ -4,8 +4,8 @@
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0817_20140820';
 fileBase = 'R0817_TAPilot_8.20.14';
-analStr = 'ebci';
-excludeTrialsFt = 0;
+analStr = 'eti';
+excludeTrialsFt = 1;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
@@ -56,8 +56,8 @@ t = tstart:tstop;
 % trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 trigNames = {'targetL','targetR'};
 
-saveData = 1;
-saveFigs = 1;
+saveData = 0;
+saveFigs = 0;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
@@ -181,6 +181,15 @@ end
 %% Weighted ERF
 w = load([dataDir '/mat/weights.mat']);
 
+inds = setdiff(0:156,badChannels)+1;
+if ~isempty(w.weightChannels)
+    for iChannel = 1:numel(inds)
+        inWeightSet(iChannel) = any(inds(iChannel)==w.weightChannels);
+    end
+else
+    inWeightSet = true(ones(size(inds)));
+end
+
 wCondNames = {'fastL','fastR'};
 for iFreq = 1:numel(w.ssvefFreqs)
     wFreq = w.ssvefFreqs(iFreq);
@@ -191,19 +200,19 @@ for iFreq = 1:numel(w.ssvefFreqs)
         
         for iTrig = 1:nTrigs
             weights = squeeze(w.w(:,iFreq,iCond));
-            weightedERF(:,iTrig) = abs(trigMean(:,:,iTrig))*weights; % may want to abs(trigMean)
+            weightedERF(:,iTrig) = trigMean(:,inWeightSet,iTrig)*weights; % trigMean or abs(trigMean)
         end
         
         subplot(2,1,iCond)
         plot(t, weightedERF)
         ylim([-40 40])
         xlabel('time (ms)')
-        ylabel('abs(amplitude)') % or abs(amplitude)
+        ylabel('amplitude') % amplitude or abs(amplitude)
         legend(trigNames)
         title(sprintf('%s, %d Hz weights', wCond, wFreq))
     end
     if saveFigs
-        figName = sprintf('weightedAbsERF_%dHzWeights', wFreq); % or weightedAbsERF
+        figName = sprintf('ERF_%dHzWeights', wFreq); % ERF or weightedAbsERF
         rd_saveAllFigs(fH, {figName}, 'plot', figDir);
     end
 end

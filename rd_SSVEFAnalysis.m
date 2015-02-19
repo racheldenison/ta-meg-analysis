@@ -4,7 +4,7 @@
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 sessionDir = 'R0817_20140820';
 fileBase = 'R0817_TAPilot_8.20.14';
-analStr = 'ebci'; % '', 'eti', etc.
+analStr = 'eti'; % '', 'eti', etc.
 excludeTrialsFt = 0;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -34,6 +34,7 @@ switch sessionDir
         badChannels = [10 11 115 49 152]; % R0890
     case 'R0817_20140820'
         badChannels = [115 152]; % R0817
+        weightChannels = sort(unique([59 92 10 60 15 14 32 2 51 1 50 39 7 24 55 103 98 8]));
     otherwise
         error('sessionDir not found')
 end
@@ -282,11 +283,19 @@ if saveFigs
 end
 
 %% Find weights that maximize some conditions while minimizing others
+if ~isempty(weightChannels)
+    for iChannel = 1:numel(inds)
+        inWeightSet(iChannel) = any(inds(iChannel)==weightChannels);
+    end
+else
+    inWeightSet = true(ones(size(inds)));
+end
+
 condSets{1} = [1 2]; % fast left (collapse across attention conditions)
 condSets{2} = [3 4]; % fast right
 for iCondSet = 1:numel(condSets)
     condSet = condSets{iCondSet};
-    peakMeansCond(:,:,iCondSet) = mean(peakMeans(:,:,condSet),3);
+    peakMeansCond(:,:,iCondSet) = mean(peakMeans(:,inWeightSet,condSet),3);
 end
 
 % one ssvef frequency at a time
@@ -342,16 +351,16 @@ wAll(:,1) = w1;
 wAll(:,2) = w2;
 
 if saveData
-    save([dataDir '/mat/weights.mat'], 'w', 'wAll', 'ssvefFreqs', 'condSets', 'trigNames')
+    save(sprintf('%s/mat/weights_%s.mat',dataDir,datestr(now,'yyyymmdd')), 'w', 'wAll', 'ssvefFreqs', 'condSets', 'trigNames', 'weightChannels')
 end
 
 %% Plot weights on mesh
 condNames = {'fastL','fastR'};
-inds = setdiff(0:156,badChannels)+1;
+% inds = setdiff(0:156,badChannels)+1;
 for iCond = 1:2
-    w157(:,:,iCond) = to157chan(w(:,:,iCond)',inds,'zeros');
+    w157(:,:,iCond) = to157chan(w(:,:,iCond)',weightChannels,'zeros');
 end
-wAll157 = to157chan(wAll',inds,'zeros');
+wAll157 = to157chan(wAll',weightChannels,'zeros');
 
 % one frequency at a time
 fH = [];
