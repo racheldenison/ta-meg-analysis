@@ -3,8 +3,8 @@
 % single-trial target data
 %% setup
 exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0890_20140806';
-fileBase = 'R0890_TAPilot_8.06.14';
+sessionDir = 'R0817_20140820';
+fileBase = 'R0817_TAPilot_8.20.14';
 analStr = 'eti';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -21,12 +21,12 @@ if ~exist(figDir,'dir')
     mkdir(figDir)
 end
 
-channelsL = [26 60 14 92]; % R0890
-channelsR = [1 50 7 8]; % R0890
-% channelsL = [92 60 15 14]; % R0817
-% channelsR = [51 1 50 39]; % R0817
+% channelsL = [26 60 14 92]; % R0890
+% channelsR = [1 50 7 8]; % R0890
+channelsL = [92 60 15 14]; % R0817
+channelsR = [51 1 50 39]; % R0817
 
-saveFigs = 1;
+saveFigs = 0;
 
 %% prepare trl
 cfg = [];
