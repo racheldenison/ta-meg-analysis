@@ -26,8 +26,8 @@ segmentationOption = 'selectData'; % 'splitData' or 'selectData'
 segmentCushion = 5; % used only if 'selectData'
 
 % experiment info
-nTrigsPerRun = 9;
-nRuns = 18;
+nTrigsPerRun = 9; % TAPilot: 9
+nRuns = 14; % TAPilot: 18
 nRunsPerSegment = 1;
 trialDur = 7;
 

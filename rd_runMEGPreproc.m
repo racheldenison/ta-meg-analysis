@@ -1,9 +1,9 @@
 % rd_runMEGPreproc.m
 
 %% setup
-exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
-sessionDir = 'R0817_20140820';
-fileBase = 'R0817_TAPilot_8.20.14';
+exptDir = '/Local/Users/denison/Data/TADetectDiscrim/MEG';
+sessionDir = 'R0817_20150504';
+fileBase = 'R0817_TADeDi_5.4.15';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc', dataDir);

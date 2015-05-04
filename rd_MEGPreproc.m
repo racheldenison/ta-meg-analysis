@@ -9,7 +9,7 @@ function preprocFileName = rd_MEGPreproc(filename, figDir, badChannels)
 % remember, these channel numbers use zero indexing
 megChannels = 0:156;
 refChannels = 157:159;
-triggerChannels = 160:166;
+triggerChannels = 160:167;
 photodiodeChannel = 191;
 
 % badChannels = [];
@@ -23,7 +23,7 @@ environmentalDenoise = 1;
 applyLineNoiseFilter = 0;
 removeBadChannels = 1;
 TSPCA = 0;
-components = 1; % pca/ica
+components = 0; % pca/ica
 interpolate = 1;
 
 % trial definition (for pca/ica)
