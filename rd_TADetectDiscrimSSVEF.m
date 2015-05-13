@@ -47,13 +47,10 @@ end
 % badChannels = [];
 
 Fs = 1000;
-tstart = -500; % ms % TAPilot: 1000
-tstop = 4400; % ms % TAPilot: 6500
+tstart = -500; % ms 
+tstop = 3100; % ms 
 t = tstart:tstop;
 
-% trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR',...
-%     'targetL','targetR','blank'};
-% trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 trigNames = {'attT1-T1p-T2p','attT2-T1p-T2p','attT1-T1a-T2p','attT2-T1a-T2p',...
     'attT1-T1p-T2a','attT2-T1p-T2a','attT1-T1a-T2a','attT2-T1a-T2a','blank'};
 
@@ -75,8 +72,8 @@ for iChSet = 1:numel(channelSets)
 %     trigMean = cat(2,trigMean,trigM);
     trigData = cat(2,trigData,trigD);
 end
-nSamples = size(trigMean,1);
-nChannels = size(trigMean,2);
+nSamples = size(trigData,1);
+nChannels = size(trigData,2);
 
 %% Save the data
 if saveData
@@ -90,8 +87,30 @@ inBaseline = ismember(t,baselinePeriod);
 baselineDC = mean(trigData(inBaseline,:,:),1);
 baselineTSeries = repmat(baselineDC,[size(trigData,1),1,1]);
 
-trigData0 = trigData;
+% trigData0 = trigData;
 trigData = trigData-baselineTSeries;
+
+%% Exclude trials manually rejected with ft
+if excludeTrialsFt
+    % load trials_rejected variable from ft manual rejection
+    load([dataDir '/mat/trials_rejected.mat'])
+    
+%     includedTrials = true(size(trigData,3),1);
+%     includedTrials(trials_rejected) = 0;
+    
+%     trigMean = [];
+%     for iTrig = 1:nTrigs
+%         trigger = triggers(iTrig);
+%         w = trigEvents(:,2)==trigger & includedTrials;
+%         trigMean(:,:,iTrig) = mean(trigData(:,:,w),3);
+%     end
+%     trigData = trigData(:,:,includedTrials);
+%     trigEvents = trigEvents(includedTrials,:);
+    trigData(:,:,trials_rejected) = NaN;
+    
+    % update figDir
+    figDir = [figDir '_ft'];
+end
 
 %% Organize trials into conditions
 cueCondIdx = strcmp(behav.responseData_labels, 'cue condition');
@@ -133,34 +152,13 @@ wBlank = behav.responseData_all(:,cueCondIdx) == blankCond;
 blankData = trigData(:,:,wBlank);
 
 % mean across trials
-condDataMean = squeeze(mean(condData,3));
-blankDataMean = squeeze(mean(blankData,3));
+condDataMean = squeeze(nanmean(condData,3));
+blankDataMean = squeeze(nanmean(blankData,3));
 
 % let trigMean have the conditions 1-9 in the third dimension
 trigMean = condDataMean(:,:,:);
 trigMean(:,:,end+1) = blankDataMean;
 nTrigs = size(trigMean,3);
-
-%% Exclude trials manually rejected with ft
-% if excludeTrialsFt
-%     % load trials_rejected variable from ft manual rejection
-%     load([dataDir '/mat/trials_rejected_ssvef.mat'])
-%     
-%     includedTrials = logical(ones(size(trigData,3),1));
-%     includedTrials(trials_rejected) = 0;
-%     
-%     trigMean = [];
-%     for iTrig = 1:nTrigs
-%         trigger = triggers(iTrig);
-%         w = trigEvents(:,2)==trigger & includedTrials;
-%         trigMean(:,:,iTrig) = mean(trigData(:,:,w),3);
-%     end
-%     trigData = trigData(:,:,includedTrials);
-%     trigEvents = trigEvents(includedTrials,:);
-%     
-%     % update figDir
-%     figDir = [figDir '_ft'];
-% end
 
 %% Find noisy channels
 varCutoff = 100;
@@ -255,7 +253,7 @@ for iF = 1:numel(ssvefFreqs)
 
     % save figs
     if saveFigs
-        figNames = [trigNames {'LRDiff','AttInOutDiff','LStimAttInOutDiff','RStimAttInOutDiff','AttEffectLRDiff'}];
+        figNames = [trigNames {'StimAve'}];
         figPrefix = sprintf('map_ssvef%dHz', freqToPlot);
         rd_saveAllFigs(fH,figNames,figPrefix,figDir)
     end
@@ -301,8 +299,26 @@ trigRed = mean(selectedMap((end-(nTrigs-1)/2)+1:end,:));
 
 eventTimes = [0 1000 1600 2600];
 
+%% Time series
+channel = 25;
+figure
+set(gca,'ColorOrder',trigColors)
+hold all
+plot(t, squeeze(trigMean(:,channel,plotOrder)))
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+% plot(t, squeeze(mean(trigMean(:,channel,plotOrder(1:(nTrigs-1)/2)),3)),'color',trigBlue,'LineWidth',4)
+% plot(t, squeeze(mean(trigMean(:,channel,plotOrder(end-(nTrigs-1)/2):end-1),3)),'color',trigRed,'LineWidth',4)
+xlim([t(1) t(end)])
+legend(trigNames(plotOrder))
+xlabel('time (ms)')
+ylabel('amplitude')
+title(sprintf('channel %d', channels))
+
+
 %% Wavelet on average across trials
-channels = 25; % [13 25]
+channels = 120; % [13 25]
 ssvefFreq = 30;
 for iTrig = 1:nTrigs
     data = trigMean(:,channels,iTrig)'; % channels by samples
@@ -311,11 +327,18 @@ for iTrig = 1:nTrigs
     
     freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
     
-    wAmp = squeeze(specAmp(:,freqIdx,:));
+    if numel(size(specAmp))==3 % if three-dimensional
+        wAmp = squeeze(specAmp(:,freqIdx,:));
+    else
+        wAmp = squeeze(specAmp(freqIdx,:));
+    end
     wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,1:500)));
     wAmps0(:,:,iTrig) = wAmpNorm';
 end
 wAmps = squeeze(mean(wAmps0,2)); % mean across channels
+% wBaselineWindow = [-300 -200];
+% wBaseline = mean(wAmps(find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2)),:));
+% wAmpsB = wAmps - repmat(wBaseline,nSamples,1);
 
 figure
 set(gca,'ColorOrder',trigColors)
@@ -329,7 +352,31 @@ plot(t, mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'Line
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('wavelet amp')
-title(['channels' sprintf(' %d', channels)])
+title(sprintf('%d Hz, channels %d', ssvefFreq, channels))
+
+%% Wavelet on single trials
+channel = 25;
+for iCue = 1:numel(cueConds)
+    for iT1 = 1:numel(t1Conds)
+        for iT2 = 1:numel(t2Conds)
+            data = squeeze(condData(:,channel,:,iCue,iT1,iT2))'; % trials by samples
+            [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000);
+            specAmp = abs(squeeze(spectrum));
+            
+            freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
+            
+            wAmp = squeeze(specAmp(:,freqIdx,:));
+            wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,1:500)));
+            wAmpsCond0(:,:,iCue,iT1,iT2) = wAmpNorm';
+        end
+    end
+end
+
+% example plot
+% figure
+% plot(wAmpsCond0(:,:,2,1,1))
+% hold on
+% plot(nanmean(wAmpsCond0(:,:,2,1,1),2),'k','LineWidth',2)
 
 %% Hilbert on average across trials
 channel = 25;
@@ -351,11 +398,16 @@ title(['channel' sprintf(' %d', channel)])
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
+plot(t, mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
+plot(t, mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
+legend(trigNames(plotOrder))
+xlabel('time (ms)')
+ylabel('Hilbert amp')
+title(['channels' sprintf(' %d', channels)])
 
 %% Filter single trial data
 ssvefFreq = 30;
 Fbp = ssvefFreq + [-1.6 1.6];
-fprintf('\nFiltering single trial data ...\n')
 for iTrial = 1:size(condData,3)
     fprintf('trial %d\n', iTrial)
     for iCue = 1:numel(cueConds)
