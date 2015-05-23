@@ -314,12 +314,16 @@ xlim([t(1) t(end)])
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('amplitude')
-title(sprintf('channel %d', channels))
+title(sprintf('channel %d', channel))
 
 
 %% Wavelet on average across trials
-channels = 120; % [13 25]
+channels = 25; % [13 14 23 25 43]
 ssvefFreq = 30;
+wBaselineWindow = [-300 -200];
+wBaselineWindowIdx = find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2));
+
+wAmps0 = [];
 for iTrig = 1:nTrigs
     data = trigMean(:,channels,iTrig)'; % channels by samples
     [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000);
@@ -332,7 +336,7 @@ for iTrig = 1:nTrigs
     else
         wAmp = squeeze(specAmp(freqIdx,:));
     end
-    wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,1:500)));
+    wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
     wAmps0(:,:,iTrig) = wAmpNorm';
 end
 wAmps = squeeze(mean(wAmps0,2)); % mean across channels
@@ -352,10 +356,30 @@ plot(t, mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'Line
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('wavelet amp')
-title(sprintf('%d Hz, channels %d', ssvefFreq, channels))
+title([sprintf('%d Hz, channels', ssvefFreq) sprintf(' %d', channels)])
+
+% condition subplots
+figure
+for iTrig = 1:(nTrigs-1)/2
+    subplot((nTrigs-1)/2,1,iTrig)
+    set(gca,'ColorOrder',[trigBlue; trigRed])
+    hold all
+    plot(t, wAmps(:,iTrig*2-1:iTrig*2))
+    legend(trigNames{iTrig*2-1:iTrig*2})
+    for iEv = 1:numel(eventTimes)
+        vline(eventTimes(iEv),'k');
+    end
+    ylim([-1 2.5])
+    if iTrig==1
+        title([sprintf('%d Hz, channels', ssvefFreq) sprintf(' %d', channels)])
+    end
+end
+xlabel('time (ms)')
+ylabel('wavelet amp')
 
 %% Wavelet on single trials
 channel = 25;
+wAmpsCond0 = [];
 for iCue = 1:numel(cueConds)
     for iT1 = 1:numel(t1Conds)
         for iT2 = 1:numel(t2Conds)
@@ -366,17 +390,60 @@ for iCue = 1:numel(cueConds)
             freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
             
             wAmp = squeeze(specAmp(:,freqIdx,:));
-            wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,1:500)));
+            wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
             wAmpsCond0(:,:,iCue,iT1,iT2) = wAmpNorm';
         end
     end
 end
 
-% example plot
+% blank
+data = squeeze(blankData(:,channel,:))'; % trials by samples
+[spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000);
+specAmp = abs(squeeze(spectrum));
+freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
+wAmp = squeeze(specAmp(:,freqIdx,:));
+wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
+wAmpsBlank0 = wAmpNorm';
+
+% mean across trials
+wAmpsCond0Mean = squeeze(nanmean(wAmpsCond0,2));
+wAmpsBlank0Mean = squeeze(nanmean(wAmpsBlank0,2));
+
+% let trigFMean have the conditions 1-9 in the third dimension
+wAmpsTrigMean = wAmpsCond0Mean(:,:);
+wAmpsTrigMean(:,end+1) = wAmpsBlank0Mean;
+
 % figure
-% plot(wAmpsCond0(:,:,2,1,1))
-% hold on
-% plot(nanmean(wAmpsCond0(:,:,2,1,1),2),'k','LineWidth',2)
+figure
+set(gca,'ColorOrder',trigColors)
+hold all
+plot(t, squeeze(wAmpsTrigMean(:,plotOrder)))
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+plot(t, mean(squeeze(wAmpsTrigMean(:,plotOrder(1:(nTrigs-1)/2))),2),'color',trigBlue,'LineWidth',4)
+plot(t, mean(squeeze(wAmpsTrigMean(:,plotOrder(end-(nTrigs-1)/2):end-1)),2),'color',trigRed,'LineWidth',4)
+legend(trigNames(plotOrder))
+xlabel('time (ms)')
+ylabel('wavelet amp')
+title(sprintf('channel %d', channel))
+
+% individual trials
+figure
+for iCue = 1:2
+    for iT1 = 1:2
+        for iT2 = 1:2
+            iTrig = (iCue-1)*4 + (iT1-1)*2 + iT2;
+            subplot(4,2,iTrig)
+            plot(t, wAmpsCond0(:,:,iCue,iT1,iT2))
+%             hold on
+%             plot(t, 2*ones(size(t)),'k')
+            title(trigNames{iTrig})
+            xlim([t(1) t(end)])
+        end
+    end
+end
+
 
 %% Hilbert on average across trials
 channel = 25;
@@ -403,7 +470,26 @@ plot(t, mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'Line
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('Hilbert amp')
-title(['channels' sprintf(' %d', channels)])
+title(sprintf('channel %d', channel))
+
+% condition subplots
+figure
+for iTrig = 1:(nTrigs-1)/2
+    subplot((nTrigs-1)/2,1,iTrig)
+    set(gca,'ColorOrder',[trigBlue; trigRed])
+    hold all
+    plot(t, hAmps(:,iTrig*2-1:iTrig*2))
+    legend(trigNames{iTrig*2-1:iTrig*2})
+    for iEv = 1:numel(eventTimes)
+        vline(eventTimes(iEv),'k');
+    end
+%     ylim([-1 2.5])
+    if iTrig==1
+        title([sprintf('%d Hz, channels', ssvefFreq) sprintf(' %d', channels)])
+    end
+end
+xlabel('time (ms)')
+ylabel('Hilbert amp')
 
 %% Filter single trial data
 ssvefFreq = 30;
@@ -428,8 +514,8 @@ for iTrial = 1:size(blankData,3)
 end
 
 % mean across trials
-condDataFMean = squeeze(mean(condDataF,3));
-blankDataFMean = squeeze(mean(blankDataF,3));
+condDataFMean = squeeze(nanmean(condDataF,3));
+blankDataFMean = squeeze(nanmean(blankDataF,3));
 
 % let trigFMean have the conditions 1-9 in the third dimension
 trigFMean = condDataFMean(:,:,:);
@@ -444,7 +530,7 @@ for iChan = 1:nChannels
     end
 end
 
-channel = 13;
+channel = 25;
 figure
 set(gca,'ColorOrder',trigColors)
 hold all
@@ -457,4 +543,5 @@ plot(t, mean(squeeze(hTrigFMean(:,channel,plotOrder(end-(nTrigs-1)/2):end-1)),2)
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('hilbert amp')
+title(sprintf('channel %d', channel))
 

@@ -1,7 +1,7 @@
 % rd_runMEGPreproc.m
 
 %% setup
-exptDir = '/Local/Users/denison/Data/TADetectDiscrim/MEG';
+exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 sessionDir = 'R0817_20150504';
 fileBase = 'R0817_TADeDi_5.4.15';
 
