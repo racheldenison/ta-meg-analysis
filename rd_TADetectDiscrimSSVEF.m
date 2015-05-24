@@ -243,13 +243,13 @@ for iF = 1:numel(ssvefFreqs)
         sensorData = peakMeans157(iTrig,:);
         figure
         fH(iTrig) = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
-        set(gca,'CLim',[0 15])
+        set(gca,'CLim',[0 20])
     end
     
     % stim average
     figure
     fH(end+1) = ssm_plotOnMesh(peakStimAve157, 'stim average', [], data_hdr, '2d');
-    set(gca,'CLim',[0 15])
+    set(gca,'CLim',[0 20])
 
     % save figs
     if saveFigs
@@ -318,15 +318,16 @@ title(sprintf('channel %d', channel))
 
 
 %% Wavelet on average across trials
-channels = 25; % [13 14 23 25 43]
+channels = 25; % [13 14 23 25 43], [7 8 13 20 36]
 ssvefFreq = 30;
+width = 7;
 wBaselineWindow = [-300 -200];
 wBaselineWindowIdx = find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2));
 
 wAmps0 = [];
 for iTrig = 1:nTrigs
     data = trigMean(:,channels,iTrig)'; % channels by samples
-    [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000);
+    [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'width', width);
     specAmp = abs(squeeze(spectrum));
     
     freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
@@ -356,7 +357,7 @@ plot(t, mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'Line
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('wavelet amp')
-title([sprintf('%d Hz, channels', ssvefFreq) sprintf(' %d', channels)])
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
 
 % condition subplots
 figure
@@ -371,7 +372,7 @@ for iTrig = 1:(nTrigs-1)/2
     end
     ylim([-1 2.5])
     if iTrig==1
-        title([sprintf('%d Hz, channels', ssvefFreq) sprintf(' %d', channels)])
+        title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
     end
 end
 xlabel('time (ms)')
@@ -426,7 +427,7 @@ plot(t, mean(squeeze(wAmpsTrigMean(:,plotOrder(end-(nTrigs-1)/2):end-1)),2),'col
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('wavelet amp')
-title(sprintf('channel %d', channel))
+title(sprintf('%d Hz, channel %d', ssvefFreq, channel))
 
 % individual trials
 figure
@@ -440,20 +441,23 @@ for iCue = 1:2
 %             plot(t, 2*ones(size(t)),'k')
             title(trigNames{iTrig})
             xlim([t(1) t(end)])
+            ylim([-2 4])
         end
     end
 end
+rd_supertitle(sprintf('%d Hz, channel %d', ssvefFreq, channel))
 
 
 %% Hilbert on average across trials
-channel = 25;
+channels = [13 14 23 25 43]; % [13 14 23 25 43];
 ssvefFreq = 30;
 Fbp = ssvefFreq + [-1.6 1.6];
+hAmps = [];
 for iTrig = 1:nTrigs
-    data = trigMean(:,channel,iTrig)'; % channels by samples
+    data = trigMean(:,channels,iTrig)'; % channels by samples
     dataF = ft_preproc_bandpassfilter(data,Fs,Fbp);
-    dataFH = abs(hilbert(dataF));
-    hAmps(:,iTrig) = dataFH;
+    dataFH = abs(hilbert(mean(dataF,1))); % average across channels
+    hAmps(:,iTrig) = dataFH; 
 end
 
 figure
@@ -461,7 +465,6 @@ set(gca,'ColorOrder',trigColors)
 hold all
 plot(t, hAmps(:,plotOrder))
 legend(trigNames(plotOrder))
-title(['channel' sprintf(' %d', channel)])
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
@@ -470,7 +473,7 @@ plot(t, mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'Line
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('Hilbert amp')
-title(sprintf('channel %d', channel))
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
 
 % condition subplots
 figure
@@ -485,15 +488,15 @@ for iTrig = 1:(nTrigs-1)/2
     end
 %     ylim([-1 2.5])
     if iTrig==1
-        title([sprintf('%d Hz, channels', ssvefFreq) sprintf(' %d', channels)])
+        title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
     end
 end
 xlabel('time (ms)')
 ylabel('Hilbert amp')
 
 %% Filter single trial data
-ssvefFreq = 30;
 Fbp = ssvefFreq + [-1.6 1.6];
+condDataF = [];
 for iTrial = 1:size(condData,3)
     fprintf('trial %d\n', iTrial)
     for iCue = 1:numel(cueConds)
@@ -507,6 +510,7 @@ for iTrial = 1:size(condData,3)
     end
 end
 
+blankDataF = [];
 for iTrial = 1:size(blankData,3)
     data = blankData(:,:,iTrial)';
     dataF = ft_preproc_bandpassfilter(data,Fs,Fbp);
@@ -522,6 +526,7 @@ trigFMean = condDataFMean(:,:,:);
 trigFMean(:,:,end+1) = blankDataFMean;
 
 %% Hilbert on filtered single trial means
+hTrigFMean = [];
 for iChan = 1:nChannels
     for iTrig = 1:nTrigs
         dataF = trigFMean(:,iChan,iTrig);
@@ -543,5 +548,59 @@ plot(t, mean(squeeze(hTrigFMean(:,channel,plotOrder(end-(nTrigs-1)/2):end-1)),2)
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('hilbert amp')
-title(sprintf('channel %d', channel))
+title(sprintf('%d Hz, channel %d', ssvefFreq, channel))
+
+%% Time-frequency
+channels = 25;
+taper          = 'hanning';
+foi            = 1:50;
+t_ftimwin      = 10 ./ foi;
+toi            = tstart/1000:0.01:tstop/1000;
+tfAmps = [];
+for iTrig = 1:nTrigs
+    data = trigMean(:,channels,iTrig)'; % channels by samples
+    [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(data, t/1000, ...
+        'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
+        'taper', taper, 'dimord', 'chan_time_freqtap');
+    specAmp = abs(squeeze(spectrum));
+    tfAmps(:,:,iTrig) = specAmp';
+end
+
+tfAmpsAtt(:,:,1) = nanmean(tfAmps(:,:,plotOrder(1:(nTrigs-1)/2)),3);
+tfAmpsAtt(:,:,2) = nanmean(tfAmps(:,:,plotOrder((nTrigs-1)/2+1:end-1)),3);
+
+% figures
+ytick = 10:10:numel(foi);
+xtick = 51:50:numel(toi);
+clims = [0 30];
+hack = plotOrder;
+hack(hack>4) = hack(hack>4)+1;
+figure
+for iTrig = 1:nTrigs
+    subplot(2,5,hack(iTrig))
+    imagesc(tfAmps(:,:,iTrig),clims)
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    if iTrig==nTrigs
+        xlabel('time (ms)')
+        ylabel('frequency (Hz)')
+    end
+    title(trigNames{iTrig})
+end
+
+figure
+attNames = {'attT1','attT2'};
+for iAtt = 1:size(tfAmpsAtt,3)
+    subplot(1,3,iAtt)
+    imagesc(tfAmpsAtt(:,:,iAtt),clims)
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    xlabel('time (ms)')
+    ylabel('frequency (Hz)')
+    title(attNames{iAtt})
+end
+subplot(1,3,3)
+imagesc(tfAmpsAtt(:,:,2)-tfAmpsAtt(:,:,1),[-10 10])
+rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+xlabel('time (ms)')
+ylabel('frequency (Hz)')
+title('attT2 - attT1')
 

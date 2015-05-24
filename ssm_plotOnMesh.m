@@ -84,15 +84,15 @@ switch lower(plotType)
         
         cfg=[];
         
-%         cfg.interpolation = 'nearest';
-        cfg.interpolation = 'v4';
+        cfg.interpolation = 'nearest';
+%         cfg.interpolation = 'v4';
         
         cfg.layout = ft_prepare_layout(cfg, data_hdr);
         cfg.style='straight';
 %         cfg.style='blank';
 
-%         cfg.electrodes ='numbers';
-        cfg.electrodes = 'off';
+        cfg.electrodes ='numbers';
+%         cfg.electrodes = 'off';
         
         cfg.colorbar='yes';
         cfg.maplimits='maxmin';
