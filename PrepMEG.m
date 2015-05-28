@@ -8,7 +8,7 @@ ft_defaults
 rootDir = '/Users/liusirui/Documents/MATLAB/MEG/';
 dataDir = [rootDir,'data/TAPilot_meg/data/']; 
 prepDir = [rootDir,'data/TAPilot_meg/prep/'];
-filename = 'R0817_TADeDi_5.4.15_ebi_part1';
+filename = 'R0817_TaDeDi_5.26.15_ebi_part1';
 sqdfile = [dataDir,filename,'.sqd'];
 dat = ft_read_data(sqdfile);
 hdr = ft_read_header(sqdfile);
@@ -28,7 +28,7 @@ threshold = 2.5;
 prep_data             = ft_preprocessing(struct('dataset',sqdfile,...
     'channel','MEG','continuous','yes','trl',trl));
 
-% show sample number and trigger channel for each of the triggers
+% show sample number and trigger channel for each trial
 triggers = [Events.trigger]';
 
 type = {Events.channel};
@@ -38,7 +38,7 @@ trig_ind = [1:numel(triggers)]';
 trigger_info = [trig_ind,triggers,trl,type]; 
 %[trial number, trigger sample, start sample, end sample, offset, trigger channel]
 
-% save ([prepDir,filename,'_prep.mat'],'prep_data')
+save ([prepDir,filename,'_prep.mat'],'prep_data')
 
 %% ft_rejectvisual (summary mode): visual check of outliers
 cfg          = [];
@@ -164,7 +164,7 @@ artf.artfctdef.reject = 'complete';
 cfg                   = [];
 cfg.channel           = 'MEG';
 data                  = ft_preprocessing(cfg,prep_target);
-clean_data1           = ft_rejectartifact(artf,data)
+clean_data1           = ft_rejectartifact(artf,data);
 
 
 
