@@ -32,6 +32,9 @@ behav = load(sprintf('%s/%s', behavDir, behavFile.name));
 trigChan = [160:163 166]; % stim/blank blocks
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
+% for checking triggers:
+% megChannels = 160:167;
+% channelSets = {megChannels};
 
 switch sessionDir
     case 'R0890_20140806'
@@ -48,11 +51,15 @@ end
 
 Fs = 1000;
 tstart = -500; % ms 
-tstop = 3100; % ms 
+tstop = 3600; % ms 
 t = tstart:tstop;
+
+eventTimes = [0 500 1500 2100 3100];
 
 trigNames = {'attT1-T1p-T2p','attT2-T1p-T2p','attT1-T1a-T2p','attT2-T1a-T2p',...
     'attT1-T1p-T2a','attT2-T1p-T2a','attT1-T1a-T2a','attT2-T1a-T2a','blank'};
+% for checking triggers:
+% tn = {'1-1','1-2','2-1','2-2','abs','pres','blank','cue'};
 
 saveData = 0;
 saveFigs = 0;
@@ -77,7 +84,7 @@ nChannels = size(trigData,2);
 
 %% Save the data
 if saveData
-    save(savename);
+    save(savename, '-v7.3');
 end
 
 %% Baseline
@@ -160,13 +167,6 @@ trigMean = condDataMean(:,:,:);
 trigMean(:,:,end+1) = blankDataMean;
 nTrigs = size(trigMean,3);
 
-%% Find noisy channels
-varCutoff = 100;
-trigVar = std(trigMean(:,:,1));
-figure
-hist(trigVar)
-noisyChannels = trigVar>varCutoff;
-
 %% FFT on mean time series for each trigger type
 % do the fft for each channel
 nfft = 2^nextpow2(nSamples); % Next power of 2 from length of y
@@ -181,8 +181,11 @@ for iTrig = 1:nTrigs
     fH(iTrig) = figure;
     % time
     subplot(2,1,1)
-    %     hold on
+    hold on
     plot(repmat(t',1,nChannels), trigMean(:,:,iTrig))
+    for iEv = 1:numel(eventTimes)
+        vline(eventTimes(iEv),'k');
+    end
     xlabel('time (ms)')
     ylabel('amplitude')
     title(trigNames{iTrig})
@@ -259,36 +262,6 @@ for iF = 1:numel(ssvefFreqs)
     end
 end
 
-%% Find the channels with high SSVEF SNR
-peakSignal = mean(peakMeans(:,:,1:4),3); % freqs x channels
-peakNoise = mean(peakMeans(:,:,5),3); % freqs x channels
-peakSNR = (peakSignal./peakNoise)';
-peakSNRAllFlickers = mean(peakSNR,2);
-
-figure
-imagesc(peakSNR)
-
-figure
-hist(peakSNRAllFlickers)
-xlabel('peak SNR (mean across flicker frequencies)')
-ylabel('number of channels')
-
-if saveFigs
-    rd_saveAllFigs(gcf, {'peakSNRAllFlickers'}, 'hist', figDir)
-end
-
-%% Plot selected channels for all ssvef freqs, all conditions
-% channelsToPlot = find(peakSNRAllFlickers>10);
-channelsToPlot = [25 13];
-for iF = 1:numel(ssvefFreqs)
-    freq = ssvefFreqs(iF);
-    figure
-    bar(squeeze(peakMeans(iF,channelsToPlot,:)))
-    set(gca,'XTickLabel',channelsToPlot)
-    legend(trigNames)
-    title(sprintf('%d Hz peak', freq))
-end
-
 %% Plotting setup
 plotOrder = [1 5 3 7 2 6 4 8 9];
 extendedMap = flipud(lbmap(nTrigs-1+4,'RedBlue'));
@@ -297,11 +270,20 @@ trigColors = [selectedMap; 0 0 0];
 trigBlue = mean(selectedMap(1:(nTrigs-1)/2,:));
 trigRed = mean(selectedMap((end-(nTrigs-1)/2)+1:end,:));
 
-eventTimes = [0 1000 1600 2600];
+% trigColorsPA4 = [107 76 154; 62 150 81; 57 106 177; 218 124 48]./255;
+trigColorsPA4 = [.52 .37 .75; .31 .74 .40; .27 .51 .84; 1.0 .57 .22];
+
+tsFigPos = [0 500 1250 375];
+condFigPos = [250 300 750 650];
+tf9FigPos = [0 250 1280 580];
+tf3FigPos = [200 475 1000 275];
+
+set(0,'defaultLineLineWidth',1)
 
 %% Time series
 channel = 25;
 figure
+set(gcf,'Position',tsFigPos)
 set(gca,'ColorOrder',trigColors)
 hold all
 plot(t, squeeze(trigMean(:,channel,plotOrder)))
@@ -316,6 +298,10 @@ xlabel('time (ms)')
 ylabel('amplitude')
 title(sprintf('channel %d', channel))
 
+if saveFigs
+    figPrefix = sprintf('plot_ch%d', channel);
+    rd_saveAllFigs(gcf, {'timeSeries'}, figPrefix, figDir)
+end
 
 %% Wavelet on average across trials
 channels = 25; % [13 14 23 25 43], [7 8 13 20 36]
@@ -345,7 +331,9 @@ wAmps = squeeze(mean(wAmps0,2)); % mean across channels
 % wBaseline = mean(wAmps(find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2)),:));
 % wAmpsB = wAmps - repmat(wBaseline,nSamples,1);
 
-figure
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tsFigPos)
 set(gca,'ColorOrder',trigColors)
 hold all
 plot(t, wAmps(:,plotOrder))
@@ -360,23 +348,46 @@ ylabel('wavelet amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
 
 % condition subplots
-figure
+fH(2) = figure;
+set(gcf,'Position',condFigPos)
 for iTrig = 1:(nTrigs-1)/2
     subplot((nTrigs-1)/2,1,iTrig)
     set(gca,'ColorOrder',[trigBlue; trigRed])
     hold all
     plot(t, wAmps(:,iTrig*2-1:iTrig*2))
     legend(trigNames{iTrig*2-1:iTrig*2})
+    ylim([-1 2.5])
     for iEv = 1:numel(eventTimes)
         vline(eventTimes(iEv),'k');
     end
-    ylim([-1 2.5])
     if iTrig==1
         title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
     end
 end
 xlabel('time (ms)')
 ylabel('wavelet amp')
+
+% present/absent
+fH(3) = figure;
+set(gcf,'Position',tsFigPos)
+hold on
+for iTrig = 1:(nTrigs-1)/2 
+    p1 = plot(t, mean(wAmps(:,iTrig*2-1:iTrig*2),2));
+    set(p1, 'Color', trigColorsPA4(iTrig,:), 'LineWidth', 1.5)
+end
+ylim([-1 2.5])
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+legend('T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a')
+xlabel('time (ms)')
+ylabel('wavelet amp')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+
+if saveFigs
+    figPrefix = ['plot_ch' sprintf('%d_', channels) sprintf('%dHz', ssvefFreq)];
+    rd_saveAllFigs(fH, {'waveletTrialAve','waveletTrialAveByCond','waveletTrialAvePA'}, figPrefix, figDir)
+end
 
 %% Wavelet on single trials
 channel = 25;
@@ -415,7 +426,9 @@ wAmpsTrigMean = wAmpsCond0Mean(:,:);
 wAmpsTrigMean(:,end+1) = wAmpsBlank0Mean;
 
 % figure
-figure
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tsFigPos)
 set(gca,'ColorOrder',trigColors)
 hold all
 plot(t, squeeze(wAmpsTrigMean(:,plotOrder)))
@@ -430,7 +443,8 @@ ylabel('wavelet amp')
 title(sprintf('%d Hz, channel %d', ssvefFreq, channel))
 
 % individual trials
-figure
+fH(2) = figure;
+set(gcf,'Position',condFigPos)
 for iCue = 1:2
     for iT1 = 1:2
         for iT2 = 1:2
@@ -447,20 +461,25 @@ for iCue = 1:2
 end
 rd_supertitle(sprintf('%d Hz, channel %d', ssvefFreq, channel))
 
+if saveFigs
+    rd_saveAllFigs(fH, {'waveletSingleTrials','waveletSingleTrialsByCond'}, 'plot', figDir)
+end
 
 %% Hilbert on average across trials
-channels = [13 14 23 25 43]; % [13 14 23 25 43];
+channels = 25; % [13 14 23 25 43], [7 8 13 20 36];
 ssvefFreq = 30;
 Fbp = ssvefFreq + [-1.6 1.6];
 hAmps = [];
 for iTrig = 1:nTrigs
     data = trigMean(:,channels,iTrig)'; % channels by samples
     dataF = ft_preproc_bandpassfilter(data,Fs,Fbp);
-    dataFH = abs(hilbert(mean(dataF,1))); % average across channels
+    dataFH = abs(hilbert(mean(dataF,1))); % average bandpassed time series across channels
     hAmps(:,iTrig) = dataFH; 
 end
 
-figure
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tsFigPos)
 set(gca,'ColorOrder',trigColors)
 hold all
 plot(t, hAmps(:,plotOrder))
@@ -476,7 +495,8 @@ ylabel('Hilbert amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
 
 % condition subplots
-figure
+fH(2) = figure;
+set(gcf,'Position',condFigPos)
 for iTrig = 1:(nTrigs-1)/2
     subplot((nTrigs-1)/2,1,iTrig)
     set(gca,'ColorOrder',[trigBlue; trigRed])
@@ -493,6 +513,27 @@ for iTrig = 1:(nTrigs-1)/2
 end
 xlabel('time (ms)')
 ylabel('Hilbert amp')
+
+% present/absent
+fH(3) = figure;
+set(gcf,'Position',tsFigPos)
+hold on
+for iTrig = 1:(nTrigs-1)/2 
+    p1 = plot(t, mean(hAmps(:,iTrig*2-1:iTrig*2),2));
+    set(p1, 'Color', trigColorsPA4(iTrig,:), 'LineWidth', 1.5)
+end
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+legend('T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a')
+xlabel('time (ms)')
+ylabel('Hilbert amp')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+
+if saveFigs
+    figPrefix = ['plot_ch' sprintf('%d_', channels) sprintf('%dHz', ssvefFreq)];
+    rd_saveAllFigs(fH, {'hilbertTrialAve','hilbertTrialAveByCond','hilbertTrialAvePA'}, figPrefix, figDir)
+end
 
 %% Filter single trial data
 Fbp = ssvefFreq + [-1.6 1.6];
@@ -535,8 +576,9 @@ for iChan = 1:nChannels
     end
 end
 
-channel = 25;
+channel = 8;
 figure
+set(gcf,'Position',tsFigPos)
 set(gca,'ColorOrder',trigColors)
 hold all
 plot(t, squeeze(hTrigFMean(:,channel,plotOrder)))
@@ -550,6 +592,11 @@ xlabel('time (ms)')
 ylabel('hilbert amp')
 title(sprintf('%d Hz, channel %d', ssvefFreq, channel))
 
+if saveFigs
+    figPrefix = sprintf('plot_ch%d_%dHz', channel, ssvefFreq);
+    rd_saveAllFigs(gcf, {'hilbertSingleTrials'}, figPrefix, figDir)
+end
+
 %% Time-frequency
 channels = 25;
 taper          = 'hanning';
@@ -562,20 +609,30 @@ for iTrig = 1:nTrigs
     [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(data, t/1000, ...
         'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
         'taper', taper, 'dimord', 'chan_time_freqtap');
-    specAmp = abs(squeeze(spectrum));
+    specAmp = squeeze(mean(abs(spectrum),1)); % mean across channels
     tfAmps(:,:,iTrig) = specAmp';
 end
 
 tfAmpsAtt(:,:,1) = nanmean(tfAmps(:,:,plotOrder(1:(nTrigs-1)/2)),3);
 tfAmpsAtt(:,:,2) = nanmean(tfAmps(:,:,plotOrder((nTrigs-1)/2+1:end-1)),3);
 
+for iTrig = 1:(nTrigs-1)/2 
+    tfAmpsPA(:,:,iTrig) = mean(tfAmps(:,:,iTrig*2-1:iTrig*2),3);
+end
+t1PADiff = mean(tfAmpsPA(:,:,[1 3]),3)-mean(tfAmpsPA(:,:,[2 4]),3);
+t2PADiff = mean(tfAmpsPA(:,:,[1 2]),3)-mean(tfAmpsPA(:,:,[3 4]),3);
+
 % figures
 ytick = 10:10:numel(foi);
 xtick = 51:50:numel(toi);
 clims = [0 30];
+diffClims = [-10 10];
 hack = plotOrder;
 hack(hack>4) = hack(hack>4)+1;
-figure
+
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tf9FigPos)
 for iTrig = 1:nTrigs
     subplot(2,5,hack(iTrig))
     imagesc(tfAmps(:,:,iTrig),clims)
@@ -587,7 +644,8 @@ for iTrig = 1:nTrigs
     title(trigNames{iTrig})
 end
 
-figure
+fH(2) = figure;
+set(gcf,'Position',tf3FigPos)
 attNames = {'attT1','attT2'};
 for iAtt = 1:size(tfAmpsAtt,3)
     subplot(1,3,iAtt)
@@ -598,9 +656,158 @@ for iAtt = 1:size(tfAmpsAtt,3)
     title(attNames{iAtt})
 end
 subplot(1,3,3)
-imagesc(tfAmpsAtt(:,:,2)-tfAmpsAtt(:,:,1),[-10 10])
+imagesc(tfAmpsAtt(:,:,2)-tfAmpsAtt(:,:,1),diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (ms)')
 ylabel('frequency (Hz)')
 title('attT2 - attT1')
+
+fH(3) = figure;
+set(gcf,'Position',tf9FigPos)
+paNames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
+for iPA = 1:size(tfAmpsPA,3)
+    subplot(2,4,iPA)
+    imagesc(tfAmpsPA(:,:,iPA),clims)
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    xlabel('time (ms)')
+    ylabel('frequency (Hz)')
+    title(paNames{iPA})
+end
+subplot(2,4,5)
+imagesc(t1PADiff,diffClims)
+rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+xlabel('time (ms)')
+ylabel('frequency (Hz)')
+title('T1 P-A')
+subplot(2,4,6)
+imagesc(t2PADiff,diffClims)
+rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+xlabel('time (ms)')
+ylabel('frequency (Hz)')
+title('T2 P-A')
+subplot(2,4,7)
+imagesc(t2PADiff - t1PADiff,diffClims)
+rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+xlabel('time (ms)')
+ylabel('frequency (Hz)')
+title('T2 vs. T1 P-A')
+
+if saveFigs
+    figPrefix = ['im_ch' sprintf('%d_', channels)];
+    rd_saveAllFigs(fH, {'timeFreqByCond','timeFreqAtt','timeFreqPA'}, figPrefix(1:end-1), figDir)
+end
+
+%% Bandpassed average time series
+channels = 2; % [13 14 23 25 43], [7 8 13 20 36];
+freq = 10;
+Fbp = freq + [-1.6 1.6];
+dataBP = [];
+for iTrig = 1:nTrigs
+    data = trigMean(:,channels,iTrig)'; % channels by samples
+%     dataF = ft_preproc_bandpassfilter(data,Fs,Fbp); % does the same thing as below
+%     dataBP(:,iTrig) = mean(dataF,1); 
+    dataBP(:,iTrig) = ft_preproc_bandpassfilter(mean(data,1),Fs,Fbp);
+end
+
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tsFigPos)
+set(gca,'ColorOrder',trigColors)
+hold all
+plot(t, dataBP(:,plotOrder))
+legend(trigNames(plotOrder))
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+plot(t, mean(dataBP(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
+plot(t, mean(dataBP(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
+legend(trigNames(plotOrder))
+xlabel('time (ms)')
+ylabel('amplitude')
+title([sprintf('%d Hz bandpass, channel', freq) sprintf(' %d', channels)])
+
+% condition subplots
+fH(2) = figure;
+set(gcf,'Position',condFigPos)
+for iTrig = 1:(nTrigs-1)/2
+    subplot((nTrigs-1)/2,1,iTrig)
+    set(gca,'ColorOrder',[trigBlue; trigRed])
+    hold all
+    plot(t, dataBP(:,iTrig*2-1:iTrig*2))
+    legend(trigNames{iTrig*2-1:iTrig*2})
+    for iEv = 1:numel(eventTimes)
+        vline(eventTimes(iEv),'k');
+    end
+%     ylim([-1 2.5])
+    if iTrig==1
+        title([sprintf('%d Hz bandpass, channel', freq) sprintf(' %d', channels)])
+    end
+end
+xlabel('time (ms)')
+ylabel('amplitude')
+
+if saveFigs
+    figPrefix = ['plot_ch' sprintf('%d_', channels) sprintf('%dHz', freq)];
+    rd_saveAllFigs(fH, {'bandpassTS','bandpassTSByCond'}, figPrefix, figDir)
+end
+
+%% Bandpassed single trials
+condDataF = [];
+for iTrial = 1:size(condData,3)
+    for iCue = 1:numel(cueConds)
+        for iT1 = 1:numel(t1Conds)
+            for iT2 = 1:numel(t2Conds)
+                data = condData(:,channels,iTrial,iCue,iT1,iT2)'; % channels by samples
+                dataF = ft_preproc_bandpassfilter(mean(data,1),Fs,Fbp);
+                condDataF(:,iTrial,iCue,iT1,iT2) = dataF';
+            end
+        end
+    end
+end
+
+blankDataF = [];
+for iTrial = 1:size(blankData,3)
+    data = blankData(:,channels,iTrial)';
+    dataF = ft_preproc_bandpassfilter(mean(data,1),Fs,Fbp);
+    blankDataF(:,iTrial) = dataF';
+end
+
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',condFigPos)
+for iTrig = 1:nTrigs-1
+    [iCue, iT1, iT2] = rd_indToFactorialInd(iTrig, ...
+        [numel(cueConds), numel(t1Conds), numel(t2Conds)]);
+    subplot(4,2,iTrig)
+    p1 = plot(t, condDataF(:,:,iCue,iT1,iT2));
+%     set(p1,'Color',trigColors(plotOrder(iTrig),:))
+    title(trigNames{iTrig})
+    xlim([t(1) t(end)])
+    ylim([-500 500])
+    for iEv = 1:numel(eventTimes)
+        vline(eventTimes(iEv),'k');
+    end
+    if iTrig==7
+        xlabel('time (ms)')
+        ylabel('amplitude')
+    end
+end
+rd_supertitle([sprintf('%d Hz bandpass, channel', freq) sprintf(' %d', channels)])
+rd_raiseAxis(gca);
+
+figure;
+set(gcf,'Position',condFigPos)
+for iTrig = 9
+    subplot(4,2,1)
+    p1 = plot(t, blankDataF);
+%     set(p1,'Color',trigColors(plotOrder(iTrig),:))
+    title(trigNames{iTrig})
+    xlim([t(1) t(end)])
+    ylim([-500 500])
+    for iEv = 1:numel(eventTimes)
+        vline(eventTimes(iEv),'k');
+    end
+    xlabel('time (ms)')
+    ylabel('amplitude')
+end
 

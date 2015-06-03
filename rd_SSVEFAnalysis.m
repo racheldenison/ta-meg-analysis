@@ -1,11 +1,12 @@
 % rd_SSVEFAnalysis.m
 
 %% Setup
-exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
+% exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
+exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TAPilot/MEG';
 sessionDir = 'R0817_20140820';
 fileBase = 'R0817_TAPilot_8.20.14';
-analStr = 'eti'; % '', 'eti', etc.
-excludeTrialsFt = 0;
+analStr = 'ebi'; % '', 'eti', etc.
+excludeTrialsFt = 1;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
@@ -33,14 +34,16 @@ switch sessionDir
         % badChannels = [10 11 115]; % R0890, 48-->49, 150-->152
         badChannels = [10 11 115 49 152]; % R0890
     case 'R0817_20140820'
-        badChannels = [115 152]; % R0817
+%         badChannels = [115 152]; % R0817
         weightChannels = sort(unique([59 92 10 60 15 14 32 2 51 1 50 39 7 24 55 103 98 8]));
     otherwise
         error('sessionDir not found')
 end
-% badChannels = [];
+if ~exist('badChannels','var')
+    badChannels = [];
+end
 
-tstart = 1000; % ms
+tstart = -500; % ms % 1000
 tstop = 6500; % ms
 t = tstart:tstop;
 
@@ -48,8 +51,8 @@ t = tstart:tstop;
 %     'targetL','targetR','blank'};
 trigNames = {'fastL-attL','fastL-attR','fastR-attL','fastR-attR','blank'};
 
-saveData = 1;
-saveFigs = 1;
+saveData = 0;
+saveFigs = 0;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
@@ -227,7 +230,7 @@ for iF = 1:numel(ssvefFreqs)
         sensorData = peakMeans157(iTrig,:);
         figure
         fH(iTrig) = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
-        set(gca,'CLim',[0 15])
+        set(gca,'CLim',[0 20])
     end
     
     % left-right
@@ -405,3 +408,66 @@ for iF = 1:numel(ssvefFreqs)
     legend(trigNames)
     title(sprintf('%d Hz peak', freq))
 end
+
+%% Plotting setup
+plotOrder = 1:5;
+extendedMap = flipud(lbmap(nTrigs-1+4,'RedBlue'));
+selectedMap = extendedMap([1:(nTrigs-1)/2 (end-(nTrigs-1)/2)+1:end],:);
+trigColors = [selectedMap; 0 0 0];
+trigBlue = mean(selectedMap(1:(nTrigs-1)/2,:));
+trigRed = mean(selectedMap((end-(nTrigs-1)/2)+1:end,:));
+
+eventTimes = 0;
+
+%% Wavelet on average across trials
+channels = 1; % [13 14 23 25 43], [7 8 13 20 36]
+ssvefFreq = 40;
+width = 7;
+wBaselineWindow = [-300 -200];
+wBaselineWindowIdx = find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2));
+
+wAmps0 = [];
+for iTrig = 1:nTrigs
+    data = trigMean(:,channels,iTrig)'; % channels by samples
+    [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'width', width);
+    specAmp = abs(squeeze(spectrum));
+    
+    freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
+    
+    if numel(size(specAmp))==3 % if three-dimensional
+        wAmp = squeeze(specAmp(:,freqIdx,:));
+    else
+        wAmp = squeeze(specAmp(freqIdx,:));
+    end
+    wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
+    wAmps0(:,:,iTrig) = wAmpNorm';
+end
+wAmps = squeeze(mean(wAmps0,2)); % mean across channels
+
+figure
+set(gca,'ColorOrder',trigColors)
+hold all
+plot(t, wAmps(:,plotOrder))
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+plot(t, mean(wAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
+plot(t, mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
+legend(trigNames(plotOrder))
+xlabel('time (ms)')
+ylabel('wavelet amp')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+
+% figure
+% set(gca,'ColorOrder',trigColors)
+% hold all
+% plot(t, wAmps)
+% for iEv = 1:numel(eventTimes)
+%     vline(eventTimes(iEv),'k');
+% end
+% plot(t, mean(wAmps(:,1:(nTrigs-1)/2),2),'color',trigBlue,'LineWidth',4)
+% plot(t, mean(wAmps(:,(nTrigs-1)/2+1:end-1),2),'color',trigRed,'LineWidth',4)
+% legend(trigNames)
+% xlabel('time (ms)')
+% ylabel('wavelet amp')
+% title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])

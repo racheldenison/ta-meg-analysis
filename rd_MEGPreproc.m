@@ -22,7 +22,7 @@ Fl = 60; % line noise frequency
 environmentalDenoise = 1;
 applyLineNoiseFilter = 0;
 removeBadChannels = 1;
-TSPCA = 1;
+TSPCA = 0;
 components = 0; % pca/ica
 interpolate = 1;
 
