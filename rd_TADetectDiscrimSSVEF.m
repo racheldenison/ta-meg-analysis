@@ -598,7 +598,7 @@ if saveFigs
 end
 
 %% Time-frequency
-channels = 25;
+channels = 8;
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
@@ -643,6 +643,8 @@ for iTrig = 1:nTrigs
     end
     title(trigNames{iTrig})
 end
+rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_raiseAxis(gca);
 
 fH(2) = figure;
 set(gcf,'Position',tf3FigPos)
@@ -661,6 +663,8 @@ rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (ms)')
 ylabel('frequency (Hz)')
 title('attT2 - attT1')
+rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_raiseAxis(gca);
 
 fH(3) = figure;
 set(gcf,'Position',tf9FigPos)
@@ -691,10 +695,127 @@ rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (ms)')
 ylabel('frequency (Hz)')
 title('T2 vs. T1 P-A')
+rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_raiseAxis(gca);
 
 if saveFigs
     figPrefix = ['im_ch' sprintf('%d_', channels)];
     rd_saveAllFigs(fH, {'timeFreqByCond','timeFreqAtt','timeFreqPA'}, figPrefix(1:end-1), figDir)
+end
+
+%% Time-frequency - single trials
+channel = 8;
+taper          = 'hanning';
+foi            = 1:50;
+t_ftimwin      = 10 ./ foi;
+toi            = tstart/1000:0.01:tstop/1000;
+tfSingleAmps = [];
+for iTrig = 1:nTrigs-1
+    [iCue,iT1,iT2] = rd_indToFactorialInd(iTrig,[2,2,2]);
+    data = squeeze(condData(:,channel,:,iCue,iT1,iT2))'; % trials by samples
+    [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(data, t/1000, ...
+        'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
+        'taper', taper, 'dimord', 'chan_time_freqtap');
+    specAmp = squeeze(nanmean(abs(spectrum),1)); % mean across trials
+    tfSingleAmps(:,:,iTrig) = specAmp';
+end
+
+% blank
+data = squeeze(blankData(:,channel,:))';
+[spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(data, t/1000, ...
+    'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
+    'taper', taper, 'dimord', 'chan_time_freqtap');
+specAmp = squeeze(nanmean(abs(spectrum),1)); % mean across trials
+tfSingleAmps(:,:,nTrigs) = specAmp';
+
+tfSingleAmpsAtt(:,:,1) = nanmean(tfSingleAmps(:,:,plotOrder(1:(nTrigs-1)/2)),3);
+tfSingleAmpsAtt(:,:,2) = nanmean(tfSingleAmps(:,:,plotOrder((nTrigs-1)/2+1:end-1)),3);
+
+for iTrig = 1:(nTrigs-1)/2 
+    tfSingleAmpsPA(:,:,iTrig) = mean(tfSingleAmps(:,:,iTrig*2-1:iTrig*2),3);
+end
+t1SinglePADiff = mean(tfSingleAmpsPA(:,:,[1 3]),3)-mean(tfSingleAmpsPA(:,:,[2 4]),3);
+t2SinglePADiff = mean(tfSingleAmpsPA(:,:,[1 2]),3)-mean(tfSingleAmpsPA(:,:,[3 4]),3);
+
+% figures
+ytick = 10:10:numel(foi);
+xtick = 51:50:numel(toi);
+clims = [0 70];
+diffClims = [-10 10];
+hack = plotOrder;
+hack(hack>4) = hack(hack>4)+1;
+
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tf9FigPos)
+for iTrig = 1:nTrigs
+    subplot(2,5,hack(iTrig))
+    imagesc(tfSingleAmps(:,:,iTrig),clims)
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    if iTrig==nTrigs
+        xlabel('time (ms)')
+        ylabel('frequency (Hz)')
+    end
+    title(trigNames{iTrig})
+end
+rd_supertitle(sprintf('channel %d', channel));
+rd_raiseAxis(gca);
+
+fH(2) = figure;
+set(gcf,'Position',tf3FigPos)
+attNames = {'attT1','attT2'};
+for iAtt = 1:size(tfSingleAmpsAtt,3)
+    subplot(1,3,iAtt)
+    imagesc(tfSingleAmpsAtt(:,:,iAtt),clims)
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    xlabel('time (ms)')
+    ylabel('frequency (Hz)')
+    title(attNames{iAtt})
+end
+subplot(1,3,3)
+imagesc(tfSingleAmpsAtt(:,:,2)-tfSingleAmpsAtt(:,:,1),diffClims)
+rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+xlabel('time (ms)')
+ylabel('frequency (Hz)')
+title('attT2 - attT1')
+rd_supertitle(sprintf('channel %d', channel));
+rd_raiseAxis(gca);
+
+fH(3) = figure;
+set(gcf,'Position',tf9FigPos)
+paNames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
+for iPA = 1:size(tfSingleAmpsPA,3)
+    subplot(2,4,iPA)
+    imagesc(tfSingleAmpsPA(:,:,iPA),clims)
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    xlabel('time (ms)')
+    ylabel('frequency (Hz)')
+    title(paNames{iPA})
+end
+subplot(2,4,5)
+imagesc(t1SinglePADiff,diffClims)
+rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+xlabel('time (ms)')
+ylabel('frequency (Hz)')
+title('T1 P-A')
+subplot(2,4,6)
+imagesc(t2SinglePADiff,diffClims)
+rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+xlabel('time (ms)')
+ylabel('frequency (Hz)')
+title('T2 P-A')
+subplot(2,4,7)
+imagesc(t2SinglePADiff - t1SinglePADiff,diffClims)
+rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+xlabel('time (ms)')
+ylabel('frequency (Hz)')
+title('T2 vs. T1 P-A')
+rd_supertitle(sprintf('channel %d', channel));
+rd_raiseAxis(gca);
+
+if saveFigs
+    figPrefix = ['im_ch' sprintf('%d_', channel)];
+    rd_saveAllFigs(fH, {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA'}, figPrefix(1:end-1), figDir)
 end
 
 %% Bandpassed average time series
