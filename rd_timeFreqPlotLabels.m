@@ -1,5 +1,9 @@
 function rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes)
 
+if nargin < 5
+    eventTimes = [];
+end
+
 set(gca,'YDir','normal')
 set(gca,'XTick',xtick)
 set(gca,'XTickLabel',toi(xtick))
