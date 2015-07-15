@@ -8,7 +8,7 @@ dur = 2;
 refRate = 120;
 tStim = -0.5:1/refRate:dur;
 stimAmp = 1;
-stimFreq = 33;
+stimFreq = 30;
 stimFreq2 = 40;
 
 Fs = 1000;
@@ -25,7 +25,7 @@ if ~isempty(stimFreq2)
 end
 stim(tStim<0) = 0; % zero baseline
 
-if plotFigs
+if plotFigs % && 0
     f(1) = figure;
     plot(tStim, stim, '.-')
     xlabel('time (s)')
@@ -34,7 +34,8 @@ if plotFigs
 end
 
 %% wavelet on stim
-[spectrum,freqoi,timeoi] = ft_specest_wavelet(stim, tStim, 'freqoi', stimFreq);
+width = 10;
+[spectrum,freqoi,timeoi] = ft_specest_wavelet(stim, tStim, 'freqoi', stimFreq, 'width', width);
 specAmp = abs(squeeze(spectrum))';
 
 if plotFigs
@@ -42,6 +43,7 @@ if plotFigs
     plot(tStim, specAmp)
     xlabel('time (ms)')
     ylabel('spec amp')
+    title('wavelet')
 end
 
 % foi = 1:50;
@@ -55,6 +57,26 @@ end
 %     imagesc(specAmp)
 %     rd_timeFreqPlotLabels(timeoi,freqoi,xtick,ytick);
 % end
+
+%% mtmconvol on stim
+taper          = 'hanning'; % 'dpss'
+toi            = tStim;
+foi            = stimFreq;
+t_ftimwin      = 12 ./ foi;
+tapsmofrq      = foi * 0.8; % for dpss 
+tfAmps = [];
+[spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(stim, tStim, ...
+    'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
+    'taper', taper, 'tapsmofrq', tapsmofrq, 'dimord', 'chan_time_freqtap');
+specAmp = abs(squeeze(spectrum))';
+
+if plotFigs
+    figure
+    plot(tStim, specAmp)
+    xlabel('time (ms)')
+    ylabel('spec amp')
+    title('mtmconvol')
+end
 
 %% time-frequency on stim
 taper          = 'hanning';
@@ -73,6 +95,7 @@ if plotFigs
     figure
     imagesc(specAmp)
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick);
+    title('mtmconvol')
 end
 
 %% SIMULATED NEURAL RESPONSE
