@@ -485,3 +485,7 @@ for iTrig = 1:nTrigs
     trigger = triggers(iTrig);
     w = trigEvents(:,2)==trigger;
     freqIdx = f>freqBand(1) & f<freqBand(2);
+    aaa = singleTrialAmps(freqIdx, channel, w);
+    
+    
+end
