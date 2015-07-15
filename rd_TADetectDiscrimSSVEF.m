@@ -1,4 +1,4 @@
-% rd_SSVEFAnalysis.m
+% rd_TADetectDiscrimSSVEF.m
 
 %% Setup
 % exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
@@ -203,8 +203,35 @@ if saveFigs
     rd_saveAllFigs(fH, trigNames, 'plot_tsFFT', figDir);
 end
 
+% Average across conditions
+figure
+% time
+subplot(2,1,1)
+hold on
+plot(repmat(t',1,nChannels), mean(trigMean,3))
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+xlabel('time (ms)')
+ylabel('amplitude')
+title('stim average')
+% frequency
+subplot(2,1,2)
+%     hold on
+plot(repmat(f',1,nChannels), mean(amps,3))
+xlim([1 200])
+ylim([0 20])
+xlabel('Frequency (Hz)')
+ylabel('|Y(f)|')
+
+if saveFigs
+    rd_saveAllFigs(gcf, {'stimAve'}, 'plot_tsFFT', figDir)
+end
+
 %% Get the component peaks
 ssvefFreqs = [15 20 30 40];
+% ssvefFreqs = [10 50 57.62 60];
+% ssvefFreqs = [1 2.68 4 5 6.7 8.4 13.43];
 freqWindow = 0.2; % +/- this window value
 for iF = 1:numel(ssvefFreqs)
     freq = ssvefFreqs(iF);
@@ -274,16 +301,21 @@ trigRed = mean(selectedMap((end-(nTrigs-1)/2)+1:end,:));
 trigColorsPA4 = [.52 .37 .75; .31 .74 .40; .27 .51 .84; 1.0 .57 .22];
 
 tsFigPos = [0 500 1250 375];
+ts2FigPos = [0 500 1100 600];
+ts3FigPos = [0 500 1100 900];
 condFigPos = [250 300 750 650];
 tf9FigPos = [0 250 1280 580];
 tf3FigPos = [200 475 1000 275];
 
 set(0,'defaultLineLineWidth',1)
 
-%% Time series
-channel = 25;
+%% Time series and FFT for single channel
+channel = 2;
 figure
-set(gcf,'Position',tsFigPos)
+set(gcf,'Position',ts2FigPos)
+
+% time
+subplot(3,1,1)
 set(gca,'ColorOrder',trigColors)
 hold all
 plot(t, squeeze(trigMean(:,channel,plotOrder)))
@@ -293,21 +325,42 @@ end
 % plot(t, squeeze(mean(trigMean(:,channel,plotOrder(1:(nTrigs-1)/2)),3)),'color',trigBlue,'LineWidth',4)
 % plot(t, squeeze(mean(trigMean(:,channel,plotOrder(end-(nTrigs-1)/2):end-1),3)),'color',trigRed,'LineWidth',4)
 xlim([t(1) t(end)])
-legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('amplitude')
 title(sprintf('channel %d', channel))
 
+% frequency
+subplot(3,1,2)
+set(gca,'ColorOrder',trigColors)
+hold all
+plot(repmat(f',1,nTrigs), squeeze(amps(:,channel,plotOrder)))
+xlim([1 200])
+ylim([0 20])
+xlabel('Frequency (Hz)')
+ylabel('|Y(f)|')
+legend(trigNames(plotOrder))
+
+subplot(3,1,3)
+set(gca,'ColorOrder',[.66 .5 .78; trigColors(end,:)])
+hold all
+plot(f, squeeze(mean(amps(:,channel,1:end-1),3)))
+plot(f, squeeze(amps(:,channel,end)))
+xlim([1 200])
+ylim([0 20])
+xlabel('Frequency (Hz)')
+ylabel('|Y(f)|')
+legend('stim average','blank')
+
 if saveFigs
     figPrefix = sprintf('plot_ch%d', channel);
-    rd_saveAllFigs(gcf, {'timeSeries'}, figPrefix, figDir)
+    rd_saveAllFigs(gcf, {'tsFFT'}, figPrefix, figDir)
 end
 
 %% Wavelet on average across trials
 channels = 25; % [13 14 23 25 43], [7 8 13 20 36]
 ssvefFreq = 30;
-width = 7;
-wBaselineWindow = [-300 -200];
+width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth
+wBaselineWindow = [-500 0]; % [-300 -200];
 wBaselineWindowIdx = find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2));
 
 wAmps0 = [];
@@ -466,8 +519,8 @@ if saveFigs
 end
 
 %% Hilbert on average across trials
-channels = 25; % [13 14 23 25 43], [7 8 13 20 36];
-ssvefFreq = 30;
+channels = 2; % [13 14 23 25 43], [7 8 13 20 36];
+ssvefFreq = 40;
 Fbp = ssvefFreq + [-1.6 1.6];
 hAmps = [];
 for iTrig = 1:nTrigs
@@ -598,7 +651,7 @@ if saveFigs
 end
 
 %% Time-frequency
-channels = 8;
+channels = 2;
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
@@ -704,7 +757,7 @@ if saveFigs
 end
 
 %% Time-frequency - single trials
-channel = 8;
+channel = 2;
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;

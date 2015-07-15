@@ -43,7 +43,7 @@ if ~exist('badChannels','var')
     badChannels = [];
 end
 
-tstart = -500; % ms % 1000
+tstart = 1000; % ms % 1000, -500
 tstop = 6500; % ms
 t = tstart:tstop;
 
@@ -116,8 +116,9 @@ if excludeTrialsFt
         w = trigEvents(:,2)==trigger & includedTrials;
         trigMean(:,:,iTrig) = mean(trigData(:,:,w),3);
     end
-    trigData = trigData(:,:,includedTrials);
-    trigEvents = trigEvents(includedTrials,:);
+%     trigData = trigData(:,:,includedTrials);
+%     trigEvents = trigEvents(includedTrials,:);
+    trigData(:,:,trials_rejected) = NaN;
     
     % update figDir
     figDir = [figDir '_ft'];
@@ -136,6 +137,10 @@ nfft = 2^nextpow2(nSamples); % Next power of 2 from length of y
 Y = fft(trigMean,nfft)/nSamples; % Scale by number of samples
 f = Fs/2*linspace(0,1,nfft/2+1); % Fs/2 is the maximum frequency that can be measured
 amps = 2*abs(Y(1:nfft/2+1,:,:)); % Multiply by 2 since only half the energy is in the positive half of the spectrum?
+
+%% FFT on single trials
+singleTrialY = fft(trigData,nfft)/nSamples;
+singleTrialAmps = 2*abs(singleTrialY(1:nfft/2+1,:,:));
 
 %% Plot trial average and single-sided amplitude spectrum
 % figure
@@ -420,10 +425,10 @@ trigRed = mean(selectedMap((end-(nTrigs-1)/2)+1:end,:));
 eventTimes = 0;
 
 %% Wavelet on average across trials
-channels = 1; % [13 14 23 25 43], [7 8 13 20 36]
+channels = 7; % [13 14 23 25 43], [7 8 13 20 36]
 ssvefFreq = 40;
-width = 7;
-wBaselineWindow = [-300 -200];
+width = 16;
+wBaselineWindow = [-500 0]; % [-300 -200];
 wBaselineWindowIdx = find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2));
 
 wAmps0 = [];
@@ -439,6 +444,7 @@ for iTrig = 1:nTrigs
     else
         wAmp = squeeze(specAmp(freqIdx,:));
     end
+%     wAmps0(:,:,iTrig) = wAmp'; % to use unnormalized data
     wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
     wAmps0(:,:,iTrig) = wAmpNorm';
 end
@@ -471,3 +477,11 @@ title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
 % xlabel('time (ms)')
 % ylabel('wavelet amp')
 % title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+
+%% Single trial FFT distributions
+channel = 25;
+freqBand = [29 31];
+for iTrig = 1:nTrigs
+    trigger = triggers(iTrig);
+    w = trigEvents(:,2)==trigger;
+    freqIdx = f>freqBand(1) & f<freqBand(2);
