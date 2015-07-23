@@ -3,8 +3,8 @@
 %% Setup
 % exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TAPilot/MEG';
-sessionDir = 'R0817_20140820';
-fileBase = 'R0817_TAPilot_8.20.14';
+sessionDir = 'R0890_20140806';
+fileBase = 'R0890_TAPilot_8.06.14';
 analStr = 'ebi'; % '', 'eti', etc.
 excludeTrialsFt = 1;
 
@@ -418,7 +418,7 @@ end
 plotOrder = 1:5;
 extendedMap = flipud(lbmap(nTrigs-1+4,'RedBlue'));
 selectedMap = extendedMap([1:(nTrigs-1)/2 (end-(nTrigs-1)/2)+1:end],:);
-trigColors = [selectedMap; 0 0 0];
+trigColors = [selectedMap([1 2 4 3],:); 0 0 0];
 trigBlue = mean(selectedMap(1:(nTrigs-1)/2,:));
 trigRed = mean(selectedMap((end-(nTrigs-1)/2)+1:end,:));
 
@@ -478,14 +478,108 @@ title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
 % ylabel('wavelet amp')
 % title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
 
-%% Single trial FFT distributions
-channel = 25;
-freqBand = [29 31];
+%% Single trial time series and filtered time series
+channels = [14 15 26 60]; % [1 7 8 20]; % [20 23 14 36]; % [1 7 8 24 25]; % 
+ssvefFreq = 30;
+Fbp = ssvefFreq + [-1.6 1.6];
+stTS = [];
+stTSF = [];
 for iTrig = 1:nTrigs
     trigger = triggers(iTrig);
     w = trigEvents(:,2)==trigger;
-    freqIdx = f>freqBand(1) & f<freqBand(2);
-    aaa = singleTrialAmps(freqIdx, channel, w);
-    
-    
+    data = squeeze(nanmean(trigData(:, channels, w),2));
+    stTS{iTrig} = data;
+    stTSF{iTrig} = ft_preproc_bandpassfilter(data',Fs,Fbp);
+    stTSStd(:,iTrig) = nanstd(data');
+    stTSFStd(:,iTrig) = nanstd(stTSF{iTrig});
 end
+
+
+%% Plot single trial time series / filtered time series
+figure
+for iTrig = 1:nTrigs
+    subplot(nTrigs,1,iTrig)
+    plot(t, stTSF{iTrig})
+%     ylim([-50 50])
+    title(trigNames{iTrig})
+end
+
+figure
+for iTrig = 1:nTrigs
+    subplot(nTrigs,1,iTrig)
+    shadedErrorBar(t, stTSF{iTrig}, {@nanmean,@nanstd})
+    xlim([1000 2000])
+    ylim([-20 20])
+    title(trigNames{iTrig})
+end
+
+figure
+set(gca,'ColorOrder',trigColors)
+hold all
+plot(t, stTSStd(:,plotOrder))
+legend(trigNames)
+
+figure
+set(gca,'ColorOrder',trigColors)
+hold all
+plot(t, stTSFStd(:,plotOrder))
+legend(trigNames)
+    
+
+%% Single trial FFT distributions
+channels = [14 15 26 60]; % [1 7 8 20]; % [20 23 14 36]; % [1 7 8 24 25]; % 
+freqBands = {[1 4],[4 8],[8 12],[12 20],[50 59],[61 100],...
+    30+[-0.2 0.2], 40+[-0.2 0.2]};
+stAmps = [];
+for iFB = 1:numel(freqBands)
+    freqBand = freqBands{iFB};
+    for iTrig = 1:nTrigs
+        trigger = triggers(iTrig);
+        w = trigEvents(:,2)==trigger;
+        freqIdx = f>freqBand(1) & f<freqBand(2);
+        stAmps{iTrig}(:,:,iFB) = squeeze(nanmean(singleTrialAmps(freqIdx, channels, w),1))';
+    end
+end
+
+%% Organize single trial amplitude histograms
+for iTrig = 1:nTrigs
+    maxStAmps(iTrig,:) = squeeze(max(max(stAmps{iTrig})));
+end
+
+nStAmps = [];
+xgrid = [];
+for iFB = 1:numel(freqBands)
+    maxAmp = max(maxStAmps(:,iFB));
+    xgrid(:,iFB) = linspace(1,maxAmp+maxAmp*0.05,30);
+    for iTrig = 1:nTrigs
+        vals = stAmps{iTrig}(:,:,iFB);
+        if any(size(vals)==1)
+            nTrials = size(vals,2);
+        else
+            nTrials = size(vals,1);
+        end
+        nStAmps(:,iTrig,iFB) = hist(vals(:),xgrid(:,iFB))/nTrials;
+    end
+end
+
+%% Plot single trial amplitude histograms
+fbNames = [];
+fH = [];
+for iFB = 1:numel(freqBands)
+    fH(iFB) = figure;
+    set(gca,'ColorOrder',trigColors)
+    hold all
+    freqBand = freqBands{iFB};
+    plot(xgrid(:,iFB),nStAmps(:,plotOrder,iFB))
+    xlabel('single trial FFT amplitude')
+    title([sprintf('%.1f - %.1f Hz, channel', freqBand(1), freqBand(2)) sprintf(' %d', channels)])
+    legend(trigNames)
+    fbNames = [fbNames, {sprintf('%d-%dHz', round(freqBand))}];
+end
+
+if saveFigs
+    figNames = fbNames;
+    figPrefix = ['plot_singleTrialAmps_channels' sprintf('%d', channels)];
+    rd_saveAllFigs(fH,figNames,figPrefix,figDir)
+end
+    
