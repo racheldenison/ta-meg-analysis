@@ -8,8 +8,10 @@ dur = 2;
 refRate = 120;
 tStim = -0.5:1/refRate:dur;
 stimAmp = 1;
-stimFreq = 30;
-stimFreq2 = 40;
+stimFreq = 15;
+stimFreq2 = [];
+phase = 0;
+phase2 = 0;
 
 Fs = 1000;
 tResponse = -0.5:1/Fs:dur;
@@ -18,10 +20,20 @@ noiseStd = 0;
 plotFigs = 1;
 
 %% STIMULUS
+%% constructed neural response - use 120 Hz
+% assumes that neurons respond to both onsets and offsets
+% so if a stimulus at 60 Hz is [1 0 0], the neural response would be 
+% [1 1 0]. sampled at 120 Hz, this would be [1 0 1 0 0 0].
+% 30 Hz
+stim = repmat([1 0 0 0],1,301/4);
+% 40 Hz
+% stim = repmat([1 0 1 0 0 0],1,301/6);
+stim(301) = 1;
+
 %% make stimulus time series
-stim = sinewave(stimAmp,stimFreq,tStim,0);
+stim = sinewave(stimAmp,stimFreq,tStim,phase);
 if ~isempty(stimFreq2)
-    stim = stim + sinewave(stimAmp,stimFreq2,tStim,0);
+    stim = stim + sinewave(stimAmp,stimFreq2,tStim,phase2);
 end
 stim(tStim<0) = 0; % zero baseline
 
@@ -126,7 +138,7 @@ end
 
 %% time-frequency on simulated neural response
 taper          = 'hanning';
-foi            = 1:50;
+foi            = 1:80;
 t_ftimwin      = 10 ./ foi;
 toi            = tResponse;
 tfAmps = [];
