@@ -310,7 +310,7 @@ tf3FigPos = [200 475 1000 275];
 set(0,'defaultLineLineWidth',1)
 
 %% Time series and FFT for single channel
-channel = 2;
+channel = 25;
 figure
 set(gcf,'Position',ts2FigPos)
 
@@ -519,8 +519,8 @@ if saveFigs
 end
 
 %% Hilbert on average across trials
-channels = 2; % [13 14 23 25 43], [7 8 13 20 36];
-ssvefFreq = 40;
+channels = [13 14 23 25 43]; % [13 14 23 25 43], [7 8 13 20 36];
+ssvefFreq = 30;
 Fbp = ssvefFreq + [-1.6 1.6];
 hAmps = [];
 for iTrig = 1:nTrigs
@@ -543,6 +543,24 @@ end
 plot(t, mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
 plot(t, mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
 legend(trigNames(plotOrder))
+xlabel('time (ms)')
+ylabel('Hilbert amp')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+
+mean1 = mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
+ste1 = std(hAmps(:,plotOrder(1:(nTrigs-1)/2)),0,2)./(sqrt((nTrigs-1)/2));
+mean2 = mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
+ste2 = std(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),0,2)./(sqrt((nTrigs-1)/2));
+figure
+hold on
+set(gcf,'Position',tsFigPos)
+shadedErrorBar(t, mean1, ste1, {'color',trigBlue,'LineWidth',4}, 1)
+shadedErrorBar(t, mean2, ste2, {'color',trigRed,'LineWidth',4}, 1)
+plot(t, hAmps(:,end), 'k')
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+legend('attend T1','attend T2')
 xlabel('time (ms)')
 ylabel('Hilbert amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
