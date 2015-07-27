@@ -1,16 +1,16 @@
-% rd_simSampledSinewave.m
+% rd_simSampledSinewave2.m
 
 %% setup
 sinewave = @(A,f,t,ph) A*sin(2*pi*f*t + ph);
 
 dur = 2;
 
-refRate = 120;
+refRate = 60;
 tStim = -0.5:1/refRate:dur;
 stimAmp = 1;
 stimFreq = 15;
-stimFreq2 = [];
-phase = 0;
+stimFreq2 = 20;
+phase = pi/2;
 phase2 = 0;
 
 Fs = 1000;
@@ -24,11 +24,11 @@ plotFigs = 1;
 % assumes that neurons respond to both onsets and offsets
 % so if a stimulus at 60 Hz is [1 0 0], the neural response would be 
 % [1 1 0]. sampled at 120 Hz, this would be [1 0 1 0 0 0].
-% 30 Hz
-stim = repmat([1 0 0 0],1,301/4);
-% 40 Hz
+% % 30 Hz
+% stim = repmat([1 0 0 0],1,301/4);
+% % 40 Hz
 % stim = repmat([1 0 1 0 0 0],1,301/6);
-stim(301) = 1;
+% stim(301) = 1;
 
 %% make stimulus time series
 stim = sinewave(stimAmp,stimFreq,tStim,phase);
@@ -58,38 +58,6 @@ if plotFigs
     title('wavelet')
 end
 
-% foi = 1:50;
-% [spectrum,freqoi,timeoi] = ft_specest_wavelet(stim, tStim, 'freqoi', foi);
-% specAmp = abs(squeeze(spectrum));
-% 
-% if plotFigs
-%     ytick = 10:10:numel(freqoi);
-%     xtick = 51:50:numel(timeoi);
-%     figure
-%     imagesc(specAmp)
-%     rd_timeFreqPlotLabels(timeoi,freqoi,xtick,ytick);
-% end
-
-%% mtmconvol on stim
-taper          = 'hanning'; % 'dpss'
-toi            = tStim;
-foi            = stimFreq;
-t_ftimwin      = 12 ./ foi;
-tapsmofrq      = foi * 0.8; % for dpss 
-tfAmps = [];
-[spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(stim, tStim, ...
-    'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
-    'taper', taper, 'tapsmofrq', tapsmofrq, 'dimord', 'chan_time_freqtap');
-specAmp = abs(squeeze(spectrum))';
-
-if plotFigs
-    figure
-    plot(tStim, specAmp)
-    xlabel('time (ms)')
-    ylabel('spec amp')
-    title('mtmconvol')
-end
-
 %% time-frequency on stim
 taper          = 'hanning';
 foi            = 1:50;
@@ -112,17 +80,28 @@ end
 
 %% SIMULATED NEURAL RESPONSE
 %% make neural response 
-% by resampling the stimulus -- right thing to do?
-ssvef = resample(stim, Fs, refRate);
-ssvef = ssvef(1:length(tResponse));
+% by assuming that neurons respond to differences
+stimUp = resample(stim, Fs, refRate);
+ssvef = abs(diff(stimUp));
+% ssvef = resample(ssvef, Fs, refRate);
+if length(ssvef) > length(tResponse)
+    ssvef = ssvef(1:length(tResponse));
+elseif length(tResponse) > length(ssvef)
+    tResponse = tResponse(1:length(ssvef));
+end
 noise = noiseStd.*randn(size(tResponse));
 
 response = ssvef + noise;
 
 if plotFigs
-    figure(f(1));
+    scaleFactor = max(stim)./max(ssvef);
+    figure
     hold on
-    plot(tResponse, ssvef, 'r')
+    plot(tStim, stim, '.-')
+    plot(tResponse, ssvef*scaleFactor, 'r')
+    xlabel('time (s)')
+    ylabel('amp')
+    title(sprintf('%.2f Hz', stimFreq))
 end
 
 %% wavelet on simulated neural response
