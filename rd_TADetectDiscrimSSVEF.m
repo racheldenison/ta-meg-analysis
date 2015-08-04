@@ -3,10 +3,10 @@
 %% Setup
 % exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0817_20150504';
-fileBase = 'R0817_TADeDi_5.4.15';
+sessionDir = 'R0973_20150727';
+fileBase = 'R0973_TADeDi_7.27.15';
 analStr = 'ebi'; % '', 'eti', etc.
-excludeTrialsFt = 1;
+excludeTrialsFt = 0;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
@@ -254,6 +254,23 @@ if saveFigs
     rd_saveAllFigs(fH, freqNames, 'im', figDir)
 end
 
+%% Plot peaks for stim ave
+ssvefFreq = 30;
+peakMeansStimAve = squeeze(mean(peakMeans(ssvefFreqs==ssvefFreq,:,1:end-1),3));
+[aa, channelsRanked] = sort(peakMeansStimAve,2,'descend');
+
+figure
+bar(peakMeansStimAve)
+text(120, aa(1)-1, sprintf('top 5 channels:\n%s', num2str(channelsRanked(1:5))))
+xlabel('channel')
+ylabel('SSVEF amplitude')
+title(sprintf('%d Hz', ssvefFreq))
+
+if saveFigs
+    figPrefix = 'bar';
+    rd_saveAllFigs(gcf, {sprintf('channelStimAveAmp_%dHz', ssvefFreq)}, figPrefix, figDir)
+end
+
 %% Convert to 157 channels
 for iF = 1:numel(ssvefFreqs)
     freqToPlot = ssvefFreqs(iF);
@@ -310,7 +327,7 @@ tf3FigPos = [200 475 1000 275];
 set(0,'defaultLineLineWidth',1)
 
 %% Time series and FFT for single channel
-channel = 25;
+channel = 14;
 figure
 set(gcf,'Position',ts2FigPos)
 
@@ -357,7 +374,7 @@ if saveFigs
 end
 
 %% Wavelet on average across trials
-channels = 25; % [13 14 23 25 43], [7 8 13 20 36]
+channels = 60; % [14 23 25 26 60], [13 14 23 25 43], [7 8 13 20 36]
 ssvefFreq = 30;
 width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth
 wBaselineWindow = [-500 0]; % [-300 -200];
@@ -519,7 +536,7 @@ if saveFigs
 end
 
 %% Hilbert on average across trials
-channels = [13 14 23 25 43]; % [13 14 23 25 43], [7 8 13 20 36];
+channels = [14 23 25 26 60]; % R0817_20150504: [13 14 23 25 43], [7 8 13 20 36];
 ssvefFreq = 30;
 Fbp = ssvefFreq + [-1.6 1.6];
 hAmps = [];
@@ -669,7 +686,7 @@ if saveFigs
 end
 
 %% Time-frequency
-channels = 2;
+channels = 14;
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
@@ -890,7 +907,7 @@ if saveFigs
 end
 
 %% Bandpassed average time series
-channels = 2; % [13 14 23 25 43], [7 8 13 20 36];
+channels = 14; % [13 14 23 25 43], [7 8 13 20 36];
 freq = 10;
 Fbp = freq + [-1.6 1.6];
 dataBP = [];
