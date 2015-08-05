@@ -29,6 +29,7 @@ segmentCushion = 5; % used only if 'selectData'
 nTrigsPerRun = 9; % TAPilot: 9
 nRuns = 14; % TADetectDiscrim: 14; TAPilot: 18
 nRunsPerSegment = 1;
+segmentOutNums = []; % default is []
 trialDur = 7;
 
 %% display sqd info
@@ -88,6 +89,9 @@ switch segmentationOption
         error('segmentationOption not found')
 end
 nSegments = numel(segmentStartTimes);
+if isempty(segmentOutNums)
+    segmentOutNums = 1:nSegments;
+end
 
 %% read data segments and write new sqd file
 for iSegment = 1:nSegments
@@ -95,15 +99,16 @@ for iSegment = 1:nSegments
 	segment = sqdread(fileName, 'Samples', [segmentStartTimes(iSegment) segmentEndTimes(iSegment)]);
     
     % new segment file name
-    segmentFileName = sprintf('%s_%s%02d.sqd', fileName(1:end-4), segmentLabel, iSegment);
+    segmentOutNum = segmentOutNums(iSegment);
+    segmentFileName = sprintf('%s_%s%02d.sqd', fileName(1:end-4), segmentLabel, segmentOutNum);
     
     % write segment file 
-    fprintf('Writing sqd: %s %d\n', segmentLabel, iSegment) 
+    fprintf('Writing sqd: %s %d\n', segmentLabel, segmentOutNum) 
     sqdwrite(fileName, segmentFileName, 'Data', segment);
     
     % check triggers in new file
     rd_checkTriggers(segmentFileName,[],0);
-    title(sprintf('%s %d', segmentLabel, iSegment)) 
+    title(sprintf('%s %d', segmentLabel, segmentOutNum)) 
 end
 
 
