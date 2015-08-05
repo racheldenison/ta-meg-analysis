@@ -2,8 +2,8 @@
 
 %% setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0974_20150728';
-fileBase = 'R0974_TADeDi_7.28.15';
+sessionDir = 'R0504_20150805';
+fileBase = 'R0504_TADeDi_runs9-14_8.5.15';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc', dataDir);

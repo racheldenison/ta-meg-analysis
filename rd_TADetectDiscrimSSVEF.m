@@ -3,8 +3,8 @@
 %% Setup
 % exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0973_20150727';
-fileBase = 'R0973_TADeDi_7.27.15';
+sessionDir = 'R0504_20150805';
+fileBase = 'R0504_TADeDi_8.5.15';
 analStr = 'ebi'; % '', 'eti', etc.
 excludeTrialsFt = 0;
 
@@ -327,7 +327,7 @@ tf3FigPos = [200 475 1000 275];
 set(0,'defaultLineLineWidth',1)
 
 %% Time series and FFT for single channel
-channel = 14;
+channel = 23;
 figure
 set(gcf,'Position',ts2FigPos)
 
@@ -374,7 +374,7 @@ if saveFigs
 end
 
 %% Wavelet on average across trials
-channels = 60; % [14 23 25 26 60], [13 14 23 25 43], [7 8 13 20 36]
+channels = 23; % [14 23 25 26 60], [13 14 23 25 43], [7 8 13 20 36]
 ssvefFreq = 30;
 width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth
 wBaselineWindow = [-500 0]; % [-300 -200];
@@ -536,7 +536,7 @@ if saveFigs
 end
 
 %% Hilbert on average across trials
-channels = [14 23 25 26 60]; % R0817_20150504: [13 14 23 25 43], [7 8 13 20 36];
+channels = [23 43 25 13 16]; % R0504_20150805: [23 43 25 13 16]; % [14 23 25 26 60]; % R0817_20150504: [13 14 23 25 43], [7 8 13 20 36];
 ssvefFreq = 30;
 Fbp = ssvefFreq + [-1.6 1.6];
 hAmps = [];
@@ -560,24 +560,6 @@ end
 plot(t, mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
 plot(t, mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
 legend(trigNames(plotOrder))
-xlabel('time (ms)')
-ylabel('Hilbert amp')
-title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
-
-mean1 = mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
-ste1 = std(hAmps(:,plotOrder(1:(nTrigs-1)/2)),0,2)./(sqrt((nTrigs-1)/2));
-mean2 = mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
-ste2 = std(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),0,2)./(sqrt((nTrigs-1)/2));
-figure
-hold on
-set(gcf,'Position',tsFigPos)
-shadedErrorBar(t, mean1, ste1, {'color',trigBlue,'LineWidth',4}, 1)
-shadedErrorBar(t, mean2, ste2, {'color',trigRed,'LineWidth',4}, 1)
-plot(t, hAmps(:,end), 'k')
-for iEv = 1:numel(eventTimes)
-    vline(eventTimes(iEv),'k');
-end
-legend('attend T1','attend T2')
 xlabel('time (ms)')
 ylabel('Hilbert amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
@@ -618,9 +600,28 @@ xlabel('time (ms)')
 ylabel('Hilbert amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
 
+% attend T1/T2 with condition error bars
+mean1 = mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
+ste1 = std(hAmps(:,plotOrder(1:(nTrigs-1)/2)),0,2)./(sqrt((nTrigs-1)/2));
+mean2 = mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
+ste2 = std(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),0,2)./(sqrt((nTrigs-1)/2));
+fH(4) = figure;
+set(gcf,'Position',tsFigPos)
+hold on
+shadedErrorBar(t, mean1, ste1, {'color',trigBlue,'LineWidth',4}, 1)
+shadedErrorBar(t, mean2, ste2, {'color',trigRed,'LineWidth',4}, 1)
+plot(t, hAmps(:,end), 'k')
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+legend('attend T1','attend T2')
+xlabel('time (ms)')
+ylabel('Hilbert amp')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+
 if saveFigs
     figPrefix = ['plot_ch' sprintf('%d_', channels) sprintf('%dHz', ssvefFreq)];
-    rd_saveAllFigs(fH, {'hilbertTrialAve','hilbertTrialAveByCond','hilbertTrialAvePA'}, figPrefix, figDir)
+    rd_saveAllFigs(fH, {'hilbertTrialAve','hilbertTrialAveByCond','hilbertTrialAvePA','hilbertTrialAveAttT1T2Error'}, figPrefix, figDir)
 end
 
 %% Filter single trial data
@@ -686,7 +687,7 @@ if saveFigs
 end
 
 %% Time-frequency
-channels = 14;
+channels = 23;
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
@@ -792,7 +793,7 @@ if saveFigs
 end
 
 %% Time-frequency - single trials
-channel = 2;
+channel = 23;
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
@@ -907,7 +908,7 @@ if saveFigs
 end
 
 %% Bandpassed average time series
-channels = 14; % [13 14 23 25 43], [7 8 13 20 36];
+channels = 23; % [13 14 23 25 43], [7 8 13 20 36];
 freq = 10;
 Fbp = freq + [-1.6 1.6];
 dataBP = [];
