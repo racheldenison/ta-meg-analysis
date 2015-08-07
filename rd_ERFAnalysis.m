@@ -405,6 +405,10 @@ fH = [];
 fH(1) = figure;
 plot(f, targetAmps)
 xlim([0 150])
+xlabel('frequency (Hz)')
+ylabel('amplitude')
+legend(trigNames)
+title(['channel' sprintf(' %d', channels)]);
 
 fH(2) = figure;
 for iTrig = 1:nTrigs
@@ -434,6 +438,8 @@ for iTrig = 1:nTrigs
     hold on
     plot(toi, signal(:,:,iTrig),'k', 'LineWidth', 2)
     plot(toi, noise(:,:,iTrig))
+    xlabel('time (ms)')
+    ylabel('mtmconvol amplitude')
     title(trigNames{iTrig})
 end
 legend(num2str(ssvefFreq), num2str(ssvefFreq-noiseDist), num2str(ssvefFreq+noiseDist))

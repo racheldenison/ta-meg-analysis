@@ -442,32 +442,48 @@ if saveFigs
 end
 
 %% Wavelet on average across trials
-channels = 23; % [14 23 25 26 60], [13 14 23 25 43], [7 8 13 20 36]
+channels = 25; % [14 23 25 26 60], [13 14 23 25 43], [7 8 13 20 36]
 ssvefFreq = 30;
 width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth
 wBaselineWindow = [-500 0]; % [-300 -200];
 wBaselineWindowIdx = find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2));
 
+% all frequencies
+% wAmps0 = [];
+% for iTrig = 1:nTrigs
+%     data = trigMean(:,channels,iTrig)'; % channels by samples
+%     [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'width', width);
+%     specAmp = abs(squeeze(spectrum));
+%     
+%     freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
+%     
+%     if numel(size(specAmp))==3 % if three-dimensional
+%         wAmp = squeeze(specAmp(:,freqIdx,:));
+%     else
+%         wAmp = squeeze(specAmp(freqIdx,:));
+%     end
+%     wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
+%     wAmps0(:,:,iTrig) = wAmpNorm';
+% end
+% wAmps = squeeze(mean(wAmps0,2)); % mean across channels
+
+% only frequency of interest
 wAmps0 = [];
+foi = ssvefFreq;
 for iTrig = 1:nTrigs
     data = trigMean(:,channels,iTrig)'; % channels by samples
-    [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'width', width);
+    [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'freqoi', foi, 'width', width);
     specAmp = abs(squeeze(spectrum));
-    
-    freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
-    
-    if numel(size(specAmp))==3 % if three-dimensional
-        wAmp = squeeze(specAmp(:,freqIdx,:));
+
+    if all(size(specAmp)>1) % if two-dimensional
+        wAmp = specAmp;
     else
-        wAmp = squeeze(specAmp(freqIdx,:));
+        wAmp = specAmp';
     end
     wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
     wAmps0(:,:,iTrig) = wAmpNorm';
 end
 wAmps = squeeze(mean(wAmps0,2)); % mean across channels
-% wBaselineWindow = [-300 -200];
-% wBaseline = mean(wAmps(find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2)),:));
-% wAmpsB = wAmps - repmat(wBaseline,nSamples,1);
 
 fH = [];
 fH(1) = figure;
@@ -530,16 +546,43 @@ end
 %% Wavelet on single trials
 channel = 25;
 wAmpsCond0 = [];
+
+% all frequencies
+% for iCue = 1:numel(cueConds)
+%     for iT1 = 1:numel(t1Conds)
+%         for iT2 = 1:numel(t2Conds)
+%             data = squeeze(condData(:,channel,:,iCue,iT1,iT2))'; % trials by samples
+%             [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000);
+%             specAmp = abs(squeeze(spectrum));
+%             
+%             freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
+%             
+%             wAmp = squeeze(specAmp(:,freqIdx,:));
+%             wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
+%             wAmpsCond0(:,:,iCue,iT1,iT2) = wAmpNorm';
+%         end
+%     end
+% end
+% 
+% % blank
+% data = squeeze(blankData(:,channel,:))'; % trials by samples
+% [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000);
+% specAmp = abs(squeeze(spectrum));
+% freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
+% wAmp = squeeze(specAmp(:,freqIdx,:));
+% wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
+% wAmpsBlank0 = wAmpNorm';
+
+% only frequency of interest
+foi = ssvefFreq;
 for iCue = 1:numel(cueConds)
     for iT1 = 1:numel(t1Conds)
         for iT2 = 1:numel(t2Conds)
             data = squeeze(condData(:,channel,:,iCue,iT1,iT2))'; % trials by samples
-            [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000);
+            [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'freqoi', foi, 'width', width);
             specAmp = abs(squeeze(spectrum));
-            
-            freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
-            
-            wAmp = squeeze(specAmp(:,freqIdx,:));
+
+            wAmp = specAmp;
             wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
             wAmpsCond0(:,:,iCue,iT1,iT2) = wAmpNorm';
         end
@@ -548,10 +591,9 @@ end
 
 % blank
 data = squeeze(blankData(:,channel,:))'; % trials by samples
-[spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000);
+[spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'freqoi', foi, 'width', width);
 specAmp = abs(squeeze(spectrum));
-freqIdx = find(abs(freqoi-ssvefFreq) == min((abs(freqoi-ssvefFreq))));
-wAmp = squeeze(specAmp(:,freqIdx,:));
+wAmp = specAmp;
 wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
 wAmpsBlank0 = wAmpNorm';
 
