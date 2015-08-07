@@ -3,10 +3,10 @@
 %% Setup
 % exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0504_20150805';
-fileBase = 'R0504_TADeDi_8.5.15';
+sessionDir = 'R0817_20150504';
+fileBase = 'R0817_TADeDi_5.4.15';
 analStr = 'ebi'; % '', 'eti', etc.
-excludeTrialsFt = 0;
+excludeTrialsFt = 1;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 
@@ -371,6 +371,74 @@ legend('stim average','blank')
 if saveFigs
     figPrefix = sprintf('plot_ch%d', channel);
     rd_saveAllFigs(gcf, {'tsFFT'}, figPrefix, figDir)
+end
+
+%% Trial average for target present vs. absent, for a single channel
+pp = mean(trigMean(:,:,1:2),3);
+pa = mean(trigMean(:,:,5:6),3);
+ap = mean(trigMean(:,:,3:4),3);
+aa = mean(trigMean(:,:,7:8),3);
+
+channel = 25;
+targetWindow = [-100 500];
+t1Window = t>=eventTimes(3) + targetWindow(1) & t<=eventTimes(3) + targetWindow(2);
+t2Window = t>=eventTimes(4) + targetWindow(1) & t<=eventTimes(4) + targetWindow(2);
+targetPA(1,:,1) = pp(t1Window, channel);
+targetPA(2,:,1) = pp(t2Window, channel);
+targetPA(3,:,1) = pa(t1Window, channel);
+targetPA(4,:,1) = ap(t2Window, channel);
+targetPA(1,:,2) = aa(t1Window, channel);
+targetPA(2,:,2) = aa(t2Window, channel);
+targetPA(3,:,2) = ap(t1Window, channel);
+targetPA(4,:,2) = pa(t2Window, channel);
+
+targetPADiff = targetPA(:,:,1)-targetPA(:,:,2);
+
+targetNfft = 2^nextpow2(diff(targetWindow)+1);
+targetY = fft(mean(targetPADiff),targetNfft)/(diff(targetWindow)+1);
+targetF = Fs/2*linspace(0,1,targetNfft/2+1);
+targetAmps = 2*abs(targetY(1:targetNfft/2+1));
+
+names = {'target present','target absent'};
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',ts2FigPos)
+for iPA = 1:2
+    subplot(2,1,iPA)
+    plot(targetWindow(1):targetWindow(2), targetPA(:,:,iPA))
+    vline(0,'k');
+    if iPA==1
+        legend('xx1','xx2','xo1','ox2')
+    end
+    xlabel('time (ms)')
+    ylabel('amplitude')
+    title(names{iPA})
+end
+rd_supertitle(sprintf('channel %d', channel))
+rd_raiseAxis(gca);
+
+fH(2) = figure;
+set(gcf,'Position',ts3FigPos)
+subplot(3,1,1)
+plot(targetWindow(1):targetWindow(2), targetPADiff)
+xlabel('time (ms)')
+ylabel('\Delta amplitude')
+title('target present - absent')
+subplot(3,1,2)
+plot(targetWindow(1):targetWindow(2), mean(targetPADiff,1), 'k');
+xlabel('time (ms)')
+ylabel('\Delta amplitude')
+subplot(3,1,3)
+plot(targetF, targetAmps)
+xlim([0 150])
+xlabel('frequency (Hz)')
+ylabel('\Delta amplitude')
+rd_supertitle(sprintf('channel %d', channel))
+rd_raiseAxis(gca);
+
+if saveFigs
+    figPrefix = sprintf('plot_ch%d', channel);
+    rd_saveAllFigs(fH, {'targetPATrialAve','targetPATrialAveDiff'}, figPrefix, figDir)
 end
 
 %% Wavelet on average across trials

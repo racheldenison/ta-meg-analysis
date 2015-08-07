@@ -1,10 +1,11 @@
 % rd_ERFAnalysis.m
 
 %% Setup
-exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
+% exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
+exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TAPilot/MEG';
 sessionDir = 'R0817_20140820';
 fileBase = 'R0817_TAPilot_8.20.14';
-analStr = 'eti';
+analStr = 'ebi';
 excludeTrialsFt = 1;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -361,4 +362,79 @@ for iChSet = 1:numel(pickedChannels)
         rd_saveAllFigs(gcf,{name},'plot',figDir)
     end
 end
+
+%% FFT of trigMean for high SNR channels
+channels = highSNRChannels;
+targetERF = squeeze(mean(trigMean(:,channels,:),2));
+
+targetY = fft(targetERF,nfft)/nSamples;
+targetAmps = 2*abs(targetY(1:nfft/2+1,:));
+
+taper          = 'hanning';
+foi            = 1:100;
+t_ftimwin      = 10 ./ foi;
+toi            = tstart/1000:0.01:tstop/1000;
+tfAmps = [];
+for iTrig = 1:nTrigs
+    data = trigMean(:,channels,iTrig)'; % channels by samples
+    [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(data, t/1000, ...
+        'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
+        'taper', taper, 'dimord', 'chan_time_freqtap');
+    specAmp = squeeze(mean(abs(spectrum),1)); % mean across channels
+    tfAmps(:,:,iTrig) = specAmp';
+end
+
+% this is not really the right baseline. should compare to blank or target
+% absent. however, this is conservative.
+tfAmpsLRDiff = tfAmps(:,:,1) - tfAmps(:,:,2);
+
+ssvefFreq = 30;
+noiseDist = 5;
+freqIdx = find(foi==ssvefFreq);
+signal = tfAmps(freqIdx,:,:);
+noise = tfAmps(freqIdx + [-noiseDist noiseDist],:,:);
+
+% figures
+ytick = 10:10:numel(foi);
+xtick = 51:50:numel(toi);
+clims = [0 15];
+diffClims = [-10 10];
+eventTimes = 0;
+
+fH = [];
+fH(1) = figure;
+plot(f, targetAmps)
+xlim([0 150])
+
+fH(2) = figure;
+for iTrig = 1:nTrigs
+    subplot(1,2,iTrig)
+    imagesc(tfAmps(:,:,iTrig),clims)
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    if iTrig==nTrigs
+        xlabel('time (ms)')
+        ylabel('frequency (Hz)')
+    end
+    title(trigNames{iTrig})
+end
+rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_raiseAxis(gca);
+
+fH(3) = figure;
+imagesc(tfAmpsLRDiff,diffClims)
+rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+xlabel('time (ms)')
+ylabel([trigNames{1} ' - ' trigNames{2}])
+title(['channel' sprintf(' %d', channels)]);
+colorbar
+
+fH(4) = figure;
+for iTrig = 1:nTrigs
+    subplot(1,2,iTrig)
+    hold on
+    plot(toi, signal(:,:,iTrig),'k', 'LineWidth', 2)
+    plot(toi, noise(:,:,iTrig))
+    title(trigNames{iTrig})
+end
+legend(num2str(ssvefFreq), num2str(ssvefFreq-noiseDist), num2str(ssvefFreq+noiseDist))
 
