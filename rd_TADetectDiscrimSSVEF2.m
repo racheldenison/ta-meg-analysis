@@ -15,16 +15,18 @@ switch analStr
     case ''
         savename = sprintf('%s/%s_ssvef_workspace.mat', matDir, fileBase);
         channelsFileName = sprintf('%s/channels_%dHz.mat', matDir, ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_%s_topChannels%d_%dHz.mat', matDir, fileBase, numel(topChannels), ssvefFreq);
     otherwise
         savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
         channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
+        analysisFileName = sprintf('%s/analysis_%s_%s_topChannels%d_%dHz.mat', matDir, fileBase, analStr, numel(topChannels), ssvefFreq);
 end
 
 %% Get the data
 load(savename)
 
 %% Settings after loading the data
-saveAnalysis = 0;
+saveAnalysis = 1;
 saveFigs = 0;
 
 excludeTrialsFt = 0;
@@ -33,13 +35,17 @@ excludeSaturatedEpochs = 1;
 load(channelsFileName,'channelsRanked');
 channels = channelsRanked(topChannels);
 
-%% Store params of this analysis
-anal.fileBase = fileBase;
-anal.analStr = analStr;
-anal.excludeTrialsFt = excludeTrialsFt;
-anal.excludeSaturatedEpochs = excludeSaturatedEpochs;
-anal.ssvefFreq = ssvefFreq;
-anal.channels = channels;
+%% Store settings for this analysis
+A.fileBase = fileBase;
+A.analStr = analStr;
+A.excludeTrialsFt = excludeTrialsFt;
+A.excludeSaturatedEpochs = excludeSaturatedEpochs;
+A.ssvefFreq = ssvefFreq;
+A.channels = channels;
+A.Fs = Fs;
+A.t = t;
+A.eventTimes = eventTimes;
+A.trigNames = trigNames;
 
 %% Baseline
 % baselinePeriod = -500:0;
@@ -111,9 +117,12 @@ condDataMean = squeeze(nanmean(condData,3));
 blankDataMean = squeeze(nanmean(blankData,3));
 
 % let trigMean have the conditions 1-9 in the third dimension
-trigMean = condDataMean(:,:,:);
-trigMean(:,:,end+1) = blankDataMean;
+%%% note that here we are selecting channels!
+trigMean = condDataMean(:,channels,:);
+trigMean(:,:,end+1) = blankDataMean(:,channels);
 nTrigs = size(trigMean,3);
+
+A.trigMean = trigMean;
 
 %% FFT on mean time series for each trigger type
 % do the fft for each channel
@@ -121,6 +130,8 @@ nfft = 2^nextpow2(nSamples); % Next power of 2 from length of y
 Y = fft(trigMean,nfft)/nSamples; % Scale by number of samples
 f = Fs/2*linspace(0,1,nfft/2+1); % Fs/2 is the maximum frequency that can be measured
 amps = 2*abs(Y(1:nfft/2+1,:,:)); % Multiply by 2 since only half the energy is in the positive half of the spectrum?
+
+A.amps = amps;
 
 %% Plotting setup
 plotOrder = [1 5 3 7 2 6 4 8 9];
@@ -138,7 +149,7 @@ ts2FigPos = [0 500 1100 600];
 ts3FigPos = [0 500 1100 900];
 condFigPos = [250 300 750 650];
 tf9FigPos = [0 250 1280 580];
-tf3FigPos = [200 475 1000 275];
+tf3FigPos = [200 475 980 330];
 
 set(0,'defaultLineLineWidth',1)
 
@@ -150,7 +161,7 @@ set(gcf,'Position',ts2FigPos)
 subplot(3,1,1)
 set(gca,'ColorOrder',trigColors)
 hold all
-plot(t, squeeze(mean(trigMean(:,channels,plotOrder),2)))
+plot(t, squeeze(mean(trigMean(:,:,plotOrder),2)))
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
@@ -163,7 +174,7 @@ title(['channel' sprintf(' %d', channels)])
 subplot(3,1,2)
 set(gca,'ColorOrder',trigColors)
 hold all
-plot(repmat(f',1,nTrigs), squeeze(mean(amps(:,channels,plotOrder),2)))
+plot(repmat(f',1,nTrigs), squeeze(mean(amps(:,:,plotOrder),2)))
 xlim([1 200])
 ylim([0 20])
 xlabel('Frequency (Hz)')
@@ -173,8 +184,8 @@ legend(trigNames(plotOrder))
 subplot(3,1,3)
 set(gca,'ColorOrder',[.66 .5 .78; trigColors(end,:)])
 hold all
-plot(f, squeeze(mean(mean(amps(:,channels,1:end-1),3),2)))
-plot(f, squeeze(mean(amps(:,channels,end),2)))
+plot(f, squeeze(mean(mean(amps(:,:,1:end-1),3),2)))
+plot(f, squeeze(mean(amps(:,:,end),2)))
 xlim([1 200])
 ylim([0 20])
 xlabel('Frequency (Hz)')
@@ -191,10 +202,10 @@ if saveFigs
 end
 
 %% Trial average for target present vs. absent, for a single channel
-pp = mean(mean(trigMean(:,channels,1:2),3),2);
-pa = mean(mean(trigMean(:,channels,5:6),3),2);
-ap = mean(mean(trigMean(:,channels,3:4),3),2);
-aa = mean(mean(trigMean(:,channels,7:8),3),2);
+pp = mean(mean(trigMean(:,:,1:2),3),2);
+pa = mean(mean(trigMean(:,:,5:6),3),2);
+ap = mean(mean(trigMean(:,:,3:4),3),2);
+aa = mean(mean(trigMean(:,:,7:8),3),2);
 
 targetWindow = [-100 500];
 t1Window = t>=eventTimes(3) + targetWindow(1) & t<=eventTimes(3) + targetWindow(2);
@@ -216,9 +227,11 @@ targetF = Fs/2*linspace(0,1,targetNfft/2+1);
 targetAmps = 2*abs(targetY(1:targetNfft/2+1));
 
 % store results
-results.targetWindow = targetWindow;
-results.targetPA = targetPA;
-results.targetPADiff = targetPADiff;
+A.targetWindow = targetWindow;
+A.targetPA = targetPA;
+A.targetPADiff = targetPADiff;
+A.targetF = targetF;
+A.targetPADiffAmps = targetAmps;
 
 names = {'target present','target absent'};
 fH = [];
@@ -282,7 +295,7 @@ wBaselineWindowIdx = find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2));
 wAmps0 = [];
 foi = ssvefFreq;
 for iTrig = 1:nTrigs
-    data = trigMean(:,channels,iTrig)'; % channels by samples
+    data = trigMean(:,:,iTrig)'; % channels by samples
     [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'freqoi', foi, 'width', width);
     specAmp = abs(squeeze(spectrum));
 
@@ -295,6 +308,25 @@ for iTrig = 1:nTrigs
     wAmps0(:,:,iTrig) = wAmpNorm';
 end
 wAmps = squeeze(mean(wAmps0,2)); % mean across channels
+
+% attT1T2 means
+wAmpsAtt(1,:) = mean(wAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
+wAmpsAtt(2,:) = mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
+attNames = {'attT1','attT2'};
+
+% PA means
+for iTrig = 1:(nTrigs-1)/2 
+    wAmpsPA(iTrig,:) = mean(wAmps(:,iTrig*2-1:iTrig*2),2);
+end
+PANames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
+
+% store results
+A.attNames = attNames;
+A.PANames = PANames;
+A.wBaselineWindow = wBaselineWindow;
+A.wAmps = wAmps;
+A.wAmpsAtt = wAmpsAtt;
+A.wAmpsPA = wAmpsPA;
 
 fH = [];
 fH(1) = figure;
@@ -358,11 +390,26 @@ end
 Fbp = ssvefFreq + [-1.6 1.6];
 hAmps = [];
 for iTrig = 1:nTrigs
-    data = trigMean(:,channels,iTrig)'; % channels by samples
+    data = trigMean(:,:,iTrig)'; % channels by samples
     dataF = ft_preproc_bandpassfilter(data,Fs,Fbp);
     dataFH = abs(hilbert(mean(dataF,1))); % average bandpassed time series across channels
     hAmps(:,iTrig) = dataFH; 
 end
+
+% attT1T2 means
+hAmpsAtt(1,:) = mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
+hAmpsAtt(2,:) = mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
+
+% PA means
+for iTrig = 1:(nTrigs-1)/2 
+    hAmpsPA(iTrig,:) = mean(hAmps(:,iTrig*2-1:iTrig*2),2);
+end
+
+% store results
+A.hFbp = Fbp;
+A.hAmps = hAmps;
+A.hAmpsAtt = hAmpsAtt;
+A.hAmpsPA = hAmpsPA;
 
 fH = [];
 fH(1) = figure;
@@ -448,7 +495,7 @@ t_ftimwin      = 10 ./ foi;
 toi            = tstart/1000:0.01:tstop/1000;
 tfAmps = [];
 for iTrig = 1:nTrigs
-    data = trigMean(:,channels,iTrig)'; % channels by samples
+    data = trigMean(:,:,iTrig)'; % channels by samples
     [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(data, t/1000, ...
         'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
         'taper', taper, 'dimord', 'chan_time_freqtap');
@@ -464,6 +511,17 @@ for iTrig = 1:(nTrigs-1)/2
 end
 t1PADiff = mean(tfAmpsPA(:,:,[1 3]),3)-mean(tfAmpsPA(:,:,[2 4]),3);
 t2PADiff = mean(tfAmpsPA(:,:,[1 2]),3)-mean(tfAmpsPA(:,:,[3 4]),3);
+
+% store results
+A.tfTaper = taper;
+A.tfFoi = foi;
+A.tfTFTimwin = t_ftimwin;
+A.tfToi = toi;
+A.tfAmps = tfAmps;
+A.tfAmpsAtt = tfAmpsAtt;
+A.tfAmpsPA = tfAmpsPA;
+A.tfPADiff(:,:,1) = t1PADiff;
+A.tfPADiff(:,:,2) = t2PADiff;
 
 % figures
 ytick = 10:10:numel(foi);
@@ -592,6 +650,17 @@ end
 t1SinglePADiff = mean(tfSingleAmpsPA(:,:,[1 3]),3)-mean(tfSingleAmpsPA(:,:,[2 4]),3);
 t2SinglePADiff = mean(tfSingleAmpsPA(:,:,[1 2]),3)-mean(tfSingleAmpsPA(:,:,[3 4]),3);
 
+% store results
+A.stfTaper = taper;
+A.stfFoi = foi;
+A.stfTFTimwin = t_ftimwin;
+A.stfToi = toi;
+A.stfAmps = tfSingleAmps;
+A.stfAmpsAtt = tfSingleAmpsAtt;
+A.stfAmpsPA = tfSingleAmpsPA;
+A.stfPADiff(:,:,1) = t1SinglePADiff;
+A.stfPADiff(:,:,2) = t2SinglePADiff;
+
 % figures
 ytick = 10:10:numel(foi);
 xtick = 51:50:numel(toi);
@@ -675,4 +744,9 @@ if saveFigs
         figPrefix = ['plot_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end))];
     end
     rd_saveAllFigs(fH, {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA'}, figPrefix(1:end-1), figDir)
+end
+
+%% save analysis
+if saveAnalysis
+    save(analysisFileName, 'A')
 end
