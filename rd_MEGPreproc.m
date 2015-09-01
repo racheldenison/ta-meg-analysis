@@ -33,6 +33,11 @@ trialDef.poststim = 5.5;
 trialDef.trig = 167; % blank blocks
 trialDef.nTrigsExpected = [];
 
+% % for finding saturating epochs
+% trialTriggerChannels = [161:164 167]; % stim/blank blocks
+% tstart = -500; % ms 
+% tstop = 3600; % ms 
+
 plotFigs = 1;
 saveFigs = 1;
 
@@ -96,6 +101,10 @@ if removeBadChannels
     
     % dead or saturating channels for all or portions of the time series
     deadChannels = checkForDeadChannels(filename)+1;
+
+%     % channels saturating on 10% or more of trials
+%     [~, ~, ~, trigData, ~] =  rd_getData(filename, trialTriggerChannels, megChannels, tstart, tstop);
+%     [saturatedChannelEpochs, saturatedChannels, saturatedTrials] = rd_findSaturatedChannelEpochs(trigData);
     
     % aggregate the bad channels
     badChannels = unique([badChannels outlierSDChannels' deadChannels]);

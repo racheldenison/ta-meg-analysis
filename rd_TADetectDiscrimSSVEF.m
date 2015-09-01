@@ -3,21 +3,23 @@
 %% Setup
 % exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0817_20150504';
-fileBase = 'R0817_TADeDi_5.4.15';
-analStr = 'ebi'; % '', 'eti', etc.
-excludeTrialsFt = 1;
+sessionDir = 'R0983_20150813';
+fileBase = 'R0983_TADeDi_8.13.15';
+analStr = 'ebi'; % '', 'eti', 'ebi', etc.
+excludeTrialsFt = 0;
+excludeSaturatedEpochs = 1;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
+matDir = sprintf('%s/mat', dataDir);
 
 switch analStr
     case ''
         filename = sprintf('%s/%s.sqd', dataDir, fileBase);
-        savename = sprintf('%s/mat/%s_ssvef_workspace.mat', dataDir, fileBase);
+        savename = sprintf('%s/%s_ssvef_workspace.mat', matDir, fileBase);
         figDir = sprintf('%s/figures/raw', dataDir);
     otherwise
         filename = sprintf('%s/%s_%s.sqd', dataDir, fileBase, analStr);
-        savename = sprintf('%s/mat/%s_%s_ssvef_workspace.mat', dataDir, fileBase, analStr);
+        savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
         figDir = sprintf('%s/figures/%s', dataDir, analStr);
 end
 if ~exist(figDir,'dir')
@@ -68,23 +70,44 @@ saveFigs = 0;
 load data/data_hdr.mat
 
 %% Get the data
-trigData = [];
-% trigMean = [];
-% triggers = [];
-for iChSet = 1:numel(channelSets)
-    allChannels = channelSets{iChSet};
-    channels = setdiff(allChannels,badChannels);
-    
-    [trigM, triggers, Fs, trigD, trigEvents] =  rd_getData(filename, trigChan, channels, tstart, tstop);
-%     trigMean = cat(2,trigMean,trigM);
-    trigData = cat(2,trigData,trigD);
+if ~exist(savename, 'file')
+    trigData = [];
+    % trigMean = [];
+    % triggers = [];
+    for iChSet = 1:numel(channelSets)
+        allChannels = channelSets{iChSet};
+        channels = setdiff(allChannels,badChannels);
+        
+        [trigM, triggers, Fs, trigD, trigEvents] =  rd_getData(filename, trigChan, channels, tstart, tstop);
+        %     trigMean = cat(2,trigMean,trigM);
+        trigData = cat(2,trigData,trigD);
+    end
+    nSamples = size(trigData,1);
+    nChannels = size(trigData,2);
+else
+    load(savename)
 end
-nSamples = size(trigData,1);
-nChannels = size(trigData,2);
 
 %% Save the data
 if saveData
+    if ~exist(matDir,'dir')
+        mkdir(matDir)
+    end
     save(savename, '-v7.3');
+end
+
+%% Find saturated channels and trials in raw data
+if strcmp(analStr, '')
+    saturatedChannelEpochs = rd_findSaturatedChannelEpochs(trigData);
+    if size(saturatedChannelEpochs, 2)~=41*14
+        fprintf('\nMake sure we are taking the right trials!\n')
+        saturatedChannelEpochs = saturatedChannelEpochs(:,42:end);
+        fprintf('\nNew size: [%d %d]\n\n', size(saturatedChannelEpochs))
+    end
+    save(sprintf('%s/saturated_channel_epochs.mat', matDir), 'saturatedChannelEpochs');
+    if saveFigs
+        rd_saveAllFigs(gcf, {'saturatedChannelEpochs'}, 'im', figDir);
+    end
 end
 
 %% Baseline
@@ -97,10 +120,16 @@ baselineTSeries = repmat(baselineDC,[size(trigData,1),1,1]);
 % trigData0 = trigData;
 trigData = trigData-baselineTSeries;
 
+%% Excluded saturated channel epochs
+if excludeSaturatedEpochs
+    load([matDir '/saturated_channel_epochs.mat'])
+    trigData(:,saturatedChannelEpochs) = NaN;
+end
+
 %% Exclude trials manually rejected with ft
 if excludeTrialsFt
     % load trials_rejected variable from ft manual rejection
-    load([dataDir '/mat/trials_rejected.mat'])
+    load([matDir '/trials_rejected.mat'])
     
 %     includedTrials = true(size(trigData,3),1);
 %     includedTrials(trials_rejected) = 0;
@@ -257,15 +286,25 @@ end
 %% Plot peaks for stim ave
 ssvefFreq = 30;
 peakMeansStimAve = squeeze(mean(peakMeans(ssvefFreqs==ssvefFreq,:,1:end-1),3));
-[aa, channelsRanked] = sort(peakMeansStimAve,2,'descend');
+[channelsRankedAmps, channelsRanked] = sort(peakMeansStimAve,2,'descend');
+channelsRanked(isnan(channelsRankedAmps)) = [];
+channelsRankedAmps(isnan(channelsRankedAmps)) = [];
 
 figure
 bar(peakMeansStimAve)
-text(120, aa(1)-1, sprintf('top 5 channels:\n%s', num2str(channelsRanked(1:5))))
+text(120, channelsRankedAmps(1)-1, sprintf('top 5 channels:\n%s', num2str(channelsRanked(1:5))))
 xlabel('channel')
 ylabel('SSVEF amplitude')
 title(sprintf('%d Hz', ssvefFreq))
 
+if saveData
+    if strcmp(analStr,'')
+        channelsFileName = sprintf('%s/channels_%dHz.mat', matDir, ssvefFreq);
+    else
+        channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
+    end
+    save(channelsFileName,'channelsRanked','channelsRankedAmps')
+end
 if saveFigs
     figPrefix = 'bar';
     rd_saveAllFigs(gcf, {sprintf('channelStimAveAmp_%dHz', ssvefFreq)}, figPrefix, figDir)
@@ -327,7 +366,7 @@ tf3FigPos = [200 475 1000 275];
 set(0,'defaultLineLineWidth',1)
 
 %% Time series and FFT for single channel
-channel = 23;
+channel = 60;
 figure
 set(gcf,'Position',ts2FigPos)
 
@@ -379,7 +418,7 @@ pa = mean(trigMean(:,:,5:6),3);
 ap = mean(trigMean(:,:,3:4),3);
 aa = mean(trigMean(:,:,7:8),3);
 
-channel = 25;
+channel = 60;
 targetWindow = [-100 500];
 t1Window = t>=eventTimes(3) + targetWindow(1) & t<=eventTimes(3) + targetWindow(2);
 t2Window = t>=eventTimes(4) + targetWindow(1) & t<=eventTimes(4) + targetWindow(2);
@@ -442,7 +481,7 @@ if saveFigs
 end
 
 %% Wavelet on average across trials
-channels = 25; % [14 23 25 26 60], [13 14 23 25 43], [7 8 13 20 36]
+channels = 60; % [14 23 25 26 60], [13 14 23 25 43], [7 8 13 20 36]
 ssvefFreq = 30;
 width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth
 wBaselineWindow = [-500 0]; % [-300 -200];
@@ -544,7 +583,7 @@ if saveFigs
 end
 
 %% Wavelet on single trials
-channel = 25;
+channel = 60;
 wAmpsCond0 = [];
 
 % all frequencies
@@ -646,7 +685,7 @@ if saveFigs
 end
 
 %% Hilbert on average across trials
-channels = [23 43 25 13 16]; % R0504_20150805: [23 43 25 13 16]; % [14 23 25 26 60]; % R0817_20150504: [13 14 23 25 43], [7 8 13 20 36];
+channels = 60; % R0504_20150805: [23 43 25 13 16]; % [14 23 25 26 60]; % R0817_20150504: [13 14 23 25 43], [7 8 13 20 36];
 ssvefFreq = 30;
 Fbp = ssvefFreq + [-1.6 1.6];
 hAmps = [];
@@ -797,7 +836,7 @@ if saveFigs
 end
 
 %% Time-frequency
-channels = 23;
+channels = 60;
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
@@ -903,7 +942,7 @@ if saveFigs
 end
 
 %% Time-frequency - single trials
-channel = 23;
+channel = 60;
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
