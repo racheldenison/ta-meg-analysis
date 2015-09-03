@@ -1,14 +1,20 @@
 %% add fieldtrip to your path
 
-addpath /Users/liusirui/Documents/MATLAB/fieldtrip-20150506
+% addpath /Users/liusirui/Documents/MATLAB/fieldtrip-20150506
 ft_defaults
 
 
 %% load & read dataset 
-rootDir = '/Users/liusirui/Documents/MATLAB/MEG/';
-dataDir = [rootDir,'data/TAPilot_meg/data/']; 
-prepDir = [rootDir,'data/TAPilot_meg/prep/'];
-filename = 'R0817_TaDeDi_5.26.15_ebi_part1';
+exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+sessionDir = 'R0898_20150828';
+filename = 'R0898_TADeDi_8.28.15_ebi';
+
+dataDir = sprintf('%s/%s/', exptDir, sessionDir);
+prepDir = sprintf('%s/prep/', dataDir);
+% rootDir = '/Users/liusirui/Documents/MATLAB/MEG/';
+% dataDir = [rootDir,'data/TAPilot_meg/data/']; 
+% prepDir = [rootDir,'data/TAPilot_meg/prep/'];
+% filename = 'R0817_TaDeDi_5.26.15_ebi_part1';
 sqdfile = [dataDir,filename,'.sqd'];
 dat = ft_read_data(sqdfile);
 hdr = ft_read_header(sqdfile);
@@ -38,7 +44,10 @@ trig_ind = [1:numel(triggers)]';
 trigger_info = [trig_ind,triggers,trl,type]; 
 %[trial number, trigger sample, start sample, end sample, offset, trigger channel]
 
-save ([prepDir,filename,'_prep.mat'],'prep_data')
+if ~exist(prepDir,'dir')
+    mkdir(prepDir)
+end
+save ([prepDir,filename,'_prep.mat'],'prep_data', '-v7.3')
 
 %% ft_rejectvisual (summary mode): visual check of outliers
 cfg          = [];
@@ -130,7 +139,11 @@ cleanPrepData.channels_rejected = setdiff(prep_data.label,clean_data2.label);
 [C,ia,ib] = intersect(trl,clean_data1.cfg.trl,'rows');
 cleanPrepData.trial_info = [C,trigger_info(ia,6)];
 
-save([prepDir,filename,'_prepCleanData.mat'],'cleanPrepData')
+save([prepDir,filename,'_prepCleanData.mat'],'cleanPrepData', '-v7.3')
+
+%% save trials_rejected separately
+trials_rejected = cleanPrepData.trials_rejected(:,1);
+save([prepDir '/trials_rejected.mat'], 'trials_rejected')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%  data broswer viewing continuous raw data: 

@@ -20,16 +20,16 @@ function outFile = rd_combineSqd(dataDir, outName, tag, delimiter)
 % September 2014
 
 %% deal with inputs
-if nargin < 4
+if nargin < 4 || isempty(delimiter)
     delimiter = '_';
 end
-if nargin < 3
+if nargin < 3 || isempty(tag)
     tag = ''; % take all the files
 end
-if nargin < 2
+if nargin < 2 || isempty(outName)
     outName = sprintf('combined_%s.sqd', datestr(now,30));
 end
-if nargin < 1
+if nargin < 1 || isempty(dataDir)
     dataDir = pwd;
 end
 

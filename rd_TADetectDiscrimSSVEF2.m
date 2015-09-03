@@ -2,8 +2,8 @@
 
 %% Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0983_20150813';
-fileBase = 'R0983_TADeDi_8.13.15';
+sessionDir = 'R0898_20150828';
+fileBase = 'R0898_TADeDi_8.28.15';
 analStr = 'ebi'; % '', 'ebi', etc.
 ssvefFreq = 30;
 topChannels = 1; % 1, 1:5, etc.
@@ -22,15 +22,17 @@ switch analStr
         analysisFileName = sprintf('%s/analysis_%s_%s_topChannels%d_%dHz.mat', matDir, fileBase, analStr, numel(topChannels), ssvefFreq);
 end
 
+% eventTimes = [0 500 1500 2100 3100];
+
 %% Get the data
 load(savename)
 
 %% Settings after loading the data
 saveAnalysis = 1;
-saveFigs = 0;
+saveFigs = 1;
 
-excludeTrialsFt = 0;
-excludeSaturatedEpochs = 1;
+excludeTrialsFt = 1;
+excludeSaturatedEpochs = 0;
 
 load(channelsFileName,'channelsRanked');
 channels = channelsRanked(topChannels);
@@ -71,6 +73,19 @@ if excludeTrialsFt
     
     % update figDir
     figDir = [figDir '_ft'];
+    
+    % update analysis file
+    switch analStr
+        case ''
+            analysisFileName = sprintf('%s/analysis_%s_ft_topChannels%d_%dHz.mat', matDir, fileBase, numel(topChannels), ssvefFreq);
+        otherwise
+            analysisFileName = sprintf('%s/analysis_%s_%s_ft_topChannels%d_%dHz.mat', matDir, fileBase, analStr, numel(topChannels), ssvefFreq);
+    end
+end
+
+%% Make figDir if needed
+if ~exist(figDir,'dir') && saveFigs
+    mkdir(figDir)
 end
 
 %% Organize trials into conditions
@@ -601,11 +616,11 @@ rd_raiseAxis(gca);
 
 if saveFigs
     if numel(channels)==1
-        figPrefix = sprintf('plot_ch%d', channels);
+        figPrefix = sprintf('im_ch%d', channels);
     else
-        figPrefix = ['plot_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end))];
+        figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end))];
     end
-    rd_saveAllFigs(fH, {'timeFreqByCond','timeFreqAtt','timeFreqPA'}, figPrefix(1:end-1), figDir)
+    rd_saveAllFigs(fH, {'timeFreqByCond','timeFreqAtt','timeFreqPA'}, figPrefix, figDir)
 end
 
 %% Time-frequency - single trials
@@ -739,11 +754,11 @@ rd_raiseAxis(gca);
 
 if saveFigs
     if numel(channels)==1
-        figPrefix = sprintf('plot_ch%d', channels);
+        figPrefix = sprintf('im_ch%d', channels);
     else
-        figPrefix = ['plot_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end))];
+        figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end))];
     end
-    rd_saveAllFigs(fH, {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA'}, figPrefix(1:end-1), figDir)
+    rd_saveAllFigs(fH, {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA'}, figPrefix, figDir)
 end
 
 %% save analysis

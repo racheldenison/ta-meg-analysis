@@ -3,11 +3,11 @@
 %% Setup
 % exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0983_20150813';
-fileBase = 'R0983_TADeDi_8.13.15';
+sessionDir = 'R0898_20150828';
+fileBase = 'R0898_TADeDi_8.28.15';
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
-excludeTrialsFt = 0;
-excludeSaturatedEpochs = 1;
+excludeTrialsFt = 1;
+excludeSaturatedEpochs = 0;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
@@ -283,8 +283,8 @@ if saveFigs
     rd_saveAllFigs(fH, freqNames, 'im', figDir)
 end
 
-%% Plot peaks for stim ave
-ssvefFreq = 30;
+%% Plot peaks for stim ave, save channelsRanked
+ssvefFreq = 40;
 peakMeansStimAve = squeeze(mean(peakMeans(ssvefFreqs==ssvefFreq,:,1:end-1),3));
 [channelsRankedAmps, channelsRanked] = sort(peakMeansStimAve,2,'descend');
 channelsRanked(isnan(channelsRankedAmps)) = [];
