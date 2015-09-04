@@ -3,8 +3,8 @@
 %% Setup
 % exptDir = '/Local/Users/denison/Data/TAPilot/MEG';
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0898_20150828';
-fileBase = 'R0898_TADeDi_8.28.15';
+sessionDir = 'R0974_20150728';
+fileBase = 'R0974_TADeDi_7.28.15';
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
