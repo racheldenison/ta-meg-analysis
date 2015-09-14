@@ -2,11 +2,13 @@
 
 %% Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0974_20150728';
-fileBase = 'R0974_TADeDi_7.28.15';
+sessionDir = 'R0436_20150904';
+fileBase = 'R0436_TADeDi_9.4.15';
 analStr = 'ebi'; % '', 'ebi', etc.
 ssvefFreq = 40;
-topChannels = 1:5; % 1, 1:5, etc.
+nTopChannels = 5; % 1, 5, etc.
+
+topChannels = 1:nTopChannels;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);

@@ -6,8 +6,8 @@ ft_defaults
 
 %% load & read dataset 
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0974_20150728';
-filename = 'R0974_TADeDi_7.28.15_ebi';
+sessionDir = 'R0436_20150904';
+filename = 'R0436_TADeDi_9.4.15_ebi';
 
 dataDir = sprintf('%s/%s/', exptDir, sessionDir);
 prepDir = sprintf('%s/prep/', dataDir);
