@@ -8,7 +8,7 @@ dur = 2;
 refRate = 120;
 tStim = -0.5:1/refRate:dur;
 stimAmp = 1;
-stimFreq = 15;
+stimFreq = 20;
 stimFreq2 = [];
 phase = 0;
 phase2 = 0;
@@ -25,10 +25,10 @@ plotFigs = 1;
 % so if a stimulus at 60 Hz is [1 0 0], the neural response would be 
 % [1 1 0]. sampled at 120 Hz, this would be [1 0 1 0 0 0].
 % 30 Hz
-stim = repmat([1 0 0 0],1,301/4);
+% stim = repmat([1 0 0 0],1,301/4);
 % 40 Hz
 % stim = repmat([1 0 1 0 0 0],1,301/6);
-stim(301) = 1;
+% stim(301) = 1;
 
 %% make stimulus time series
 stim = sinewave(stimAmp,stimFreq,tStim,phase);
