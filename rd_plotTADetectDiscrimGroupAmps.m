@@ -1,10 +1,23 @@
-function rd_plotTADetectDiscrimGroupTS(A, measure, groupData, groupMean, groupSte)
+function rd_plotTADetectDiscrimGroupAmps(A, measure, subjects, groupData, groupMean, groupSte, saveFigs, figDir, figStr)
+
+%% args
+if nargin<7
+    saveFigs = 0;
+end
+if nargin<9
+    figStr = '';
+    if saveFigs==1
+        error('If youre saving figs, you should specify a figStr')
+    end
+end
+
+figTitle = und2space(figStr);
 
 %% setup
 plotOrder = [1 5 3 7 2 6 4 8 9];
 
+tsFigPos0 = [0 500 850 375];
 tf9FigPos = [0 250 1280 580];
-tf3FigPos = [200 475 1000 275];
 
 eventTimes = A.eventTimes;
 trigNames = A.trigNames;
@@ -28,11 +41,13 @@ set(0,'defaultLineLineWidth',1)
 
 switch measure
     case 'w'
-        ylims = [-.5 2.5];
-        diffYlims = [-.8 .8];
+        ylims = [0 400];
+        diffYLims = [-50 50];
+        diffYLimsGroup = [-20 20];
     case 'h'
-        ylims = [-5 40];
-        diffYlims = [-5 5];
+        ylims = [-5 30];
+        diffYLims = [-5 5];
+        diffYLimsGroup = [-2.5 2.5];
     otherwise
         error('measure not recognized')
 end
@@ -47,12 +62,25 @@ allColors.ampsPA = trigColorsPA4;
 fieldNames = fieldnames(groupData);
 nFields = numel(fieldNames);
 
+for iF = 1:nFields
+    fieldName = fieldNames{iF};
+    figNamesIndiv{iF} = sprintf('%s%s%sIndiv', measure, upper(fieldName(1)), fieldName(2:end));
+    figNamesGroup{iF} = sprintf('%s%s%sGroup', measure, upper(fieldName(1)), fieldName(2:end));
+end
+
 %% calculate attT2-T1
 valsDiff = diff(groupData.ampsAtt);
 valsDiffMean = squeeze(mean(valsDiff,3));
 valsDiffSte = squeeze(std(valsDiff,0,3)./sqrt(nSubjects));
 
+%% calculate pres-abs ste
+t1PA = cat(1, mean(groupData.ampsPA([1 3],:,:)), mean(groupData.ampsPA([2 4],:,:)));
+t2PA = cat(1, mean(groupData.ampsPA([1 2],:,:)), mean(groupData.ampsPA([3 4],:,:)));
+t1PADiffSte = squeeze(std(diff(t1PA),0,3)./sqrt(nSubjects)); % T1
+t2PADiffSte = squeeze(std(diff(t2PA),0,3)./sqrt(nSubjects)); % T2
+
 %% indiv subjects ts
+fH = [];
 for iF = 1:nFields
     fieldName = fieldNames{iF};
     
@@ -60,14 +88,14 @@ for iF = 1:nFields
     valsMean = groupMean.(fieldName);
     colors = allColors.(fieldName);
     
-    figure
+    fH(iF) = figure;
     set(gcf,'Position',tf9FigPos)
     for iSubject = 1:nSubjects
         subplot(nrows,ncols,iSubject)
         hold on
-        if strcmp(fieldName, 'amps') % condition dimension varies (ick)
+        if strcmp(fieldName, 'amps')
             for iCond=1:size(valsMean,2)
-                plot(t, vals(:,iCond,iSubject), 'color', colors(iCond,:))
+                plot(t, vals(:,plotOrder(iCond),iSubject), 'color', colors(iCond,:))
             end
         else
             for iCond=1:size(valsMean,1)
@@ -84,7 +112,15 @@ for iF = 1:nFields
             xlabel('time (ms)')
             ylabel('amplitude')
         end
+        title(und2space(subjects{iSubject}))
     end
+    rd_supertitle(figTitle);
+    rd_raiseAxis(gca);
+end
+
+if saveFigs
+    figPrefix = sprintf('%s_plot', figStr);
+    rd_saveAllFigs(fH, figNamesIndiv, figPrefix, figDir);
 end
 
 %% indiv attT2-attT1
@@ -96,7 +132,7 @@ for iSubject = 1:nSubjects
     plot(t, valsDiff(1,:,iSubject), 'k', 'LineWidth', 2)
     plot(xlims, [0 0], 'k')
     xlim(xlims)
-    ylim(diffYlims)
+    ylim(diffYLims)
     for iEv = 1:numel(eventTimes)
         vline(eventTimes(iEv),'color','k','LineStyle',':');
     end
@@ -104,9 +140,19 @@ for iSubject = 1:nSubjects
         xlabel('time (ms)')
         ylabel('amplitude difference (T2-T1)')
     end
+    title(und2space(subjects{iSubject}))
+end
+rd_supertitle(figTitle);
+rd_raiseAxis(gca);
+
+if saveFigs
+    figPrefix = sprintf('%s_plot', figStr);
+    figName = sprintf('%sAmpsAttDiffIndiv', measure);
+    rd_saveAllFigs(gcf, {figName}, figPrefix, figDir);
 end
 
 %% group
+fH = [];
 for iF = 1:nFields
     fieldName = fieldNames{iF};
     
@@ -115,46 +161,115 @@ for iF = 1:nFields
     colors = allColors.(fieldName);
     
     if strcmp(fieldName, 'amps')
-        valsMean = valsMean';
-        valsSte = valsSte';
+        valsMean = valsMean(:,plotOrder)';
+        valsSte = valsSte(:,plotOrder)';
     end
     
-    figure
+    fH(iF) = figure;
+    set(gcf,'Position',tsFigPos0);
     hold on
     for iCond=1:size(valsMean,1)
         shadedErrorBar(t, valsMean(iCond,:), valsSte(iCond,:), {'color', colors(iCond,:), 'LineWidth', 3}, 1)
     end
-    plot(xlims, [0 0], 'k')
+%     plot(xlims, [0 0], 'k')
     for iEv = 1:numel(eventTimes)
         vline(eventTimes(iEv),'color','k','LineStyle',':');
     end
+    xlim(xlims)
     xlabel('time (ms)')
     ylabel('amplitude')
+    title(figTitle)
+end
+
+if saveFigs
+    figPrefix = sprintf('%s_plot', figStr);
+    rd_saveAllFigs(fH, figNamesGroup, figPrefix, figDir);
 end
 
 %% group attT2-attT1 with ste error bars
 valsMean = groupMean.ampsAtt;
 colors = allColors.ampsAtt;
-figure
+
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tsFigPos0);
 hold on
 for iCond=1:2
     shadedErrorBar(t, valsMean(iCond,:), valsDiffSte, {'color', colors(iCond,:), 'LineWidth', 3}, 1)
 end
-plot(xlims, [0 0], 'k')
+% plot(t, groupMean.amps(:,end), 'color', allColors.amps(end,:), 'LineWidth', 1.5)
+% plot(xlims, [0 0], 'k')
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'color','k','LineStyle',':');
 end
+xlim(xlims)
 xlabel('time (ms)')
 ylabel('amplitude')
+title(figTitle)
 
-figure
+fH(2) = figure;
+set(gcf,'Position',tsFigPos0);
 hold on
 shadedErrorBar(t, valsDiffMean, valsDiffSte, 'k', 1)
 plot(xlims, [0 0], 'k')
-ylim(diffYlims)
+ylim(diffYLimsGroup)
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'color','k','LineStyle',':');
 end
+xlim(xlims)
 xlabel('time (ms)')
 ylabel('amplitude difference (T2-T1)')
+title(figTitle)
 
+if saveFigs
+    figPrefix = sprintf('%s_plot', figStr);
+    figNames = {sprintf('%sAmpsAttGroupSte', measure), ...
+        sprintf('%sAmpsAttDiffGroupSte', measure)};
+    rd_saveAllFigs(fH, figNames, figPrefix, figDir);
+end
+
+%% group pres-abs with ste error bars
+colors = allColors.ampsPA([1 4],:);
+ylims = [135 235];
+twin = [-200 700];
+t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
+t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
+
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tsFigPos0);
+subplot(1,2,1)
+hold on
+for iPA=1:2
+    shadedErrorBar(twin(1):twin(end), mean(t1PA(iPA,t1Tidx,:),3), t1PADiffSte(t1Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
+%     shadedErrorBar(t(t1Tidx), mean(t1PA(iPA,t1Tidx,:),3), t1PADiffSte(t1Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
+end
+ylim(ylims)
+vline(0,'color','k','LineStyle',':');
+% for iEv = 1:numel(eventTimes)
+%     vline(eventTimes(iEv),'color','k','LineStyle',':');
+% end
+xlim(twin)
+% xlim([t(t1Tidx(1)) t(t1Tidx(end))])
+xlabel('time (ms)')
+ylabel('amplitude')
+title('T1')
+
+subplot(1,2,2)
+hold on
+for iPA=1:2
+    shadedErrorBar(twin(1):twin(end), mean(t2PA(iPA,t2Tidx,:),3), t2PADiffSte(t2Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
+%     shadedErrorBar(t(t2Tidx), mean(t2PA(iPA,t2Tidx,:),3), t2PADiffSte(t2Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
+end
+ylim(ylims)
+vline(0,'color','k','LineStyle',':');
+% for iEv = 1:numel(eventTimes)
+%     vline(eventTimes(iEv),'color','k','LineStyle',':');
+% end
+xlim(twin)
+% xlim([t(t2Tidx(1)) t(t2Tidx(end))])
+xlabel('time (ms)')
+ylabel('amplitude')
+title('T2')
+
+rd_supertitle(figTitle)

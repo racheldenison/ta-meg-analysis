@@ -1,12 +1,14 @@
-% rd_TADetectDiscrimSSVEF2.m
+function rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels)
 
 %% Setup
-exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0436_20150904';
-fileBase = 'R0436_TADeDi_9.4.15';
-analStr = 'ebi'; % '', 'ebi', etc.
-ssvefFreq = 40;
-nTopChannels = 5; % 1, 5, etc.
+if nargin==0 || ~exist('exptDir','var')
+    exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+    sessionDir = 'R0988_20150904';
+    fileBase = 'R0988_TADeDi_r1-8_9.4.15';
+    analStr = 'ebi'; % '', 'ebi', etc.
+    ssvefFreq = 40;
+    nTopChannels = 5; % 1, 5, etc.
+end
 
 topChannels = 1:nTopChannels;
 
@@ -23,8 +25,6 @@ switch analStr
         channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
         analysisFileName = sprintf('%s/analysis_%s_%s_topChannels%d_%dHz.mat', matDir, fileBase, analStr, numel(topChannels), ssvefFreq);
 end
-
-% eventTimes = [0 500 1500 2100 3100];
 
 %% Get the data
 load(savename)
@@ -48,6 +48,9 @@ A.ssvefFreq = ssvefFreq;
 A.channels = channels;
 A.Fs = Fs;
 A.t = t;
+if ~exist('eventTimes','var')
+    eventTimes = [0 500 1500 2100 3100];
+end
 A.eventTimes = eventTimes;
 A.trigNames = trigNames;
 
@@ -143,11 +146,19 @@ A.trigMean = trigMean;
 
 %% FFT on mean time series for each trigger type
 % do the fft for each channel
-nfft = 2^nextpow2(nSamples); % Next power of 2 from length of y
-Y = fft(trigMean,nfft)/nSamples; % Scale by number of samples
+% nfft = 2^nextpow2(nSamples); % Next power of 2 from length of y
+% Y = fft(trigMean,nfft)/nSamples; % Scale by number of samples
+
+% only go from cue to post-cue
+tidx1 = find(t==eventTimes(2));
+tidx2 = find(t==eventTimes(5))-1;
+nfft = numel(tidx1:tidx2);
+Y = fft(trigMean(tidx1:tidx2,:,:),nfft)/nfft; % Scale by number of samples
 f = Fs/2*linspace(0,1,nfft/2+1); % Fs/2 is the maximum frequency that can be measured
 amps = 2*abs(Y(1:nfft/2+1,:,:)); % Multiply by 2 since only half the energy is in the positive half of the spectrum?
 
+A.f = f;
+A.Y = Y;
 A.amps = amps;
 
 %% Plotting setup
@@ -305,8 +316,9 @@ switch ssvefFreq
     otherwise
         error('ssvefFreq not recognized')
 end
-wBaselineWindow = [-500 0]; % [-300 -200];
-wBaselineWindowIdx = find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2));
+wBaselineWindow = NaN;
+% wBaselineWindow = [-500 0]; % [-300 -200];
+% wBaselineWindowIdx = find(t==wBaselineWindow(1)):find(t==wBaselineWindow(2));
 
 % only frequency of interest
 wAmps0 = [];
@@ -321,8 +333,9 @@ for iTrig = 1:nTrigs
     else
         wAmp = specAmp';
     end
-    wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
-    wAmps0(:,:,iTrig) = wAmpNorm';
+%     wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
+%     wAmps0(:,:,iTrig) = wAmpNorm';
+    wAmps0(:,:,iTrig) = wAmp';
 end
 wAmps = squeeze(mean(wAmps0,2)); % mean across channels
 
@@ -370,7 +383,7 @@ for iTrig = 1:(nTrigs-1)/2
     hold all
     plot(t, wAmps(:,iTrig*2-1:iTrig*2))
     legend(trigNames{iTrig*2-1:iTrig*2})
-    ylim([-1 2.5])
+%     ylim([-1 2.5])
     for iEv = 1:numel(eventTimes)
         vline(eventTimes(iEv),'k');
     end
@@ -389,7 +402,7 @@ for iTrig = 1:(nTrigs-1)/2
     p1 = plot(t, mean(wAmps(:,iTrig*2-1:iTrig*2),2));
     set(p1, 'Color', trigColorsPA4(iTrig,:), 'LineWidth', 1.5)
 end
-ylim([-1 2.5])
+% ylim([-1 2.5])
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
@@ -556,7 +569,7 @@ for iTrig = 1:nTrigs
     imagesc(tfAmps(:,:,iTrig),clims)
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
     if iTrig==nTrigs
-        xlabel('time (ms)')
+        xlabel('time (s)')
         ylabel('frequency (Hz)')
     end
     title(trigNames{iTrig})
@@ -571,14 +584,14 @@ for iAtt = 1:size(tfAmpsAtt,3)
     subplot(1,3,iAtt)
     imagesc(tfAmpsAtt(:,:,iAtt),clims)
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-    xlabel('time (ms)')
+    xlabel('time (s)')
     ylabel('frequency (Hz)')
     title(attNames{iAtt})
 end
 subplot(1,3,3)
 imagesc(tfAmpsAtt(:,:,2)-tfAmpsAtt(:,:,1),diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (ms)')
+xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('attT2 - attT1')
 rd_supertitle(['channel' sprintf(' %d', channels)]);
@@ -591,7 +604,7 @@ for iPA = 1:size(tfAmpsPA,3)
     subplot(2,4,iPA)
     imagesc(tfAmpsPA(:,:,iPA),clims)
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-    xlabel('time (ms)')
+    xlabel('time (s)')
     ylabel('frequency (Hz)')
     title(paNames{iPA})
 end
@@ -604,13 +617,13 @@ title('T1 P-A')
 subplot(2,4,6)
 imagesc(t2PADiff,diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (ms)')
+xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('T2 P-A')
 subplot(2,4,7)
 imagesc(t2PADiff - t1PADiff,diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (ms)')
+xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('T2 vs. T1 P-A')
 rd_supertitle(['channel' sprintf(' %d', channels)]);
@@ -694,7 +707,7 @@ for iTrig = 1:nTrigs
     imagesc(tfSingleAmps(:,:,iTrig),clims)
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
     if iTrig==nTrigs
-        xlabel('time (ms)')
+        xlabel('time (s)')
         ylabel('frequency (Hz)')
     end
     title(trigNames{iTrig})
@@ -709,14 +722,14 @@ for iAtt = 1:size(tfSingleAmpsAtt,3)
     subplot(1,3,iAtt)
     imagesc(tfSingleAmpsAtt(:,:,iAtt),clims)
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-    xlabel('time (ms)')
+    xlabel('time (s)')
     ylabel('frequency (Hz)')
     title(attNames{iAtt})
 end
 subplot(1,3,3)
 imagesc(tfSingleAmpsAtt(:,:,2)-tfSingleAmpsAtt(:,:,1),diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (ms)')
+xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('attT2 - attT1')
 rd_supertitle(['channel' sprintf(' %d', channels)]);
@@ -729,26 +742,26 @@ for iPA = 1:size(tfSingleAmpsPA,3)
     subplot(2,4,iPA)
     imagesc(tfSingleAmpsPA(:,:,iPA),clims)
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-    xlabel('time (ms)')
+    xlabel('time (s)')
     ylabel('frequency (Hz)')
     title(paNames{iPA})
 end
 subplot(2,4,5)
 imagesc(t1SinglePADiff,diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (ms)')
+xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('T1 P-A')
 subplot(2,4,6)
 imagesc(t2SinglePADiff,diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (ms)')
+xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('T2 P-A')
 subplot(2,4,7)
 imagesc(t2SinglePADiff - t1SinglePADiff,diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (ms)')
+xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('T2 vs. T1 P-A')
 rd_supertitle(['channel' sprintf(' %d', channels)]);

@@ -1,28 +1,37 @@
-% rd_plotTADetectDiscrimGroup.m
+function rd_plotTADetectDiscrimGroup(measure)
+
+%% Args
+if ~exist('measure','var')
+    measure = 'w'; % ts w h tf stf
+end
 
 %% Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
 nTopChannels = 5; % 1, 5, etc.
-measure = 'stf'; % w h tf stf
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
-    'R0861_20150813', ...
-    'R0504_20150805', 'R0983_20150813', 'R0898_20150828','R0436_20150904'};
+    'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
+    'R0898_20150828', 'R0436_20150904', 'R0988_20150904'};
+% subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
+%     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
+%     'R0898_20150828', 'R0436_20150904'};
 % subjects = {'R0817_20150504', 'R0973_20150727', ...
-%     'R0861_20150813', 'R0898_20150828'};
-% subjects = {'R0973_20150727', 'R0974_20150728', ...
-%     'R0861_20150813', ...
-%     'R0504_20150805', 'R0983_20150813', 'R0898_20150828','R0436_20150904'};
+%     'R0861_20150813', 'R0504_20150805', 'R0898_20150828'}; % endo
+% subjects = {'R0973_20150727', 'R0861_20150813', 'R0504_20150805', ...
+%     'R0983_20150813', 'R0436_20150904'}; % exo
 
 nSubjects = numel(subjects);
+
+saveFigs = 0;
+figDir = sprintf('%s/Group/figures/%s', exptDir, analStr);
+figStr = sprintf('gN%d_%dHz_topChannels%d', nSubjects, ssvefFreq, nTopChannels);
 
 tstart = -500; % ms
 tstop = 3600; % ms
 t = tstart:tstop;
-evTimes = [0 500 1500 2100 3100];
-eventTimes = evTimes;
+eventTimes = [0 500 1500 2100 3100];
 
 %% Get data
 for iSubject = 1:nSubjects
@@ -41,6 +50,12 @@ for iSubject = 1:nSubjects
     end
     
     switch measure
+        case 'ts'
+            groupData.tsAmps(:,:,:,iSubject) = A.trigMean;
+            groupData.fAmps(:,:,:,iSubject) = A.amps;
+            groupData.targetPA(:,:,:,iSubject) = A.targetPA;
+            groupData.targetPADiff(:,:,iSubject) = A.targetPADiff;
+            groupData.targetPADiffAmps(:,:,iSubject) = A.targetPADiffAmps;
         case 'w'
             groupData.amps(:,:,iSubject) = A.wAmps;
             groupData.ampsAtt(:,:,iSubject) = A.wAmpsAtt;
@@ -75,14 +90,27 @@ for iF = 1:nFields
     groupSte.(fieldName) = std(vals, 0, sdim)./sqrt(nSubjects);
 end
 
+%% A bit of stats
+[h p] = ttest(squeeze(groupData.ampsAtt(1,:,:))', squeeze(groupData.ampsAtt(2,:,:))');
+% hold on
+% plot(t,h)
+% plot(t,-log10(p))
+% plot(t, ones(size(t))*(-log10(.05)))
+
 %% Plot figs
 switch measure
+    case 'ts'
+        rd_plotTADetectDiscrimGroupTS(A, ...
+            groupMean, ...
+            saveFigs, figDir, figStr)
     case {'w','h'}
-        rd_plotTADetectDiscrimGroupTS(A, measure, ...
-            groupData, groupMean, groupSte)
+        rd_plotTADetectDiscrimGroupAmps(A, measure, subjects, ...
+            groupData, groupMean, groupSte, ...
+            saveFigs, figDir, figStr)
     case {'tf','stf'}
         rd_plotTADetectDiscrimGroupTimeFreq(A, measure, ...
-            groupMean.amps, groupMean.ampsAtt, groupMean.ampsPA, groupMean.paDiff)
+            groupMean, ...
+            saveFigs, figDir, figStr)
     otherwise
         error('measure not recognized')
 end
