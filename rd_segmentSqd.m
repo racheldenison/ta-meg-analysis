@@ -27,9 +27,9 @@ segmentCushion = 5; % used only if 'selectData'
 
 % experiment info
 nTrigsPerRun = 9; % TAPilot: 9
-nRuns = 14; % TADetectDiscrim: 14; TAPilot: 18
+nRuns = 9; % TADetectDiscrim: 14; TAPilot: 18
 nRunsPerSegment = 1;
-segmentOutNums = []; % [91 1:14]; % default is []
+segmentOutNums = []; % [91 1:14]; % default is [], numbers 1:nRuns
 trialDur = 7;
 
 %% display sqd info
