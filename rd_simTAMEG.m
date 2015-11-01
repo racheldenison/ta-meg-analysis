@@ -77,6 +77,9 @@ for iTrial = 1:nTrials
     end
     
     %% wavelet
+    foi = ssvefFreq;
+    width = 12;
+%     [spectrum,freqoi,timeoi] = ft_specest_wavelet(response, t, 'freqoi', foi, 'width', width);
     [spectrum,freqoi,timeoi] = ft_specest_wavelet(response, t);
     specAmp = abs(squeeze(spectrum));
     
@@ -133,3 +136,14 @@ plot(t, meanW, 'c')
 legend('true attn gain','average then Hilbert','Hilbert then average','average then wavelet','wavelet then average')
 
     
+%% investigation of wavelet
+foi = ssvefFreq;
+width = 12;
+[spectrum,freqoi,timeoi] = ft_specest_wavelet(response, t, 'freqoi', foi, 'width', width);
+spec = squeeze(spectrum);
+
+% phase example
+x = cos(pi/4*(0:100));
+y = hilbert(x);
+sigphase = angle(y);
+plot(sigphase)
