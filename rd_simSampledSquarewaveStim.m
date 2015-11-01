@@ -16,6 +16,8 @@ plotFigs = 0;
 switch stimFreq
     case 20
         duty = 33;
+    case 100
+        duty = 10;
     otherwise
         duty = 50;
 end

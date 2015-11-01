@@ -1,9 +1,9 @@
-% rd_simSampledSquarewaveConvBiphasic.m
+% rd_simSampledSquarewaveConvBiphasic2.m
 
 stimFreq = 20;
 
-widths = 2:2:20;
-shifts = 2:2:20;
+ks = 500:-50:50;
+ns = 1:10;
 
 %% make stim
 [stim, t, Fs] = rd_simSampledSquarewaveStim(stimFreq);
@@ -24,26 +24,24 @@ plot(t,stimOff,'r')
 xlim([0 1])
 
 %% make biphasic impulse response function
-center = 75;
-for i = 1:numel(widths)
-    for j = 1:numel(shifts)
-        width = widths(i);
-        shift = shifts(j);
-        gpos = makeGaussian(0:200,center,width,1);
-        gneg = -makeGaussian(0:200,center+shift,width,1);
-        g = gpos + gneg;
+for i = 1:numel(ks)
+    for j = 1:numel(ns)
+        k = ks(i);
+        n = ns(j);
+        g = makeBiphasic(0:.001:0.2,k,n);
+%         g(g<0)=g(g<0)*0.5; % unbalanced
         g = g./max(g);
         gs(:,i,j) = g;
     end
 end
 
 figure
-for i=1:numel(widths)
-    subplot(numel(shifts),1,i)
+for i=1:numel(ks)
+    subplot(numel(ns),1,i)
     plot(squeeze(gs(:,i,:)))
     xlim([0 200])
     set(gca,'YTickLabel','')
-    if i~=numel(widths)
+    if i~=numel(ks)
         set(gca,'XTickLabel','')
     else
         xlabel('time (ms)')
@@ -51,8 +49,8 @@ for i=1:numel(widths)
 end
 
 %% convolve with impulse response function
-for i = 1:numel(widths)
-    for j = 1:numel(shifts)
+for i = 1:numel(ks)
+    for j = 1:numel(ns)
         g = gs(:,i,j);
         onResponses(:,i,j) = conv(stimOn, g);
         offResponses(:,i,j) = conv(stimOff, g);
@@ -70,7 +68,7 @@ responses = onResponses + offResponses;
 
 %% example time series
 figure
-plot(t, responses(:,7,6));
+plot(t, responses(:,8,8));
 xlim([0 1])
 title('example')
 xlabel('time (s)')
@@ -83,7 +81,7 @@ amps = 2*abs(Y(1:nfft/2+1,:,:)); % Multiply by 2 since only half the energy is i
 
 %% example spectrum
 figure
-plot(f, amps(:,1,1));
+plot(f, amps(:,1,5));
 xlim([0 150])
 title('example')
 
@@ -91,7 +89,7 @@ title('example')
 [xx, freqIdx(1)] = min(abs(f-stimFreq));
 [xx, freqIdx(2)] = min(abs(f-stimFreq*2));
 
-stimFreqAmps(:,:,1) = squeeze(amps(freqIdx(1),:,:)); % widths x shifts
+stimFreqAmps(:,:,1) = squeeze(amps(freqIdx(1),:,:)); % ks x ns
 stimFreqAmps(:,:,2) = squeeze(amps(freqIdx(2),:,:));
 
 figure
@@ -101,22 +99,22 @@ for iF = 1:numel(freqIdx)
     clims = [0 8];
     set(gca,'clim',clims);
     colorbar
-    xlabel('shift parameter')
-    ylabel('width parameter')
+    xlabel('n parameter')
+    ylabel('k parameter')
     title(sprintf('%d Hz', stimFreq*iF))
 end
 
 %% visualize gammas with high stim freq power
 figure
-for i=1:numel(widths)
-    subplot(numel(widths),1,i)
+for i=1:numel(ks)
+    subplot(numel(ks),1,i)
     hold on
-    for j=1:numel(shifts)
+    for j=1:numel(ns)
         plot(gs(:,i,j),'color',1-repmat(stimFreqAmps(i,j,1)./3,1,3))
     end
     xlim([0 150])
     set(gca,'YTickLabel','')
-    if i~=numel(widths)
+    if i~=numel(ks)
         set(gca,'XTickLabel','')
     else
         xlabel('time (ms)')

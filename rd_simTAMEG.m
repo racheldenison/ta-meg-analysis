@@ -18,13 +18,13 @@ EndoT = 2;
 EndoWidth = 0.1;
 EndoAmp = 1;
 
-noiseStd = 1;
+noiseStd = 0;
 
 t = 0:1/Fs:dur;
 
-nTrials = 50;
+nTrials = 2;
 
-plotFigs = 0;
+plotFigs = 1;
 
 %% run simulated trials
 for iTrial = 1:nTrials
@@ -33,6 +33,10 @@ for iTrial = 1:nTrials
     erf = makeGaussian(t,erfT,erfWidth,erfAmp) - makeGaussian(t,erfT+0.5*erfWidth,erfWidth,erfAmp);
     attnGain = makeGaussian(t,EndoT,EndoWidth,EndoAmp) + ones(size(t));
     noise = noiseStd.*randn(size(t));
+    
+%     % contrast modulation from target
+%     targetOn = find(t==3):find(t==3.05);
+%     ssvef(targetOn) = ssvef(targetOn)*0.5;
     
     response = (ssvef + erf).*attnGain + noise;
     responses(iTrial,:) = response;
