@@ -34,9 +34,9 @@ for iTrial = 1:nTrials
     attnGain = makeGaussian(t,EndoT,EndoWidth,EndoAmp) + ones(size(t));
     noise = noiseStd.*randn(size(t));
     
-    % contrast modulation from target
-    targetOn = find(t==3):find(t==3.05);
-    ssvef(targetOn) = ssvef(targetOn)*0.5;
+%     % contrast modulation from target
+%     targetOn = find(t==3):find(t==3.05);
+%     ssvef(targetOn) = ssvef(targetOn)*0.5;
     
     response = (ssvef + erf).*attnGain + noise;
     responses(iTrial,:) = response;
