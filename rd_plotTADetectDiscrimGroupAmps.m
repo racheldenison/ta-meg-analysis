@@ -245,7 +245,7 @@ for iPA=1:2
 %     shadedErrorBar(t(t1Tidx), mean(t1PA(iPA,t1Tidx,:),3), t1PADiffSte(t1Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
 end
 ylim(ylims)
-vline(0,'color','k','LineStyle',':');
+vline(0,'color','k','LineStyle',':'); %%%%
 % for iEv = 1:numel(eventTimes)
 %     vline(eventTimes(iEv),'color','k','LineStyle',':');
 % end
@@ -262,7 +262,7 @@ for iPA=1:2
 %     shadedErrorBar(t(t2Tidx), mean(t2PA(iPA,t2Tidx,:),3), t2PADiffSte(t2Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
 end
 ylim(ylims)
-vline(0,'color','k','LineStyle',':');
+vline(0,'color','k','LineStyle',':'); %%%%
 % for iEv = 1:numel(eventTimes)
 %     vline(eventTimes(iEv),'color','k','LineStyle',':');
 % end
