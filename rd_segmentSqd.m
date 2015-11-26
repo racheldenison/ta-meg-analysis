@@ -27,7 +27,7 @@ segmentCushion = 5; % used only if 'selectData'
 
 % experiment info
 nTrigsPerRun = 9; % TAPilot: 9
-nRuns = 9; % TADetectDiscrim: 14; TAPilot: 18
+nRuns = 14; % TADetectDiscrim: 14; TAPilot: 18
 nRunsPerSegment = 1;
 segmentOutNums = []; % [91 1:14]; % default is [], numbers 1:nRuns
 trialDur = 7;
@@ -56,7 +56,8 @@ end
 %% exclude stray triggers
 % manual (different for each subject)
 if nTrigs>nTrigsExpected
-    excludedTrigIdxs = nTrigsPerRun*6 + 1;
+%     excludedTrigIdxs = nTrigsPerRun*6 + 1;
+    excludedTrigIdxs = [1:5]; % TADeDi R1021_20151120 r1-5: [1 20:26]; r6-14: [1:5]
     triggers(excludedTrigIdxs,:) = [];
     nTrigs = size(triggers,1);
 

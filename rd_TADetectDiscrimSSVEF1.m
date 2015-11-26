@@ -2,8 +2,8 @@
 
 %% Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0988_20150904';
-fileBase = 'R0988_TADeDi_r1-8_9.4.15';
+sessionDir = 'R1021_20151120';
+fileBase = 'R1021_TADeDi_11.20.15';
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
@@ -20,9 +20,6 @@ switch analStr
         filename = sprintf('%s/%s_%s.sqd', dataDir, fileBase, analStr);
         savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
         figDir = sprintf('%s/figures/%s', dataDir, analStr);
-end
-if ~exist(figDir,'dir')
-    mkdir(figDir)
 end
 
 behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
@@ -61,8 +58,8 @@ trigNames = {'attT1-T1p-T2p','attT2-T1p-T2p','attT1-T1a-T2p','attT2-T1a-T2p',...
 % for checking triggers:
 % tn = {'1-1','1-2','2-1','2-2','abs','pres','blank','cue'};
 
-saveData = 0;
-saveFigs = 0;
+saveData = 1;
+saveFigs = 1;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
@@ -128,6 +125,11 @@ if excludeTrialsFt
     
     % update figDir
     figDir = [figDir '_ft'];
+end
+
+%% Fig dir
+if ~exist(figDir,'dir')
+    mkdir(figDir)
 end
 
 %% Organize trials into conditions

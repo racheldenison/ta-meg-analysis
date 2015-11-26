@@ -2,8 +2,8 @@
 
 %% setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0988_20150904';
-fileBase = 'R0988_TADeDi_r1-9_9.4.15';
+sessionDir = 'R1021_20151120';
+fileBase = 'R1021_TADeDi_11.20.15';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc', dataDir);
@@ -31,8 +31,9 @@ if isempty(runFiles)
     end
 else
     % we have done preprocessing before, so find the number of runs
-    runTag = rd_getTag(runFiles(end).name,'run');
-    nRuns = str2num(runTag(3:4));
+%     runTag = rd_getTag(runFiles(end).name,'run');
+%     nRuns = str2num(runTag(3:4));
+    nRuns = numel(runFiles);
     runs = 1:nRuns
 end
 
