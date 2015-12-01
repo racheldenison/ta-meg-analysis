@@ -11,14 +11,14 @@ analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
 nTopChannels = 5; % 1, 5, etc.
 
-subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
-    'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
-    'R0898_20150828', 'R0436_20150904', 'R0988_20150904', ...
-      'R1018_20151118', 'R1019_20151118', 'R1021_20151120'};
 % subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 %     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
-%     'R0898_20150828', 'R0436_20150904', 'R1018_20151118', ...
-%     'R1019_20151118','R1021_20151120'};
+%     'R0898_20150828', 'R0436_20150904', 'R0988_20150904', ...
+%       'R1018_20151118', 'R1019_20151118', 'R1021_20151120'};
+subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
+    'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
+    'R0898_20150828', 'R0436_20150904', 'R1018_20151118', ...
+    'R1019_20151118','R1021_20151120'};
 % subjects = {'R0817_20150504', 'R0973_20150727', ...
 %     'R0861_20150813', 'R0504_20150805', 'R0898_20150828'}; % endo
 % subjects = {'R0973_20150727', 'R0861_20150813', 'R0504_20150805', ...
@@ -35,7 +35,7 @@ tstop = 3600; % ms
 t = tstart:tstop;
 eventTimes = [0 500 1500 2100 3100];
 
-normalizeData = 0;
+normalizeOption = 'amp'; % 'none','amp','commonBaseline'
 
 %% Get data
 for iSubject = 1:nSubjects
@@ -84,23 +84,40 @@ for iSubject = 1:nSubjects
 end
 
 %% Normalize to baseline for each subject - common baseline across conds
-if normalizeData
-    bwin = [-500 0];
-    fieldNames = fieldnames(groupData);
-    nFields = numel(fieldNames);
-    for iF = 1:nFields
-        fieldName = fieldNames{iF};
-        vals = groupData.(fieldName);
-        sz = size(vals);
-        tdim = find(sz==numel(t));
-        if tdim==1
-            baseline = nanmean(nanmean(vals(t>=bwin(1) & t<bwin(2),:,:),1),2);
-        else
-            baseline = nanmean(nanmean(vals(:,t>=bwin(1) & t<bwin(2),:),1),2);
+switch normalizeOption
+    case 'commonBaseline'
+        bwin = [-500 0];
+        fieldNames = fieldnames(groupData);
+        nFields = numel(fieldNames);
+        for iF = 1:nFields
+            fieldName = fieldNames{iF};
+            vals = groupData.(fieldName);
+            sz = size(vals);
+            tdim = find(sz==numel(t));
+            if tdim==1
+                baseline = nanmean(nanmean(vals(t>=bwin(1) & t<bwin(2),:,:),1),2);
+            else
+                baseline = nanmean(nanmean(vals(:,t>=bwin(1) & t<bwin(2),:),1),2);
+            end
+            baselineVals = repmat(baseline, sz(1), sz(2));
+            groupData.(fieldName) = (vals - baselineVals)./baselineVals; % change
         end
-        baselineVals = repmat(baseline, sz(1), sz(2));
-        groupData.(fieldName) = (vals - baselineVals)./baselineVals; % change
-    end
+    case 'amp'
+        bwin = [500 3100];
+        vals = groupData.amps;
+        baselineStim = nanmean(nanmean(vals(t>=bwin(1) & t<bwin(2),1:end-1,:),2),1);
+        baselineBlank = nanmean(vals(t>=bwin(1) & t<bwin(2),end,:),1);
+        baseline = baselineStim-baselineBlank;
+        fieldNames = fieldnames(groupData);
+        nFields = numel(fieldNames);
+        for iF = 1:nFields
+            fieldName = fieldNames{iF};
+            vals = groupData.(fieldName);
+            sz = size(vals);
+            blankVals = repmat(baselineBlank, sz(1), sz(2));
+            baselineVals = repmat(baseline, sz(1), sz(2));
+            groupData.(fieldName) = (vals - blankVals)./baselineVals; % relative to average amplitude
+        end
 end
 
 %% Calculate group mean and ste

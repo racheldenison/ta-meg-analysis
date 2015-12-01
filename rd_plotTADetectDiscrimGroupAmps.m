@@ -73,6 +73,9 @@ valsDiff = diff(groupData.ampsAtt);
 valsDiffMean = squeeze(mean(valsDiff,3));
 valsDiffSte = squeeze(std(valsDiff,0,3)./sqrt(nSubjects));
 
+valsDiffAbsMean = squeeze(mean(abs(valsDiff),3));
+valsDiffAbsSte = squeeze(std(abs(valsDiff),0,3)./sqrt(nSubjects));
+
 %% calculate pres-abs ste
 t1PA = cat(1, mean(groupData.ampsPA([1 3],:,:)), mean(groupData.ampsPA([2 4],:,:)));
 t2PA = cat(1, mean(groupData.ampsPA([1 2],:,:)), mean(groupData.ampsPA([3 4],:,:)));
@@ -186,6 +189,34 @@ if saveFigs
     rd_saveAllFigs(fH, figNamesGroup, figPrefix, figDir);
 end
 
+%% group attT1 vs attT2, separated by PA
+valsMean = groupMean.amps';
+valsSte = groupSte.amps';
+colors = allColors.ampsAtt;
+conds = 1:2:nTrigs-1;
+
+fH = [];
+fH(1) = figure;
+for iCond = 1:numel(conds)
+    subplot(2,2,iCond)
+    hold on
+    shadedErrorBar(t, valsMean(conds(iCond),:), valsSte(conds(iCond),:), {'color', colors(1,:), 'LineWidth', 3}, 1)
+    shadedErrorBar(t, valsMean(conds(iCond)+1,:), valsSte(conds(iCond)+1,:), {'color', colors(2,:), 'LineWidth', 3}, 1)
+    for iEv = 1:numel(eventTimes)
+        vline(eventTimes(iEv),'color','k','LineStyle',':');
+    end
+    xlim(xlims)
+    xlabel('time (ms)')
+    ylabel('amplitude')
+    title(paNames{iCond})
+end
+
+if saveFigs
+    figPrefix = sprintf('%s_plot', figStr);
+    figNames = {sprintf('%sAmpsAttByPA', measure)};
+    rd_saveAllFigs(fH, figNames, figPrefix, figDir);
+end
+
 %% group attT2-attT1 with ste error bars
 valsMean = groupMean.ampsAtt;
 colors = allColors.ampsAtt;
@@ -221,10 +252,25 @@ xlabel('time (ms)')
 ylabel('amplitude difference (T2-T1)')
 title(figTitle)
 
+fH(3) = figure;
+set(gcf,'Position',tsFigPos0);
+hold on
+shadedErrorBar(t, valsDiffAbsMean, valsDiffAbsSte, 'k', 1)
+plot(xlims, [0 0], 'k')
+ylim(diffYLimsGroup)
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'color','k','LineStyle',':');
+end
+xlim(xlims)
+xlabel('time (ms)')
+ylabel('|amplitude difference (T2-T1)|')
+title(figTitle)
+
 if saveFigs
     figPrefix = sprintf('%s_plot', figStr);
     figNames = {sprintf('%sAmpsAttGroupSte', measure), ...
-        sprintf('%sAmpsAttDiffGroupSte', measure)};
+        sprintf('%sAmpsAttDiffGroupSte', measure), ...
+        sprintf('%sAmpsAttDiffAbsGroupSte', measure)};
     rd_saveAllFigs(fH, figNames, figPrefix, figDir);
 end
 
