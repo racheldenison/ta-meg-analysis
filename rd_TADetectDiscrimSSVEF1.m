@@ -2,8 +2,8 @@
 
 %% Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R1021_20151120';
-fileBase = 'R1021_TADeDi_11.20.15';
+sessionDir = 'R1029_20151222';
+fileBase = 'R1029_TADeDi_12.22.15';
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
@@ -84,6 +84,11 @@ end
 if saveData
     if ~exist(matDir,'dir')
         mkdir(matDir)
+        
+        prepFile = sprintf('%s/prep/trials_rejected.mat',dataDir);
+        if exist(prepFile,'file')
+            movefile(prepFile,matDir)
+        end 
     end
     save(savename, '-v7.3');
 end

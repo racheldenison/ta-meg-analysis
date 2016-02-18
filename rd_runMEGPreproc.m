@@ -2,12 +2,14 @@
 
 %% setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R1021_20151120';
-fileBase = 'R1021_TADeDi_11.20.15';
+sessionDir = 'R1029_20151222';
+fileBase = 'R1029_TADeDi_12.22.15';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc', dataDir);
 figDir = sprintf('%s/%s/%s', preprocDir, 'figures');
+
+inspectData = 0;
 
 %% make the preproc dir if it doesn't exist
 if ~exist(preprocDir,'dir')
@@ -38,13 +40,15 @@ else
 end
 
 %% view data
-% % just from run 1
-run1Data = sqdread(sprintf('%s/%s', preprocDir, runFiles(1).name));
-run1Data  = run1Data(:,1:157)';
-
-srate = 1000;
-windowSize = [1 5 2560 1392];
-eegplot(run1Data,'srate',srate,'winlength',20,'dispchans',80,'position',windowSize);
+if inspectData
+    % % just from run 1
+    run1Data = sqdread(sprintf('%s/%s', preprocDir, runFiles(1).name));
+    run1Data  = run1Data(:,1:157)';
+    
+    srate = 1000;
+    windowSize = [1 5 2560 1392];
+    eegplot(run1Data,'srate',srate,'winlength',20,'dispchans',80,'position',windowSize);
+end
 
 %% manually set bad channels
 badChannels = []; % in matlab 1-indexing

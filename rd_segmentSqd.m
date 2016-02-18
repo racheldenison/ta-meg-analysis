@@ -57,7 +57,7 @@ end
 % manual (different for each subject)
 if nTrigs>nTrigsExpected
 %     excludedTrigIdxs = nTrigsPerRun*6 + 1;
-    excludedTrigIdxs = [1:5]; % TADeDi R1021_20151120 r1-5: [1 20:26]; r6-14: [1:5]
+    excludedTrigIdxs = [1:8]; % TADeDi R1021_20151120 r1-5: [1 20:26]; r6-14: [1:5]; R1026_20151211: [82:84 112:115]; R0582_20151211 r1: [1:8], r2-14: [10:11 21 94:97]
     triggers(excludedTrigIdxs,:) = [];
     nTrigs = size(triggers,1);
 
