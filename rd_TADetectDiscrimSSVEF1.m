@@ -2,8 +2,8 @@
 
 %% Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R1029_20151222';
-fileBase = 'R1029_TADeDi_12.22.15';
+sessionDir = 'R0817_20150504';
+fileBase = 'R0817_TADeDi_5.4.15';
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
@@ -276,10 +276,11 @@ end
 for ssvefFreq = [30 40]
     % ssvefFreq = 40;
     peakMeansStimAve = squeeze(mean(peakMeans(ssvefFreqs==ssvefFreq,:,1:end-1),3));
+    peakMeansBlank = squeeze(mean(peakMeans(ssvefFreqs==ssvefFreq,:,end),3));
     [channelsRankedAmps, channelsRanked] = sort(peakMeansStimAve,2,'descend');
     channelsRanked(isnan(channelsRankedAmps)) = [];
     channelsRankedAmps(isnan(channelsRankedAmps)) = [];
-    
+
     figure
     bar(peakMeansStimAve)
     text(120, channelsRankedAmps(1)-1, sprintf('top 5 channels:\n%s', num2str(channelsRanked(1:5))))
@@ -293,7 +294,7 @@ for ssvefFreq = [30 40]
         else
             channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
         end
-        save(channelsFileName,'channelsRanked','channelsRankedAmps')
+        save(channelsFileName,'channelsRanked','channelsRankedAmps','peakMeansStimAve','peakMeansBlank')
     end
     if saveFigs
         figPrefix = 'bar';

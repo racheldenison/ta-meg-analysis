@@ -76,6 +76,17 @@ valsDiffSte = squeeze(std(valsDiff,0,3)./sqrt(nSubjects));
 valsDiffAbsMean = squeeze(mean(abs(valsDiff),3));
 valsDiffAbsSte = squeeze(std(abs(valsDiff),0,3)./sqrt(nSubjects));
 
+% generate null distribution by shuffling each subject's time series in time
+nSamples = 1000;
+for iSample = 1:nSamples
+    for iSubject=1:nSubjects
+        valsDiffShuffled(:,iSubject,iSample) = squeeze(shuffle(valsDiff(:,:,iSubject),2));
+    end
+end
+valsDiffShuffledAbsMean = squeeze(nanmean(abs(valsDiffShuffled),2));
+% valsDiffAbsCI = prctile(valsDiffShuffledAbsMean,[2.5 97.5],2);
+valsDiffAbsCI = prctile(valsDiffShuffledAbsMean,95,2);
+
 %% calculate pres-abs ste
 t1PA = cat(1, mean(groupData.ampsPA([1 3],:,:)), mean(groupData.ampsPA([2 4],:,:)));
 t2PA = cat(1, mean(groupData.ampsPA([1 2],:,:)), mean(groupData.ampsPA([3 4],:,:)));

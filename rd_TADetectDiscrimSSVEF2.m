@@ -7,7 +7,8 @@ if nargin==0 || ~exist('exptDir','var')
     fileBase = 'R0988_TADeDi_r1-8_9.4.15';
     analStr = 'ebi'; % '', 'ebi', etc.
     ssvefFreq = 40;
-    nTopChannels = 5; % 1, 5, etc.
+    nTopChannels = 5; % 1, 5, etc. 
+    iqrThresh = []; % 10
 end
 
 topChannels = 1:nTopChannels;
@@ -15,15 +16,29 @@ topChannels = 1:nTopChannels;
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
 
+if ~isempty(nTopChannels) && ~isempty(iqrThresh)
+    error('set either nTopChannels or iqrThresh to empty')
+else
+    if ~isempty(nTopChannels)
+        channelSelection = 'topchannels';
+        selectionStr = spritnf('topChannels%d', numel(topChannels));
+    elseif ~isempty(iqrThresh)
+        channelSelection = 'iqrthresh';
+        selectionStr = spritnf('iqrThresh%d', iqrThresh);
+    else
+        error('set either nTopChannels or iqrThresh to a value for channel selection')
+    end
+end
+
 switch analStr
     case ''
         savename = sprintf('%s/%s_ssvef_workspace.mat', matDir, fileBase);
         channelsFileName = sprintf('%s/channels_%dHz.mat', matDir, ssvefFreq);
-        analysisFileName = sprintf('%s/analysis_%s_topChannels%d_%dHz.mat', matDir, fileBase, numel(topChannels), ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_%s_%s_%dHz.mat', matDir, fileBase, selectionStr, ssvefFreq);
     otherwise
         savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
         channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
-        analysisFileName = sprintf('%s/analysis_%s_%s_topChannels%d_%dHz.mat', matDir, fileBase, analStr, numel(topChannels), ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_%s_%s_%s_%dHz.mat', matDir, fileBase, analStr, selectionStr, ssvefFreq);
 end
 
 %% Get the data
@@ -37,7 +52,14 @@ excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
 
 load(channelsFileName,'channelsRanked');
-channels = channelsRanked(topChannels);
+switch channelSelection
+    case 'topchannels'
+        channels = channelsRanked(topChannels);
+    case 'iqrthresh'
+        channels = find(peakMeansStimAve > median(peakMeansBlank) + iqrThresh*iqr(peakMeansBlank));
+    otherwise
+        error('channelSelection not recognized')
+end
 
 %% Store settings for this analysis
 A.fileBase = fileBase;
@@ -82,9 +104,9 @@ if excludeTrialsFt
     % update analysis file
     switch analStr
         case ''
-            analysisFileName = sprintf('%s/analysis_%s_ft_topChannels%d_%dHz.mat', matDir, fileBase, numel(topChannels), ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_%s_ft_%s_%dHz.mat', matDir, fileBase, selectionStr, ssvefFreq);
         otherwise
-            analysisFileName = sprintf('%s/analysis_%s_%s_ft_topChannels%d_%dHz.mat', matDir, fileBase, analStr, numel(topChannels), ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_%s_%s_ft_%s_%dHz.mat', matDir, fileBase, analStr, selectionStr, ssvefFreq);
     end
 end
 
