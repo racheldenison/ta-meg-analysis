@@ -9,7 +9,7 @@ end
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
-nTopChannels = 5; % 1, 5, etc.
+selectionStr = 'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -17,6 +17,7 @@ subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R1019_20151118','R1021_20151120','R1026_20151211', ...
     'R0852_20151211','R1027_20151216','R1028_20151216',...
     'R1029_20151222'}; % N=16
+
 % subjects = {'R0817_20150504', 'R0973_20150727', ...
 %     'R0861_20150813', 'R0504_20150805', 'R0898_20150828'}; % endo
 % subjects = {'R0973_20150727', 'R0861_20150813', 'R0504_20150805', ...
@@ -24,9 +25,9 @@ subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 
 nSubjects = numel(subjects);
 
-saveFigs = 0;
+saveFigs = 1;
 figDir = sprintf('%s/Group/figures/%s', exptDir, analStr);
-figStr = sprintf('gN%d_%dHz_topChannels%d', nSubjects, ssvefFreq, nTopChannels);
+figStr = sprintf('gN%d_%dHz_%s', nSubjects, ssvefFreq, selectionStr);
 
 tstart = -500; % ms
 tstop = 3600; % ms
@@ -43,12 +44,12 @@ for iSubject = 1:nSubjects
     dataDir = sprintf('%s/%s', exptDir, sessionDir);
     matDir = sprintf('%s/mat', dataDir);
     
-    analysisFile = dir(sprintf('%s/analysis_*_%s_topChannels%d_%dHz.mat', matDir, analStr, nTopChannels, ssvefFreq));
-    
+    analysisFile = dir(sprintf('%s/analysis_*_%s_%s_%dHz.mat', matDir, analStr, selectionStr, ssvefFreq));
+
     if numel(analysisFile)==1
         load(sprintf('%s/%s', matDir, analysisFile.name))
     else
-        error('too many or too few matching analysis files')
+        error('%s: too many or too few matching analysis files', subject)
     end
     
     switch measure

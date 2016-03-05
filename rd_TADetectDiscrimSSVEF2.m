@@ -1,14 +1,15 @@
-function rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels)
+function rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, trialSelection)
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
     exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-    sessionDir = 'R0988_20150904';
-    fileBase = 'R0988_TADeDi_r1-8_9.4.15';
+    sessionDir = 'R0817_20150504';
+    fileBase = 'R0817_TADeDi_5.4.15';
     analStr = 'ebi'; % '', 'ebi', etc.
-    ssvefFreq = 40;
-    nTopChannels = 5; % 1, 5, etc. 
-    iqrThresh = []; % 10
+    ssvefFreq = 30;
+    nTopChannels = []; % 1, 5, etc., or [] for iqrThresh
+    iqrThresh = 10; % 10, or [] for nTopChannels
+    trialSelection = 'all'; % 'all','validCorrect'
 end
 
 topChannels = 1:nTopChannels;
@@ -21,10 +22,10 @@ if ~isempty(nTopChannels) && ~isempty(iqrThresh)
 else
     if ~isempty(nTopChannels)
         channelSelection = 'topchannels';
-        selectionStr = spritnf('topChannels%d', numel(topChannels));
+        channelSelectionStr = sprintf('topChannels%d', numel(topChannels));
     elseif ~isempty(iqrThresh)
         channelSelection = 'iqrthresh';
-        selectionStr = spritnf('iqrThresh%d', iqrThresh);
+        channelSelectionStr = sprintf('iqrThresh%d', iqrThresh);
     else
         error('set either nTopChannels or iqrThresh to a value for channel selection')
     end
@@ -34,11 +35,11 @@ switch analStr
     case ''
         savename = sprintf('%s/%s_ssvef_workspace.mat', matDir, fileBase);
         channelsFileName = sprintf('%s/channels_%dHz.mat', matDir, ssvefFreq);
-        analysisFileName = sprintf('%s/analysis_%s_%s_%dHz.mat', matDir, fileBase, selectionStr, ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_%s_%s_%sTrials_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, ssvefFreq);
     otherwise
         savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
         channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
-        analysisFileName = sprintf('%s/analysis_%s_%s_%s_%dHz.mat', matDir, fileBase, analStr, selectionStr, ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_%s_%s_%s_%sTrials_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, ssvefFreq);
 end
 
 %% Get the data
@@ -51,7 +52,7 @@ saveFigs = 1;
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
 
-load(channelsFileName,'channelsRanked');
+load(channelsFileName);
 switch channelSelection
     case 'topchannels'
         channels = channelsRanked(topChannels);
@@ -59,6 +60,10 @@ switch channelSelection
         channels = find(peakMeansStimAve > median(peakMeansBlank) + iqrThresh*iqr(peakMeansBlank));
     otherwise
         error('channelSelection not recognized')
+end
+if isempty(channels)
+    fprintf('No channels found for %s iqrThresh %d Hz ... exiting.', sessionDir, ssvefFreq)
+    return
 end
 
 %% Store settings for this analysis
@@ -104,13 +109,15 @@ if excludeTrialsFt
     % update analysis file
     switch analStr
         case ''
-            analysisFileName = sprintf('%s/analysis_%s_ft_%s_%dHz.mat', matDir, fileBase, selectionStr, ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_%s_ft_%s_%sTrials_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, ssvefFreq);
         otherwise
-            analysisFileName = sprintf('%s/analysis_%s_%s_ft_%s_%dHz.mat', matDir, fileBase, analStr, selectionStr, ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_%s_%s_ft_%s_%sTrials_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, ssvefFreq);
     end
 end
 
 %% Make figDir if needed
+figDir = sprintf('%s_%s_%sTrials', figDir, channelSelectionStr, trialSelection);
+
 if ~exist(figDir,'dir') && saveFigs
     mkdir(figDir)
 end
@@ -119,9 +126,19 @@ end
 cueCondIdx = strcmp(behav.responseData_labels, 'cue condition');
 t1CondIdx = strcmp(behav.responseData_labels, 'target type T1');
 t2CondIdx = strcmp(behav.responseData_labels, 'target type T2');
+correctIdx = strcmp(behav.responseData_labels, 'correct');
 
 blankCond = 1;
-cueConds = {[2 3], [4 5]}; % cue T1, cue T2
+switch trialSelection
+    case 'validCorrect'
+        cueConds = {2, 5}; % cue T1 valid (1-1), cue T2 valid (2-2)
+        trigDataCorrect = trigData; % make a copy so we use it for condData but not blankData
+        trigDataCorrect(:,:,behav.responseData_all(:,correctIdx)~=1)=NaN;
+    case 'all'
+        cueConds = {[2 3], [4 5]}; % cue T1, cue T2
+    otherwise
+        error('trialSelection not recognized')
+end
 t1Conds = {[1 2], 0}; % present, absent
 t2Conds = {[1 2], 0}; % present, absent
 
@@ -146,7 +163,15 @@ for iCue = 1:numel(cueConds)
             end
             
             w = sum([wCue wT1 wT2],2)==3;
-            condData(:,:,:,iCue,iT1,iT2) = trigData(:,:,w);
+            
+            switch trialSelection
+                case 'all'
+                    condData(:,:,:,iCue,iT1,iT2) = trigData(:,:,w);
+                case 'validCorrect'
+                    condData(:,:,:,iCue,iT1,iT2) = trigDataCorrect(:,:,w);
+                otherwise
+                    error('trialSelection not recognized')
+            end
         end
     end
 end

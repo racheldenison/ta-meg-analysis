@@ -1,9 +1,10 @@
+function rd_TADetectDiscrimSSVEF1(sessionDir)
 % rd_TADetectDiscrimSSVEF1.m
 
 %% Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0817_20150504';
-fileBase = 'R0817_TADeDi_5.4.15';
+% sessionDir = 'R0817_20150504';
+fileBase = sessionDirToFileBase(sessionDir);
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
@@ -58,8 +59,8 @@ trigNames = {'attT1-T1p-T2p','attT2-T1p-T2p','attT1-T1a-T2p','attT2-T1a-T2p',...
 % for checking triggers:
 % tn = {'1-1','1-2','2-1','2-2','abs','pres','blank','cue'};
 
-saveData = 1;
-saveFigs = 1;
+saveData = 0;
+saveFigs = 0;
 
 % load data header for plotting topologies
 load data/data_hdr.mat

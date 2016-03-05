@@ -4,13 +4,17 @@
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi'; % '', 'ebi', etc.
 ssvefFreqs = [30 40];
-nTopChs = [1 5]; % 1, 5, etc.
+nTopChs = 5; % 1, 5, [1 5], etc.
+iqrThreshs = [];
+trialSelection = 'validCorrect'; % 'all','validCorrect'
 
-% subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
-%     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
-%     'R0898_20150828', 'R0436_20150904', 'R0988_20150904', ...
-%     'R1021_20151120','R1026_20151211'};
-subjects = {'R1029_20151222'};
+subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
+    'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
+    'R0898_20150828', 'R0436_20150904', 'R1018_20151118', ...
+    'R1019_20151118','R1021_20151120','R1026_20151211', ...
+    'R0852_20151211','R1027_20151216','R1028_20151216',...
+    'R1029_20151222'}; % N=16
+% subjects = subjects(8:end);
 nSubjects = numel(subjects);
 
 %% run analysis
@@ -28,11 +32,27 @@ for iSubject = 1:nSubjects
     
     % run freq/top channels combos
     for ssvefFreq = ssvefFreqs
-        for nTopChannels = nTopChs
-            rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
-                analStr, ssvefFreq, nTopChannels);
-            close all;
+        
+        if ~isempty(nTopChs) && ~isempty(iqrThreshs)
+            error('set either nTopChs or iqrThreshs to empty')
+        else
+            if ~isempty(nTopChs)
+                for nTopChannels = nTopChs
+                    rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
+                        analStr, ssvefFreq, nTopChannels, [], trialSelection);
+                    close all;
+                end
+            elseif ~isempty(iqrThreshs)
+                for iqrThresh = iqrThreshs
+                    rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
+                        analStr, ssvefFreq, [], iqrThresh, trialSelection);
+                    close all;
+                end
+            else
+                error('set either nTopChannels or iqrThresh to a value for channel selection')
+            end
         end
+        
     end
 end
 fprintf('done.\n')
