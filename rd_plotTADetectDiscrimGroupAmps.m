@@ -93,6 +93,17 @@ t2PA = cat(1, mean(groupData.ampsPA([1 2],:,:)), mean(groupData.ampsPA([3 4],:,:
 t1PADiffSte = squeeze(std(diff(t1PA),0,3)./sqrt(nSubjects)); % T1
 t2PADiffSte = squeeze(std(diff(t2PA),0,3)./sqrt(nSubjects)); % T2
 
+%% calculate pres/abs x att/unattend for each target
+t1PAAU(:,1) = mean(groupMean.amps(:,[1 5]),2); % present/attended
+t1PAAU(:,2) = mean(groupMean.amps(:,[2 6]),2); % present/unattended
+t1PAAU(:,3) = mean(groupMean.amps(:,[3 7]),2); % absent/attended
+t1PAAU(:,4) = mean(groupMean.amps(:,[4 8]),2); % absent/unattended
+
+t2PAAU(:,1) = mean(groupMean.amps(:,[2 4]),2);
+t2PAAU(:,2) = mean(groupMean.amps(:,[1 3]),2);
+t2PAAU(:,3) = mean(groupMean.amps(:,[6 8]),2);
+t2PAAU(:,4) = mean(groupMean.amps(:,[5 7]),2);
+
 %% indiv subjects ts
 fH = [];
 for iF = 1:nFields
@@ -330,3 +341,43 @@ ylabel('amplitude')
 title('T2')
 
 rd_supertitle(figTitle)
+
+
+fH(2) = figure;
+set(gcf,'Position',tsFigPos0);
+subplot(1,2,1)
+hold on
+plot(twin(1):twin(end), t1PAAU(t1Tidx,:))
+ylim(ylims)
+vline(0,'color','k','LineStyle',':'); 
+xlim(twin)
+% xlim([t(t1Tidx(1)) t(t1Tidx(end))])
+xlabel('time (ms)')
+ylabel('amplitude')
+title('T1')
+
+subplot(1,2,2)
+hold on
+plot(twin(1):twin(end), t2PAAU(t2Tidx,:))
+ylim(ylims)
+vline(0,'color','k','LineStyle',':');
+xlim(twin)
+% xlim([t(t2Tidx(1)) t(t2Tidx(end))])
+xlabel('time (ms)')
+ylabel('amplitude')
+title('T2')
+legend('P-att','P-unatt','A-att','A-unatt')
+
+rd_supertitle(figTitle)
+
+
+paau = (t1PAAU(t1Tidx,:) + t2PAAU(t2Tidx,:))/2;
+fH(3) = figure;
+plot(twin(1):twin(end),paau)
+vline(0,'color','k','LineStyle',':');
+legend('P-att','P-unatt','A-att','A-unatt')
+xlabel('time (ms)')
+ylabel('amplitude')
+title('T1 & T2')
+box off
+
