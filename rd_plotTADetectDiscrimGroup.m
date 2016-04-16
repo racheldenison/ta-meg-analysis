@@ -2,7 +2,7 @@ function rd_plotTADetectDiscrimGroup(measure)
 
 %% Args
 if ~exist('measure','var')
-    measure = 'w'; % ts w h tf stf
+    measure = 'stf'; % ts w h tf stf
 end
 
 %% Setup
