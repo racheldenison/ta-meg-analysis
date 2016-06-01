@@ -93,7 +93,7 @@ t2PA = cat(1, mean(groupData.ampsPA([1 2],:,:)), mean(groupData.ampsPA([3 4],:,:
 t1PADiffSte = squeeze(std(diff(t1PA),0,3)./sqrt(nSubjects)); % T1
 t2PADiffSte = squeeze(std(diff(t2PA),0,3)./sqrt(nSubjects)); % T2
 
-%% calculate pres/abs x att/unattend for each target
+%% calculate pres/abs x att/unattend for each target, groupMean
 t1PAAU(:,1) = mean(groupMean.amps(:,[1 5]),2); % present/attended
 t1PAAU(:,2) = mean(groupMean.amps(:,[2 6]),2); % present/unattended
 t1PAAU(:,3) = mean(groupMean.amps(:,[3 7]),2); % absent/attended
@@ -103,6 +103,39 @@ t2PAAU(:,1) = mean(groupMean.amps(:,[2 4]),2);
 t2PAAU(:,2) = mean(groupMean.amps(:,[1 3]),2);
 t2PAAU(:,3) = mean(groupMean.amps(:,[6 8]),2);
 t2PAAU(:,4) = mean(groupMean.amps(:,[5 7]),2);
+
+%% calculate pres/abs x att/unattend for each target, groupData
+t1PAAUData(:,1,:) = mean(groupData.amps(:,[1 5],:),2); % present/attended
+t1PAAUData(:,2,:) = mean(groupData.amps(:,[2 6],:),2); % present/unattended
+t1PAAUData(:,3,:) = mean(groupData.amps(:,[3 7],:),2); % absent/attended
+t1PAAUData(:,4,:) = mean(groupData.amps(:,[4 8],:),2); % absent/unattended
+
+t2PAAUData(:,1,:) = mean(groupData.amps(:,[2 4],:),2);
+t2PAAUData(:,2,:) = mean(groupData.amps(:,[1 3],:),2);
+t2PAAUData(:,3,:) = mean(groupData.amps(:,[6 8],:),2);
+t2PAAUData(:,4,:) = mean(groupData.amps(:,[5 7],:),2);
+
+%% calculate mean amp over a window
+twin = [-200 200];
+t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
+t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
+winamp(:,1,:) = mean(t1PAAUData(t1Tidx,:,:),1); % T1
+winamp(:,2,:) = mean(t2PAAUData(t2Tidx,:,:),1); % T2
+winampAU(1,:) = mean(winamp(3,:,:),2); % absent/attended
+winampAU(2,:) = mean(winamp(4,:,:),2); % absent/unattended
+enhancers = subjects(diff(winampAU)<0);
+suppressers = subjects(diff(winampAU)>0);
+
+% figure
+% for i = 1:16
+%     subplot(4,4,i)
+%     bar(winamp(:,:,i)')
+% end
+% legend('P-att','P-unatt','A-att','A-unatt')
+% 
+% figure
+% bar(winampAU')
+% legend('A-att','A-unatt')
 
 %% indiv subjects ts
 fH = [];

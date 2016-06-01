@@ -48,6 +48,10 @@ set(gcf,'Position',ts2FigPos)
 trigMean = mean(groupMean.tsAmps,2);
 amps = mean(groupMean.fAmps,2);
 
+% mean across attention conditions
+tsAttT1 = mean(trigMean(:,plotOrder(1:4)),2);
+tsAttT2 = mean(trigMean(:,plotOrder(5:8)),2);
+
 % time
 subplot(3,1,1)
 set(gca,'ColorOrder',trigColors)
@@ -129,6 +133,20 @@ xlabel('frequency (Hz)')
 ylabel('\Delta amplitude')
 rd_supertitle(figTitle)
 rd_raiseAxis(gca);
+
+fH(3) = figure;
+hold on
+plot(t, tsAttT1, 'color', mean(trigColors(1:4,:)))
+plot(t, tsAttT2, 'color', mean(trigColors(5:8,:)))
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+xlim([t(1) t(end)])
+xlabel('time (ms)')
+ylabel('amplitude')
+title(figTitle)
+legend('attT1','attT2')
+
 
 if saveFigs
     figPrefix = sprintf('%s_plot', figStr);
