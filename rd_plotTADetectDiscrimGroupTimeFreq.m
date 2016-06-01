@@ -85,6 +85,14 @@ rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('attT2 - attT1')
+% for iAtt = 1:size(tfAmpsAtt,3)
+%     subplot(2,3,3+iAtt)
+%     imagesc(tfAmpsAtt(:,:,iAtt)-tfAmps(:,:,end),clims) % vs blank
+%     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+%     xlabel('time (s)')
+%     ylabel('frequency (Hz)')
+%     title(attNames{iAtt})
+% end
 rd_supertitle(figTitle);
 rd_raiseAxis(gca);
 
