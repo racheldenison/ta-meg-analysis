@@ -115,6 +115,10 @@ t2PAAUData(:,2,:) = mean(groupData.amps(:,[1 3],:),2);
 t2PAAUData(:,3,:) = mean(groupData.amps(:,[6 8],:),2);
 t2PAAUData(:,4,:) = mean(groupData.amps(:,[5 7],:),2);
 
+t1PAAUSte = std(t1PAAUData,0,3)/sqrt(nSubjects);
+t2PAAUSte = std(t2PAAUData,0,3)/sqrt(nSubjects);
+paauSte = std(t2PAAUData,0,3)/sqrt(nSubjects);
+
 %% calculate mean amp over a window
 twin = [-200 200];
 t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
@@ -125,6 +129,37 @@ winampAU(1,:) = mean(winamp(3,:,:),2); % absent/attended
 winampAU(2,:) = mean(winamp(4,:,:),2); % absent/unattended
 enhancers = subjects(diff(winampAU)<0);
 suppressers = subjects(diff(winampAU)>0);
+
+% att-unatt consistency (correlation across subjects for P and A)
+a1(:,:,1) = t1PAAUData(:,1,:)-t1PAAUData(:,2,:);
+a1(:,:,2) = t1PAAUData(:,3,:)-t1PAAUData(:,4,:);
+
+a2(:,:,1) = t2PAAUData(:,1,:)-t2PAAUData(:,2,:);
+a2(:,:,2) = t2PAAUData(:,3,:)-t2PAAUData(:,4,:);
+
+for i = 1:numel(t)
+    temp = corr(squeeze(a1(i,:,:)));
+    a1corr(i) = temp(1,2);
+    temp = corr(squeeze(a2(i,:,:)));
+    a2corr(i) = temp(1,2);
+end
+
+twin = [-200 700];
+t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
+t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
+
+a1corr = a1corr(t1Tidx);
+a2corr = a2corr(t2Tidx);
+
+figure
+hold on
+plot(twin(1):twin(end),a1corr)
+plot(twin(1):twin(end),a2corr,'r')
+plot(twin,[0 0],'k:')
+vline(0,'color','k','LineStyle',':');
+xlabel('time (ms)')
+ylabel('correlation between present att-unatt and absent att-unatt')
+legend('T1','T2')
 
 % figure
 % for i = 1:16
@@ -343,13 +378,9 @@ subplot(1,2,1)
 hold on
 for iPA=1:2
     shadedErrorBar(twin(1):twin(end), mean(t1PA(iPA,t1Tidx,:),3), t1PADiffSte(t1Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
-%     shadedErrorBar(t(t1Tidx), mean(t1PA(iPA,t1Tidx,:),3), t1PADiffSte(t1Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
 end
 ylim(ylims)
-vline(0,'color','k','LineStyle',':'); %%%%
-% for iEv = 1:numel(eventTimes)
-%     vline(eventTimes(iEv),'color','k','LineStyle',':');
-% end
+vline(0,'color','k','LineStyle',':');
 xlim(twin)
 % xlim([t(t1Tidx(1)) t(t1Tidx(end))])
 xlabel('time (ms)')
@@ -360,13 +391,9 @@ subplot(1,2,2)
 hold on
 for iPA=1:2
     shadedErrorBar(twin(1):twin(end), mean(t2PA(iPA,t2Tidx,:),3), t2PADiffSte(t2Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
-%     shadedErrorBar(t(t2Tidx), mean(t2PA(iPA,t2Tidx,:),3), t2PADiffSte(t2Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
 end
 ylim(ylims)
-vline(0,'color','k','LineStyle',':'); %%%%
-% for iEv = 1:numel(eventTimes)
-%     vline(eventTimes(iEv),'color','k','LineStyle',':');
-% end
+vline(0,'color','k','LineStyle',':');
 xlim(twin)
 % xlim([t(t2Tidx(1)) t(t2Tidx(end))])
 xlabel('time (ms)')
@@ -375,13 +402,17 @@ title('T2')
 
 rd_supertitle(figTitle)
 
-
+% PAAU
 fH(2) = figure;
+colors = get(gca,'ColorOrder');
 set(gcf,'Position',tsFigPos0);
 subplot(1,2,1)
 hold on
 plot(twin(1):twin(end), t1PAAU(t1Tidx,:))
-ylim(ylims)
+for iPAAU = 1:4
+    shadedErrorBar(twin(1):twin(end), t1PAAU(t1Tidx,iPAAU), t1PAAUSte(t1Tidx,iPAAU), {'color', colors(iPAAU,:), 'LineWidth', 3}, 1)
+end
+% ylim(ylims)
 vline(0,'color','k','LineStyle',':'); 
 xlim(twin)
 % xlim([t(t1Tidx(1)) t(t1Tidx(end))])
@@ -392,7 +423,10 @@ title('T1')
 subplot(1,2,2)
 hold on
 plot(twin(1):twin(end), t2PAAU(t2Tidx,:))
-ylim(ylims)
+for iPAAU = 1:4
+    shadedErrorBar(twin(1):twin(end), t2PAAU(t2Tidx,iPAAU), t2PAAUSte(t2Tidx,iPAAU), {'color', colors(iPAAU,:), 'LineWidth', 3}, 1)
+end
+% ylim(ylims)
 vline(0,'color','k','LineStyle',':');
 xlim(twin)
 % xlim([t(t2Tidx(1)) t(t2Tidx(end))])
@@ -403,7 +437,6 @@ legend('P-att','P-unatt','A-att','A-unatt')
 
 rd_supertitle(figTitle)
 
-
 paau = (t1PAAU(t1Tidx,:) + t2PAAU(t2Tidx,:))/2;
 fH(3) = figure;
 plot(twin(1):twin(end),paau)
@@ -413,4 +446,28 @@ xlabel('time (ms)')
 ylabel('amplitude')
 title('T1 & T2')
 box off
+
+paauData = (t1PAAUData(t1Tidx,:,:) + t2PAAUData(t2Tidx,:,:))/2;
+paauPresAUDiff = squeeze(paauData(:,1,:) - paauData(:,2,:));
+figure
+set(gcf,'Position',tf9FigPos)
+for iSubject = 1:nSubjects
+    subplot(nrows,ncols,iSubject)
+    hold on
+    plot(twin(1):twin(end), paauData(:,1:2,iSubject), 'LineWidth', 2)
+%     xlim(xlims)
+%     ylim(diffYLims)
+    vline(0,'color','k','LineStyle',':');
+    if iSubject==1
+        xlabel('time (ms)')
+%         ylabel('amplitude difference (T2-T1)')
+    end
+    title(und2space(subjects{iSubject}))
+end
+
+figure
+hold on
+plot(twin([1 end]), [0 0], 'k:')
+shadedErrorBar(twin(1):twin(end), mean(paauPresAUDiff,2), std(paauPresAUDiff,0,2)/sqrt(nSubjects), {'color', 'k', 'LineWidth', 3}, 1)
+vline(0,'color','k','LineStyle',':');
 

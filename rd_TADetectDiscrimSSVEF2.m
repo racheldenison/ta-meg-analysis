@@ -7,8 +7,9 @@ if nargin==0 || ~exist('exptDir','var')
     fileBase = 'R0817_TADeDi_5.4.15';
     analStr = 'ebi'; % '', 'ebi', etc.
     ssvefFreq = 30;
-    nTopChannels = []; % 1, 5, etc., or [] for iqrThresh
-    iqrThresh = 10; % 10, or [] for nTopChannels
+    nTopChannels = 10; % 1, 5, etc., or [] for iqrThresh
+    iqrThresh = []; % 10, or [] for nTopChannels
+    weightChannels = 1; % weight channels according to average SSVEF amp
     trialSelection = 'all'; % 'all','validCorrect'
 end
 

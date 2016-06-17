@@ -1,11 +1,11 @@
 function rd_plotTADetectDiscrimGroup(measure)
 
-%% Args
+% Args
 if ~exist('measure','var')
     measure = 'w'; % ts w h tf stf
 end
 
-%% Setup
+% Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
@@ -57,7 +57,7 @@ tstop = 3600; % ms
 t = tstart:tstop;
 eventTimes = [0 500 1500 2100 3100];
 
-normalizeOption = 'none'; % 'none','amp','commonBaseline'
+normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
 
 %% Get data
 for iSubject = 1:nSubjects
@@ -139,6 +139,20 @@ switch normalizeOption
             blankVals = repmat(baselineBlank, sz(1), sz(2));
             baselineVals = repmat(baseline, sz(1), sz(2));
             groupData.(fieldName) = (vals - blankVals)./baselineVals; % relative to average amplitude
+        end
+    case 'stim'
+        bwin = [500 3100];
+        vals = groupData.amps;
+        baselineStim = nanmean(nanmean(vals(t>=bwin(1) & t<bwin(2),1:end-1,:),2),1);
+        baseline = baselineStim;
+        fieldNames = fieldnames(groupData);
+        nFields = numel(fieldNames);
+        for iF = 1:nFields
+            fieldName = fieldNames{iF};
+            vals = groupData.(fieldName);
+            sz = size(vals);
+            baselineVals = repmat(baseline, sz(1), sz(2));
+            groupData.(fieldName) = vals./baselineVals; % relative to average stim 
         end
 end
 
