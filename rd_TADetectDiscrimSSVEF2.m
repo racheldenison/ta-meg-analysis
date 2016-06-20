@@ -9,7 +9,7 @@ if nargin==0 || ~exist('exptDir','var')
     ssvefFreq = 30;
     nTopChannels = 10; % 1, 5, etc., or [] for iqrThresh
     iqrThresh = []; % 10, or [] for nTopChannels
-    weightChannels = 1; % weight channels according to average SSVEF amp
+    weightChannels = 1; % weight channels according to average SSVEF amp - only works for top channels
     trialSelection = 'all'; % 'all','validCorrect'
 end
 
@@ -67,6 +67,19 @@ if isempty(channels)
     return
 end
 
+% channel weights
+if weightChannels && strcmp(channelSelection,'topchannels')
+    chw = (channelsRankedAmps(topChannels)/channelsRankedAmps(1))';
+    wstr = 'W';
+    wstr2 = 'W_';
+    wstrt = ' W';
+else
+    chw = ones(size(topChannels))';
+    wstr = '';
+    wstr2 = '';
+    wstrt = '';
+end
+
 %% Store settings for this analysis
 A.fileBase = fileBase;
 A.analStr = analStr;
@@ -74,6 +87,7 @@ A.excludeTrialsFt = excludeTrialsFt;
 A.excludeSaturatedEpochs = excludeSaturatedEpochs;
 A.ssvefFreq = ssvefFreq;
 A.channels = channels;
+A.chw = chw;
 A.Fs = Fs;
 A.t = t;
 if ~exist('eventTimes','var')
@@ -230,6 +244,11 @@ tf3FigPos = [200 475 980 330];
 set(0,'defaultLineLineWidth',1)
 
 %% Time series and FFT
+trigMeanMean = squeeze(rd_wmean(trigMean,chw,2));
+ampsMean = squeeze(rd_wmean(amps,chw,2));
+A.trigMeanMean = trigMeanMean;
+A.ampsMean = ampsMean;
+
 figure
 set(gcf,'Position',ts2FigPos)
 
@@ -237,20 +256,20 @@ set(gcf,'Position',ts2FigPos)
 subplot(3,1,1)
 set(gca,'ColorOrder',trigColors)
 hold all
-plot(t, squeeze(mean(trigMean(:,:,plotOrder),2)))
+plot(t, trigMeanMean(:,plotOrder))
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
 xlim([t(1) t(end)])
 xlabel('time (ms)')
 ylabel('amplitude')
-title(['channel' sprintf(' %d', channels)])
+title(['channel' sprintf(' %d', channels) wstrt])
 
 % frequency
 subplot(3,1,2)
 set(gca,'ColorOrder',trigColors)
 hold all
-plot(repmat(f',1,nTrigs), squeeze(mean(amps(:,:,plotOrder),2)))
+plot(f, ampsMean(:,plotOrder))
 xlim([1 200])
 ylim([0 20])
 xlabel('Frequency (Hz)')
@@ -260,8 +279,8 @@ legend(trigNames(plotOrder))
 subplot(3,1,3)
 set(gca,'ColorOrder',[.66 .5 .78; trigColors(end,:)])
 hold all
-plot(f, squeeze(mean(mean(amps(:,:,1:end-1),3),2)))
-plot(f, squeeze(mean(amps(:,:,end),2)))
+plot(f, mean(ampsMean(:,1:end-1),2))
+plot(f, ampsMean(:,end))
 xlim([1 200])
 ylim([0 20])
 xlabel('Frequency (Hz)')
@@ -272,16 +291,16 @@ if saveFigs
     if numel(channels)==1
         figPrefix = sprintf('plot_ch%d', channels);
     else
-        figPrefix = ['plot_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end))];
+        figPrefix = ['plot_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end)) wstr];
     end
     rd_saveAllFigs(gcf, {'tsFFT'}, figPrefix, figDir)
 end
 
 %% Trial average for target present vs. absent, for a single channel
-pp = mean(mean(trigMean(:,:,1:2),3),2);
-pa = mean(mean(trigMean(:,:,5:6),3),2);
-ap = mean(mean(trigMean(:,:,3:4),3),2);
-aa = mean(mean(trigMean(:,:,7:8),3),2);
+pp = mean(trigMeanMean(:,1:2),2);
+pa = mean(trigMeanMean(:,5:6),2);
+ap = mean(trigMeanMean(:,3:4),2);
+aa = mean(trigMeanMean(:,7:8),2);
 
 targetWindow = [-100 500];
 t1Window = t>=eventTimes(3) + targetWindow(1) & t<=eventTimes(3) + targetWindow(2);
@@ -324,7 +343,7 @@ for iPA = 1:2
     ylabel('amplitude')
     title(names{iPA})
 end
-rd_supertitle(['channel' sprintf(' %d', channels)])
+rd_supertitle(['channel' sprintf(' %d', channels) wstrt])
 rd_raiseAxis(gca);
 
 fH(2) = figure;
@@ -343,14 +362,14 @@ plot(targetF, targetAmps)
 xlim([0 150])
 xlabel('frequency (Hz)')
 ylabel('\Delta amplitude')
-rd_supertitle(['channel' sprintf(' %d', channels)])
+rd_supertitle(['channel' sprintf(' %d', channels) wstrt])
 rd_raiseAxis(gca);
 
 if saveFigs
     if numel(channels)==1
         figPrefix = sprintf('plot_ch%d', channels);
     else
-        figPrefix = ['plot_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end))];
+        figPrefix = ['plot_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end)) wstr];
     end
     rd_saveAllFigs(fH, {'targetPATrialAve','targetPATrialAveDiff'}, figPrefix, figDir)
 end
@@ -385,7 +404,7 @@ for iTrig = 1:nTrigs
 %     wAmps0(:,:,iTrig) = wAmpNorm';
     wAmps0(:,:,iTrig) = wAmp';
 end
-wAmps = squeeze(mean(wAmps0,2)); % mean across channels
+wAmps = squeeze(rd_wmean(wAmps0,chw,2)); % mean across channels
 
 % attT1T2 means
 wAmpsAtt(1,:) = mean(wAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
@@ -420,7 +439,7 @@ plot(t, mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'Line
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('wavelet amp')
-title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 % condition subplots
 fH(2) = figure;
@@ -436,7 +455,7 @@ for iTrig = 1:(nTrigs-1)/2
         vline(eventTimes(iEv),'k');
     end
     if iTrig==1
-        title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+        title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
     end
 end
 xlabel('time (ms)')
@@ -457,10 +476,10 @@ end
 legend('T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a')
 xlabel('time (ms)')
 ylabel('wavelet amp')
-title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 if saveFigs
-    figPrefix = ['plot_ch' sprintf('%d_', channels) sprintf('%dHz', ssvefFreq)];
+    figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
     rd_saveAllFigs(fH, {'waveletTrialAve','waveletTrialAveByCond','waveletTrialAvePA'}, figPrefix, figDir)
 end
 
@@ -470,7 +489,7 @@ hAmps = [];
 for iTrig = 1:nTrigs
     data = trigMean(:,:,iTrig)'; % channels by samples
     dataF = ft_preproc_bandpassfilter(data,Fs,Fbp);
-    dataFH = abs(hilbert(mean(dataF,1))); % average bandpassed time series across channels
+    dataFH = abs(hilbert(rd_wmean(dataF,chw))); % average bandpassed time series across channels
     hAmps(:,iTrig) = dataFH; 
 end
 
@@ -504,7 +523,7 @@ plot(t, mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'Line
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('Hilbert amp')
-title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 % condition subplots
 fH(2) = figure;
@@ -520,7 +539,7 @@ for iTrig = 1:(nTrigs-1)/2
     end
 %     ylim([-1 2.5])
     if iTrig==1
-        title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+        title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
     end
 end
 xlabel('time (ms)')
@@ -540,7 +559,7 @@ end
 legend('T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a')
 xlabel('time (ms)')
 ylabel('Hilbert amp')
-title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 % attend T1/T2 with condition error bars
 mean1 = mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
@@ -559,10 +578,10 @@ end
 legend('attend T1','attend T2')
 xlabel('time (ms)')
 ylabel('Hilbert amp')
-title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels)])
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 if saveFigs
-    figPrefix = ['plot_ch' sprintf('%d_', channels) sprintf('%dHz', ssvefFreq)];
+    figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
     rd_saveAllFigs(fH, {'hilbertTrialAve','hilbertTrialAveByCond','hilbertTrialAvePA','hilbertTrialAveAttT1T2Error'}, figPrefix, figDir)
 end
 
@@ -577,7 +596,7 @@ for iTrig = 1:nTrigs
     [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(data, t/1000, ...
         'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
         'taper', taper, 'dimord', 'chan_time_freqtap');
-    specAmp = squeeze(mean(abs(spectrum),1)); % mean across channels
+    specAmp = squeeze(rd_wmean(abs(spectrum),chw,1)); % mean across channels
     tfAmps(:,:,iTrig) = specAmp';
 end
 
@@ -622,7 +641,7 @@ for iTrig = 1:nTrigs
     end
     title(trigNames{iTrig})
 end
-rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
 rd_raiseAxis(gca);
 
 fH(2) = figure;
@@ -642,7 +661,7 @@ rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('attT2 - attT1')
-rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
 rd_raiseAxis(gca);
 
 fH(3) = figure;
@@ -674,14 +693,14 @@ rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('T2 vs. T1 P-A')
-rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
 rd_raiseAxis(gca);
 
 if saveFigs
     if numel(channels)==1
         figPrefix = sprintf('im_ch%d', channels);
     else
-        figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end))];
+        figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end)) wstr];
     end
     rd_saveAllFigs(fH, {'timeFreqByCond','timeFreqAtt','timeFreqPA'}, figPrefix, figDir)
 end
@@ -701,7 +720,7 @@ for iCh = 1:numel(channels)
             'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
             'taper', taper, 'dimord', 'chan_time_freqtap');
         specAmp = squeeze(nanmean(abs(spectrum),1)); % mean across trials
-        tfSingleAmps0(:,:,iTrig,iCh) = specAmp';
+        tfSingleAmps0(iCh,:,:,iTrig) = specAmp';
     end
 end
 
@@ -713,11 +732,11 @@ for iCh = 1:numel(channels)
         'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
         'taper', taper, 'dimord', 'chan_time_freqtap');
     specAmp = squeeze(nanmean(abs(spectrum),1)); % mean across trials
-    tfSingleAmps0(:,:,nTrigs,iCh) = specAmp';
+    tfSingleAmps0(iCh,:,:,nTrigs) = specAmp';
 end
 
 % mean across channels
-tfSingleAmps = mean(tfSingleAmps0, 4);
+tfSingleAmps = squeeze(rd_wmean(tfSingleAmps0,chw,1));
 
 tfSingleAmpsAtt(:,:,1) = nanmean(tfSingleAmps(:,:,plotOrder(1:(nTrigs-1)/2)),3);
 tfSingleAmpsAtt(:,:,2) = nanmean(tfSingleAmps(:,:,plotOrder((nTrigs-1)/2+1:end-1)),3);
@@ -760,7 +779,7 @@ for iTrig = 1:nTrigs
     end
     title(trigNames{iTrig})
 end
-rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
 rd_raiseAxis(gca);
 
 fH(2) = figure;
@@ -780,7 +799,7 @@ rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('attT2 - attT1')
-rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
 rd_raiseAxis(gca);
 
 fH(3) = figure;
@@ -812,14 +831,14 @@ rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('T2 vs. T1 P-A')
-rd_supertitle(['channel' sprintf(' %d', channels)]);
+rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
 rd_raiseAxis(gca);
 
 if saveFigs
     if numel(channels)==1
         figPrefix = sprintf('im_ch%d', channels);
     else
-        figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end))];
+        figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end)) wstr];
     end
     rd_saveAllFigs(fH, {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA'}, figPrefix, figDir)
 end
