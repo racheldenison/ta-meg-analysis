@@ -120,7 +120,7 @@ t2PAAUSte = std(t2PAAUData,0,3)/sqrt(nSubjects);
 paauSte = std(t2PAAUData,0,3)/sqrt(nSubjects);
 
 %% calculate mean amp over a window
-twin = [-200 0]; % [-200 200]
+twin = [-200 200]; % [-200 200]
 t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
 t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
 winamp(:,1,:) = mean(t1PAAUData(t1Tidx,:,:),1); % T1
@@ -129,6 +129,13 @@ winampAU(1,:) = mean(winamp(3,:,:),2); % absent/attended
 winampAU(2,:) = mean(winamp(4,:,:),2); % absent/unattended
 enhancers = subjects(diff(winampAU)<0);
 suppressers = subjects(diff(winampAU)>0);
+
+winampAU2(1,:,:) = mean(winamp([1 3],:,:));
+winampAU2(2,:,:) = mean(winamp([2 4],:,:));
+winampAU2GroupMean = mean(winampAU2,3);
+winampAU2GroupSte = std(winampAU2,0,3)/sqrt(nSubjects);
+figure
+barweb(winampAU2GroupMean',winampAU2GroupSte')
 
 % att-unatt consistency (correlation across subjects for P and A)
 a1(:,:,1) = t1PAAUData(:,1,:)-t1PAAUData(:,2,:);
