@@ -4,9 +4,10 @@
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi'; % '', 'ebi', etc.
 ssvefFreqs = [30 40];
-nTopChs = 5; % 1, 5, [1 5], etc.
+nTopChs = 10; % 1, 5, [1 5], etc.
 iqrThreshs = [];
-trialSelection = 'validCorrect'; % 'all','validCorrect'
+weightChannels = 1;
+trialSelection = 'all'; % 'all','validCorrect'
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -39,13 +40,13 @@ for iSubject = 1:nSubjects
             if ~isempty(nTopChs)
                 for nTopChannels = nTopChs
                     rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
-                        analStr, ssvefFreq, nTopChannels, [], trialSelection);
+                        analStr, ssvefFreq, nTopChannels, [], weightChannels, trialSelection);
                     close all;
                 end
             elseif ~isempty(iqrThreshs)
                 for iqrThresh = iqrThreshs
                     rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
-                        analStr, ssvefFreq, [], iqrThresh, trialSelection);
+                        analStr, ssvefFreq, [], iqrThresh, weightChannels, trialSelection);
                     close all;
                 end
             else

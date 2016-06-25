@@ -120,7 +120,7 @@ t2PAAUSte = std(t2PAAUData,0,3)/sqrt(nSubjects);
 paauSte = std(t2PAAUData,0,3)/sqrt(nSubjects);
 
 %% calculate mean amp over a window
-twin = [-200 200];
+twin = [-200 0]; % [-200 200]
 t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
 t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
 winamp(:,1,:) = mean(t1PAAUData(t1Tidx,:,:),1); % T1

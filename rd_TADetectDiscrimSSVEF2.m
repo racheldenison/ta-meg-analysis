@@ -1,4 +1,4 @@
-function rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, trialSelection)
+function rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection)
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
@@ -24,6 +24,9 @@ else
     if ~isempty(nTopChannels)
         channelSelection = 'topchannels';
         channelSelectionStr = sprintf('topChannels%d', numel(topChannels));
+        if weightChannels
+            channelSelectionStr = [channelSelectionStr 'W'];
+        end
     elseif ~isempty(iqrThresh)
         channelSelection = 'iqrthresh';
         channelSelectionStr = sprintf('iqrThresh%d', iqrThresh);
