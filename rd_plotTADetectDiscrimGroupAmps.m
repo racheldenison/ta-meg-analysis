@@ -135,7 +135,12 @@ winampAU2(2,:,:) = mean(winamp([2 4],:,:));
 winampAU2GroupMean = mean(winampAU2,3);
 winampAU2GroupSte = std(winampAU2,0,3)/sqrt(nSubjects);
 figure
-barweb(winampAU2GroupMean',winampAU2GroupSte')
+barweb(winampAU2GroupMean',winampAU2GroupSte');
+winampAU2N = normalizeDC(winampAU2);
+wnmean = mean(winampAU2N,3);
+wnste = std(winampAU2N,0,3)./sqrt(nSubjects);
+figure
+barweb(wnmean',wnste');
 
 % att-unatt consistency (correlation across subjects for P and A)
 a1(:,:,1) = t1PAAUData(:,1,:)-t1PAAUData(:,2,:);
