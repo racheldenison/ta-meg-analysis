@@ -7,10 +7,10 @@ if nargin==0 || ~exist('exptDir','var')
     fileBase = 'R0817_TADeDi_5.4.15';
     analStr = 'ebi'; % '', 'ebi', etc.
     ssvefFreq = 30;
-    nTopChannels = 10; % 1, 5, etc., or [] for iqrThresh
+    nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
     iqrThresh = []; % 10, or [] for nTopChannels
-    weightChannels = 1; % weight channels according to average SSVEF amp - only works for top channels
-    trialSelection = 'all'; % 'all','validCorrect'
+    weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
+    trialSelection = 'detectHit'; % 'all','validCorrect'
 end
 
 topChannels = 1:nTopChannels;
@@ -48,6 +48,9 @@ end
 
 %% Get the data
 load(savename)
+
+%% Update behav
+behav = behavior(behav);
 
 %% Settings after loading the data
 saveAnalysis = 1;
@@ -145,18 +148,35 @@ cueCondIdx = strcmp(behav.responseData_labels, 'cue condition');
 t1CondIdx = strcmp(behav.responseData_labels, 'target type T1');
 t2CondIdx = strcmp(behav.responseData_labels, 'target type T2');
 correctIdx = strcmp(behav.responseData_labels, 'correct');
+nTrials = size(behav.responseData_all,1);
 
 blankCond = 1;
 switch trialSelection
     case 'validCorrect'
-        cueConds = {2, 5}; % cue T1 valid (1-1), cue T2 valid (2-2)
-        trigDataCorrect = trigData; % make a copy so we use it for condData but not blankData
-        trigDataCorrect(:,:,behav.responseData_all(:,correctIdx)~=1)=NaN;
+        wValid = behav.cueType==1;
+        wCorrect = behav.responseData_all(:,correctIdx)==1;
+        wSelect = wValid & wCorrect;
+    case 'detectHit'
+        wSelect = behav.detectHMFC(:,1)==1;
+    case 'detectMiss'
+        wSelect = behav.detectHMFC(:,2)==1;
+    case 'detectFA'
+        wSelect = behav.detectHMFC(:,3)==1;
+    case 'detectCR'
+        wSelect = behav.detectHMFC(:,4)==1;
+    case 'discrimCorrect'
+        wSelect = behav.discrimCI(:,1)==1;
+    case 'discrimIncorrect'
+        wSelect = behav.discrimCI(:,2)==1;
     case 'all'
-        cueConds = {[2 3], [4 5]}; % cue T1, cue T2
+        wSelect = ones(nTrials,1);
     otherwise
         error('trialSelection not recognized')
 end
+trigDataSelected = trigData; % make a copy so we use it for condData but not blankData
+trigDataSelected(:,:,wSelect~=1)=NaN;
+
+cueConds = {[2 3], [4 5]}; % cue T1, cue T2
 t1Conds = {[1 2], 0}; % present, absent
 t2Conds = {[1 2], 0}; % present, absent
 
@@ -179,17 +199,12 @@ for iCue = 1:numel(cueConds)
             for iEl = 1:numel(vals)
                 wT2(:,iEl) = behav.responseData_all(:,t2CondIdx) == vals(iEl);
             end
-            
+   
             w = sum([wCue wT1 wT2],2)==3;
+            nTrialsCond(iCue,iT1,iT2) = nnz(w & wSelect);
+            fprintf('Number of trials %d %d %d: %d\n', iCue, iT1, iT2, nnz(w & wSelect))
             
-            switch trialSelection
-                case 'all'
-                    condData(:,:,:,iCue,iT1,iT2) = trigData(:,:,w);
-                case 'validCorrect'
-                    condData(:,:,:,iCue,iT1,iT2) = trigDataCorrect(:,:,w);
-                otherwise
-                    error('trialSelection not recognized')
-            end
+            condData(:,:,:,iCue,iT1,iT2) = trigDataSelected(:,:,w);
         end
     end
 end
@@ -282,7 +297,7 @@ legend(trigNames(plotOrder))
 subplot(3,1,3)
 set(gca,'ColorOrder',[.66 .5 .78; trigColors(end,:)])
 hold all
-plot(f, mean(ampsMean(:,1:end-1),2))
+plot(f, nanmean(ampsMean(:,1:end-1),2))
 plot(f, ampsMean(:,end))
 xlim([1 200])
 ylim([0 20])
@@ -300,10 +315,10 @@ if saveFigs
 end
 
 %% Trial average for target present vs. absent, for a single channel
-pp = mean(trigMeanMean(:,1:2),2);
-pa = mean(trigMeanMean(:,5:6),2);
-ap = mean(trigMeanMean(:,3:4),2);
-aa = mean(trigMeanMean(:,7:8),2);
+pp = nanmean(trigMeanMean(:,1:2),2);
+pa = nanmean(trigMeanMean(:,5:6),2);
+ap = nanmean(trigMeanMean(:,3:4),2);
+aa = nanmean(trigMeanMean(:,7:8),2);
 
 targetWindow = [-100 500];
 t1Window = t>=eventTimes(3) + targetWindow(1) & t<=eventTimes(3) + targetWindow(2);
@@ -320,7 +335,7 @@ targetPA(4,:,2) = pa(t2Window);
 targetPADiff = targetPA(:,:,1)-targetPA(:,:,2);
 
 targetNfft = 2^nextpow2(diff(targetWindow)+1);
-targetY = fft(mean(targetPADiff),targetNfft)/(diff(targetWindow)+1);
+targetY = fft(nanmean(targetPADiff),targetNfft)/(diff(targetWindow)+1);
 targetF = Fs/2*linspace(0,1,targetNfft/2+1);
 targetAmps = 2*abs(targetY(1:targetNfft/2+1));
 
@@ -357,7 +372,7 @@ xlabel('time (ms)')
 ylabel('\Delta amplitude')
 title('target present - absent')
 subplot(3,1,2)
-plot(targetWindow(1):targetWindow(2), mean(targetPADiff,1), 'k');
+plot(targetWindow(1):targetWindow(2), nanmean(targetPADiff,1), 'k');
 xlabel('time (ms)')
 ylabel('\Delta amplitude')
 subplot(3,1,3)
@@ -410,13 +425,13 @@ end
 wAmps = squeeze(rd_wmean(wAmps0,chw,2)); % mean across channels
 
 % attT1T2 means
-wAmpsAtt(1,:) = mean(wAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
-wAmpsAtt(2,:) = mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
+wAmpsAtt(1,:) = nanmean(wAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
+wAmpsAtt(2,:) = nanmean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
 attNames = {'attT1','attT2'};
 
 % PA means
 for iTrig = 1:(nTrigs-1)/2 
-    wAmpsPA(iTrig,:) = mean(wAmps(:,iTrig*2-1:iTrig*2),2);
+    wAmpsPA(iTrig,:) = nanmean(wAmps(:,iTrig*2-1:iTrig*2),2);
 end
 PANames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
 
@@ -437,8 +452,8 @@ plot(t, wAmps(:,plotOrder))
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
-plot(t, mean(wAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
-plot(t, mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
+plot(t, nanmean(wAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
+plot(t, nanmean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('wavelet amp')
@@ -469,7 +484,7 @@ fH(3) = figure;
 set(gcf,'Position',tsFigPos)
 hold on
 for iTrig = 1:(nTrigs-1)/2 
-    p1 = plot(t, mean(wAmps(:,iTrig*2-1:iTrig*2),2));
+    p1 = plot(t, nanmean(wAmps(:,iTrig*2-1:iTrig*2),2));
     set(p1, 'Color', trigColorsPA4(iTrig,:), 'LineWidth', 1.5)
 end
 % ylim([-1 2.5])
@@ -497,12 +512,12 @@ for iTrig = 1:nTrigs
 end
 
 % attT1T2 means
-hAmpsAtt(1,:) = mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
-hAmpsAtt(2,:) = mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
+hAmpsAtt(1,:) = nanmean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
+hAmpsAtt(2,:) = nanmean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
 
 % PA means
 for iTrig = 1:(nTrigs-1)/2 
-    hAmpsPA(iTrig,:) = mean(hAmps(:,iTrig*2-1:iTrig*2),2);
+    hAmpsPA(iTrig,:) = nanmean(hAmps(:,iTrig*2-1:iTrig*2),2);
 end
 
 % store results
@@ -521,8 +536,8 @@ legend(trigNames(plotOrder))
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
-plot(t, mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
-plot(t, mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
+plot(t, nanmean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
+plot(t, nanmean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('Hilbert amp')
@@ -553,7 +568,7 @@ fH(3) = figure;
 set(gcf,'Position',tsFigPos)
 hold on
 for iTrig = 1:(nTrigs-1)/2 
-    p1 = plot(t, mean(hAmps(:,iTrig*2-1:iTrig*2),2));
+    p1 = plot(t, nanmean(hAmps(:,iTrig*2-1:iTrig*2),2));
     set(p1, 'Color', trigColorsPA4(iTrig,:), 'LineWidth', 1.5)
 end
 for iEv = 1:numel(eventTimes)
@@ -565,10 +580,10 @@ ylabel('Hilbert amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 % attend T1/T2 with condition error bars
-mean1 = mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
-ste1 = std(hAmps(:,plotOrder(1:(nTrigs-1)/2)),0,2)./(sqrt((nTrigs-1)/2));
-mean2 = mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
-ste2 = std(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),0,2)./(sqrt((nTrigs-1)/2));
+mean1 = nanmean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
+ste1 = nanstd(hAmps(:,plotOrder(1:(nTrigs-1)/2)),0,2)./(sqrt((nTrigs-1)/2));
+mean2 = nanmean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
+ste2 = nanstd(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),0,2)./(sqrt((nTrigs-1)/2));
 fH(4) = figure;
 set(gcf,'Position',tsFigPos)
 hold on
@@ -607,10 +622,10 @@ tfAmpsAtt(:,:,1) = nanmean(tfAmps(:,:,plotOrder(1:(nTrigs-1)/2)),3);
 tfAmpsAtt(:,:,2) = nanmean(tfAmps(:,:,plotOrder((nTrigs-1)/2+1:end-1)),3);
 
 for iTrig = 1:(nTrigs-1)/2 
-    tfAmpsPA(:,:,iTrig) = mean(tfAmps(:,:,iTrig*2-1:iTrig*2),3);
+    tfAmpsPA(:,:,iTrig) = nanmean(tfAmps(:,:,iTrig*2-1:iTrig*2),3);
 end
-t1PADiff = mean(tfAmpsPA(:,:,[1 3]),3)-mean(tfAmpsPA(:,:,[2 4]),3);
-t2PADiff = mean(tfAmpsPA(:,:,[1 2]),3)-mean(tfAmpsPA(:,:,[3 4]),3);
+t1PADiff = nanmean(tfAmpsPA(:,:,[1 3]),3)-nanmean(tfAmpsPA(:,:,[2 4]),3);
+t2PADiff = nanmean(tfAmpsPA(:,:,[1 2]),3)-nanmean(tfAmpsPA(:,:,[3 4]),3);
 
 % store results
 A.tfTaper = taper;
@@ -745,10 +760,10 @@ tfSingleAmpsAtt(:,:,1) = nanmean(tfSingleAmps(:,:,plotOrder(1:(nTrigs-1)/2)),3);
 tfSingleAmpsAtt(:,:,2) = nanmean(tfSingleAmps(:,:,plotOrder((nTrigs-1)/2+1:end-1)),3);
 
 for iTrig = 1:(nTrigs-1)/2 
-    tfSingleAmpsPA(:,:,iTrig) = mean(tfSingleAmps(:,:,iTrig*2-1:iTrig*2),3);
+    tfSingleAmpsPA(:,:,iTrig) = nanmean(tfSingleAmps(:,:,iTrig*2-1:iTrig*2),3);
 end
-t1SinglePADiff = mean(tfSingleAmpsPA(:,:,[1 3]),3)-mean(tfSingleAmpsPA(:,:,[2 4]),3);
-t2SinglePADiff = mean(tfSingleAmpsPA(:,:,[1 2]),3)-mean(tfSingleAmpsPA(:,:,[3 4]),3);
+t1SinglePADiff = nanmean(tfSingleAmpsPA(:,:,[1 3]),3)-nanmean(tfSingleAmpsPA(:,:,[2 4]),3);
+t2SinglePADiff = nanmean(tfSingleAmpsPA(:,:,[1 2]),3)-nanmean(tfSingleAmpsPA(:,:,[3 4]),3);
 
 % store results
 A.stfTaper = taper;
