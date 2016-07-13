@@ -222,6 +222,7 @@ trigMean = condDataMean(:,channels,:);
 trigMean(:,:,end+1) = blankDataMean(:,channels);
 nTrigs = size(trigMean,3);
 
+A.nTrialsCond = nTrialsCond;
 A.trigMean = trigMean;
 
 %% FFT on mean time series for each trigger type

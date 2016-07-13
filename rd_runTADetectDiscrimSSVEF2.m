@@ -7,7 +7,7 @@ ssvefFreqs = [30 40];
 nTopChs = 5; % 1, 5, [1 5], etc.
 iqrThreshs = [];
 weightChannels = 0;
-trialSelection = 'detectHit'; % 'all','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
+trialSelection = 'discrimCorrect'; % 'all','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...

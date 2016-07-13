@@ -9,7 +9,7 @@ end
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
-selectionStr = 'topChannels5'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+selectionStr = 'topChannels5_detectHitTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -79,9 +79,13 @@ subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 % subjects = {'R0973_20150727', 'R0861_20150813', 'R0504_20150805', ...
 %     'R0983_20150813', 'R0436_20150904'}; % exo
 
+% subjects = {'R0861_20150813','R0504_20150805','R0983_20150813',...
+%     'R1021_20151120','R1026_20151211','R0852_20151211',...
+%     'R1027_20151216','R1028_20151216','R1029_20151222'}; % discrim1 T1
+
 nSubjects = numel(subjects);
 
-saveFigs = 0;
+saveFigs = 1;
 figDir = sprintf('%s/Group/figures/%s', exptDir, analStr);
 figStr = sprintf('gN%d_%dHz_%s', nSubjects, ssvefFreq, selectionStr);
 

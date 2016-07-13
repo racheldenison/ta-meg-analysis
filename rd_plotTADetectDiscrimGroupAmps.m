@@ -115,12 +115,11 @@ t2PAAUData(:,2,:) = mean(groupData.amps(:,[1 3],:),2);
 t2PAAUData(:,3,:) = mean(groupData.amps(:,[6 8],:),2);
 t2PAAUData(:,4,:) = mean(groupData.amps(:,[5 7],:),2);
 
-t1PAAUSte = std(t1PAAUData,0,3)/sqrt(nSubjects);
+t1PAAUSte = std(t1PAAUData,0,3)/sqrt(nSubjects); 
 t2PAAUSte = std(t2PAAUData,0,3)/sqrt(nSubjects);
-paauSte = std(t2PAAUData,0,3)/sqrt(nSubjects);
 
 %% calculate mean amp over a window
-twin = [-200 200]; % [-200 200]
+twin = [-100 100]; % [-200 200]
 t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
 t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
 winamp(:,1,:) = mean(t1PAAUData(t1Tidx,:,:),1); % T1
@@ -130,17 +129,21 @@ winampAU(2,:) = mean(winamp(4,:,:),2); % absent/unattended
 enhancers = subjects(diff(winampAU)<0);
 suppressers = subjects(diff(winampAU)>0);
 
-winampAU2(1,:,:) = mean(winamp([1 3],:,:));
-winampAU2(2,:,:) = mean(winamp([2 4],:,:));
-winampAU2GroupMean = mean(winampAU2,3);
-winampAU2GroupSte = std(winampAU2,0,3)/sqrt(nSubjects);
-figure
-barweb(winampAU2GroupMean',winampAU2GroupSte');
-winampAU2N = normalizeDC(winampAU2);
-wnmean = mean(winampAU2N,3);
-wnste = std(winampAU2N,0,3)./sqrt(nSubjects);
-figure
-barweb(wnmean',wnste');
+% winampAU2(1,:,:) = mean(winamp([1 3],:,:));
+% winampAU2(2,:,:) = mean(winamp([2 4],:,:));
+% winampAU2GroupMean = mean(winampAU2,3);
+% winampAU2GroupSte = std(winampAU2,0,3)/sqrt(nSubjects);
+% figure
+% barweb(winampAU2GroupMean',winampAU2GroupSte');
+% winampAU2N = normalizeDC(winampAU2);
+% wnmean = mean(winampAU2N,3);
+% wnste = std(winampAU2N,0,3)./sqrt(nSubjects);
+% figure
+% barweb(wnmean',wnste');
+% 
+% % effect size
+% winampAU2Diff = winampAU2(1,:,:)-winampAU2(2,:,:);
+% cohenD = mean(winampAU2Diff,3)./std(winampAU2Diff,0,3);
 
 % att-unatt consistency (correlation across subjects for P and A)
 a1(:,:,1) = t1PAAUData(:,1,:)-t1PAAUData(:,2,:);
@@ -383,6 +386,7 @@ twin = [-200 700];
 t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
 t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
 
+% PA
 fH = [];
 fH(1) = figure;
 set(gcf,'Position',tsFigPos0);
@@ -461,7 +465,7 @@ box off
 
 paauData = (t1PAAUData(t1Tidx,:,:) + t2PAAUData(t2Tidx,:,:))/2;
 paauPresAUDiff = squeeze(paauData(:,1,:) - paauData(:,2,:));
-figure
+fH(4) = figure;
 set(gcf,'Position',tf9FigPos)
 for iSubject = 1:nSubjects
     subplot(nrows,ncols,iSubject)
@@ -476,10 +480,24 @@ for iSubject = 1:nSubjects
     end
     title(und2space(subjects{iSubject}))
 end
+legend('P-att','P-unatt')
 
-figure
+fH(5) = figure;
 hold on
 plot(twin([1 end]), [0 0], 'k:')
 shadedErrorBar(twin(1):twin(end), mean(paauPresAUDiff,2), std(paauPresAUDiff,0,2)/sqrt(nSubjects), {'color', 'k', 'LineWidth', 3}, 1)
 vline(0,'color','k','LineStyle',':');
+xlabel('time (ms)')
+ylabel('amplitude difference (att-unatt)')
+title('target present trials')
+
+if saveFigs
+    figPrefix = sprintf('%s_plot', figStr);
+    figNames = {sprintf('%sAmpsPAByTargetGroup', measure), ...
+        sprintf('%sAmpsPAAUGroupSte', measure), ...
+        sprintf('%sAmpsPAAUT1T2AveGroup', measure), ...
+        sprintf('%sAmpsPAUIndiv', measure), ...
+        sprintf('%sAmpsPAUDiffGroup', measure)};
+    rd_saveAllFigs(fH, figNames, figPrefix, figDir);
+end
 
