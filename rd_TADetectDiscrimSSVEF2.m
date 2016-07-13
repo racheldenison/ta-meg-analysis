@@ -10,7 +10,7 @@ if nargin==0 || ~exist('exptDir','var')
     nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
     iqrThresh = []; % 10, or [] for nTopChannels
     weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
-    trialSelection = 'detectHit'; % 'all','validCorrect'
+    trialSelection = 'detectHit'; % 'all','validCorrect', etc
 end
 
 topChannels = 1:nTopChannels;
@@ -147,14 +147,16 @@ end
 cueCondIdx = strcmp(behav.responseData_labels, 'cue condition');
 t1CondIdx = strcmp(behav.responseData_labels, 'target type T1');
 t2CondIdx = strcmp(behav.responseData_labels, 'target type T2');
-correctIdx = strcmp(behav.responseData_labels, 'correct');
 nTrials = size(behav.responseData_all,1);
 
-blankCond = 1;
 switch trialSelection
+    case 'correct'
+        wSelect = behav.acc==1;
+    case 'incorrect'
+        wSelect = behav.acc==0;
     case 'validCorrect'
-        wValid = behav.cueType==1;
-        wCorrect = behav.responseData_all(:,correctIdx)==1;
+        wValid = behav.cueValidity==1;
+        wCorrect = behav.acc==1; 
         wSelect = wValid & wCorrect;
     case 'detectHit'
         wSelect = behav.detectHMFC(:,1)==1;
@@ -176,6 +178,7 @@ end
 trigDataSelected = trigData; % make a copy so we use it for condData but not blankData
 trigDataSelected(:,:,wSelect~=1)=NaN;
 
+blankCond = 1;
 cueConds = {[2 3], [4 5]}; % cue T1, cue T2
 t1Conds = {[1 2], 0}; % present, absent
 t2Conds = {[1 2], 0}; % present, absent
