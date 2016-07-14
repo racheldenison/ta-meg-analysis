@@ -1,5 +1,7 @@
 function rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection)
 
+% single trial analysis
+
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
     exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
@@ -226,6 +228,7 @@ trigMean = reshape(condData(:,channels,:,:,:,:), ...
 randomBlankTrials = randperm(size(blankData,3));
 trigMean(:,:,:,end+1) = blankData(:,channels,randomBlankTrials(1:size(condData,3)));
 nTrigs = size(trigMean,4);
+nTrialsPerCond = size(trigMean,3);
 
 A.nTrialsCond = nTrialsCond;
 A.trigMean = trigMean;
@@ -268,6 +271,7 @@ tf3FigPos = [200 475 980 330];
 set(0,'defaultLineLineWidth',1)
 
 %% Time series and FFT
+% mean across channels
 trigMeanMean = squeeze(rd_wmean(trigMean,chw,2));
 ampsMean = squeeze(rd_wmean(amps,chw,2));
 A.trigMeanMean = trigMeanMean;
@@ -321,31 +325,32 @@ if saveFigs
     rd_saveAllFigs(gcf, {'tsFFT'}, figPrefix, figDir)
 end
 
-%% Trial average for target present vs. absent, for a single channel
-pp = mean(trigMeanMean(:,:,1:2),3);
-pa = mean(trigMeanMean(:,:,5:6),3);
-ap = mean(trigMeanMean(:,:,3:4),3);
-aa = mean(trigMeanMean(:,:,7:8),3);
-%%% stopped working here
+%% Target present vs. absent
+pp = [trigMeanMean(:,:,1) trigMeanMean(:,:,2)];
+pa = [trigMeanMean(:,:,5) trigMeanMean(:,:,6)];
+ap = [trigMeanMean(:,:,3) trigMeanMean(:,:,4)];
+aa = [trigMeanMean(:,:,7) trigMeanMean(:,:,8)];
 
 targetWindow = [-100 500];
 t1Window = t>=eventTimes(3) + targetWindow(1) & t<=eventTimes(3) + targetWindow(2);
 t2Window = t>=eventTimes(4) + targetWindow(1) & t<=eventTimes(4) + targetWindow(2);
-targetPA(1,:,1) = pp(t1Window);
-targetPA(2,:,1) = pp(t2Window);
-targetPA(3,:,1) = pa(t1Window);
-targetPA(4,:,1) = ap(t2Window);
-targetPA(1,:,2) = aa(t1Window);
-targetPA(2,:,2) = aa(t2Window);
-targetPA(3,:,2) = ap(t1Window);
-targetPA(4,:,2) = pa(t2Window);
+targetPA(1,:,1,:) = pp(t1Window,:);
+targetPA(2,:,1,:) = pp(t2Window,:);
+targetPA(3,:,1,:) = pa(t1Window,:);
+targetPA(4,:,1,:) = ap(t2Window,:);
+targetPA(1,:,2,:) = aa(t1Window,:);
+targetPA(2,:,2,:) = aa(t2Window,:);
+targetPA(3,:,2,:) = ap(t1Window,:);
+targetPA(4,:,2,:) = pa(t2Window,:);
 
-targetPADiff = targetPA(:,:,1)-targetPA(:,:,2);
+targetPADiff0 = squeeze(targetPA(:,:,1,:)-targetPA(:,:,2,:)); % trial pairing not meaningful
+targetPADiff = reshape(shiftdim(targetPADiff0,1),...
+    size(targetPADiff0,2),size(targetPADiff0,1)*size(targetPADiff0,3));
 
 targetNfft = 2^nextpow2(diff(targetWindow)+1);
-targetY = fft(mean(targetPADiff),targetNfft)/(diff(targetWindow)+1);
+targetY = fft(targetPADiff,targetNfft)/(diff(targetWindow)+1);
 targetF = Fs/2*linspace(0,1,targetNfft/2+1);
-targetAmps = 2*abs(targetY(1:targetNfft/2+1));
+targetAmps = 2*abs(targetY(1:targetNfft/2+1,:));
 
 % store results
 A.targetWindow = targetWindow;
@@ -355,12 +360,16 @@ A.targetF = targetF;
 A.targetPADiffAmps = targetAmps;
 
 names = {'target present','target absent'};
+colors = {'b','g','r','c'};
 fH = [];
 fH(1) = figure;
 set(gcf,'Position',ts2FigPos)
 for iPA = 1:2
     subplot(2,1,iPA)
-    plot(targetWindow(1):targetWindow(2), targetPA(:,:,iPA))
+    hold on
+    for iXO = 1:4
+        plot(targetWindow(1):targetWindow(2), squeeze(targetPA(iXO,:,iPA,:)), 'color', colors{iXO})
+    end
     vline(0,'k');
     if iPA==1
         legend('xx1','xx2','xo1','ox2')
@@ -380,7 +389,7 @@ xlabel('time (ms)')
 ylabel('\Delta amplitude')
 title('target present - absent')
 subplot(3,1,2)
-plot(targetWindow(1):targetWindow(2), mean(targetPADiff,1), 'k');
+plot(targetWindow(1):targetWindow(2), nanmean(targetPADiff,2), 'k');
 xlabel('time (ms)')
 ylabel('\Delta amplitude')
 subplot(3,1,3)
@@ -417,30 +426,40 @@ wBaselineWindow = NaN;
 wAmps0 = [];
 foi = ssvefFreq;
 for iTrig = 1:nTrigs
-    data = trigMean(:,:,iTrig)'; % channels by samples
-    [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'freqoi', foi, 'width', width);
-    specAmp = abs(squeeze(spectrum));
-
-    if all(size(specAmp)>1) % if two-dimensional
-        wAmp = specAmp;
-    else
-        wAmp = specAmp';
+    for iTrial = 1:nTrialsPerCond
+        data = trigMean(:,:,iTrial,iTrig)'; % channels by samples
+        [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'freqoi', foi, 'width', width);
+        specAmp = abs(squeeze(spectrum));
+        
+        if all(size(specAmp)>1) % if two-dimensional
+            wAmp = specAmp;
+        else
+            wAmp = specAmp';
+        end
+        %     wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
+        %     wAmps0(:,:,iTrig) = wAmpNorm';
+        wAmps0(:,:,iTrial,iTrig) = wAmp';
     end
-%     wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
-%     wAmps0(:,:,iTrig) = wAmpNorm';
-    wAmps0(:,:,iTrig) = wAmp';
 end
 wAmps = squeeze(rd_wmean(wAmps0,chw,2)); % mean across channels
 
-% attT1T2 means
-wAmpsAtt(1,:) = mean(wAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
-wAmpsAtt(2,:) = mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
+% attT1T2 combined
+att1 = []; att2 = [];
+conds1 = plotOrder(1:(nTrigs-1)/2);
+conds2 = plotOrder((nTrigs-1)/2+1:nTrigs-1);
+for i=1:4
+    att1 = cat(2, att1, wAmps(:,:,conds1(i)));
+    att2 = cat(2, att2, wAmps(:,:,conds2(i)));
+end
+wAmpsAtt(:,:,1) = att1;
+wAmpsAtt(:,:,2) = att2;
 attNames = {'attT1','attT2'};
 
-% PA means
-for iTrig = 1:(nTrigs-1)/2 
-    wAmpsPA(iTrig,:) = mean(wAmps(:,iTrig*2-1:iTrig*2),2);
-end
+% PA combined
+wAmpsPA(:,:,1) = [wAmps(:,:,1) wAmps(:,:,2)];
+wAmpsPA(:,:,2) = [wAmps(:,:,5) wAmps(:,:,6)];
+wAmpsPA(:,:,3) = [wAmps(:,:,3) wAmps(:,:,4)];
+wAmpsPA(:,:,4) = [wAmps(:,:,7) wAmps(:,:,8)];
 PANames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
 
 % store results
@@ -456,19 +475,35 @@ fH(1) = figure;
 set(gcf,'Position',tsFigPos)
 set(gca,'ColorOrder',trigColors)
 hold all
-plot(t, wAmps(:,plotOrder))
+plot(t, squeeze(nanmean(wAmps(:,:,plotOrder),2)))
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
-plot(t, mean(wAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
-plot(t, mean(wAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
 legend(trigNames(plotOrder))
 xlabel('time (ms)')
 ylabel('wavelet amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
-% condition subplots
 fH(2) = figure;
+hold on
+plot(t, nanmean(wAmpsAtt(:,:,1),2),'color',trigBlue,'LineWidth',4)
+plot(t, nanmean(wAmpsAtt(:,:,2),2),'color',trigRed,'LineWidth',4)
+legend(attNames)
+[~, err] = rd_bootstrapCI(wAmpsAtt(:,:,1)');
+shadedErrorBar(t, nanmean(wAmpsAtt(:,:,1),2), err, {'color',trigBlue,'LineWidth',4}, 1)
+[~, err] = rd_bootstrapCI(wAmpsAtt(:,:,2)');
+shadedErrorBar(t, nanmean(wAmpsAtt(:,:,2),2), err, {'color',trigRed,'LineWidth',4}, 1)
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+xlabel('time (ms)')
+ylabel('wavelet amp')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+
+%%%% stopped working here
+
+% condition subplots
+fH(3) = figure;
 set(gcf,'Position',condFigPos)
 for iTrig = 1:(nTrigs-1)/2
     subplot((nTrigs-1)/2,1,iTrig)
@@ -488,7 +523,7 @@ xlabel('time (ms)')
 ylabel('wavelet amp')
 
 % present/absent
-fH(3) = figure;
+fH(4) = figure;
 set(gcf,'Position',tsFigPos)
 hold on
 for iTrig = 1:(nTrigs-1)/2 
@@ -506,7 +541,7 @@ title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 if saveFigs
     figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
-    rd_saveAllFigs(fH, {'waveletTrialAve','waveletTrialAveByCond','waveletTrialAvePA'}, figPrefix, figDir)
+    rd_saveAllFigs(fH, {'waveletTrialAve','waveletTrialAveAtt','waveletTrialAveByCond','waveletTrialAvePA'}, figPrefix, figDir)
 end
 
 %% Hilbert on average across trials
