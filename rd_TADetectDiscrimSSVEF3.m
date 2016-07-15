@@ -267,6 +267,8 @@ ts3FigPos = [0 500 1100 900];
 condFigPos = [250 300 750 650];
 tf9FigPos = [0 250 1280 580];
 tf3FigPos = [200 475 980 330];
+paau3FigPos = [800 30 450 830];
+paau6FigPos = [0 90 1000 800];
 
 set(0,'defaultLineLineWidth',1)
 
@@ -370,6 +372,7 @@ for iPA = 1:2
     for iXO = 1:4
         plot(targetWindow(1):targetWindow(2), squeeze(targetPA(iXO,:,iPA,:)), 'color', colors{iXO})
     end
+    plot(targetWindow(1):targetWindow(2),squeeze(nanmean(nanmean(targetPA(:,:,iPA,:),1),4)),'k','LineWidth',4)
     vline(0,'k');
     if iPA==1
         legend('xx1','xx2','xo1','ox2')
@@ -462,6 +465,9 @@ wAmpsPA(:,:,3) = [wAmps(:,:,3) wAmps(:,:,4)];
 wAmpsPA(:,:,4) = [wAmps(:,:,7) wAmps(:,:,8)];
 PANames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
 
+% All combined
+wAmpsAll = [wAmpsAtt(:,:,1) wAmpsAtt(:,:,2)];
+
 % store results
 A.attNames = attNames;
 A.PANames = PANames;
@@ -469,6 +475,7 @@ A.wBaselineWindow = wBaselineWindow;
 A.wAmps = wAmps;
 A.wAmpsAtt = wAmpsAtt;
 A.wAmpsPA = wAmpsPA;
+A.wAmpsAll = wAmpsAll;
 
 fH = [];
 fH(1) = figure;
@@ -485,14 +492,15 @@ ylabel('wavelet amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 fH(2) = figure;
+set(gcf,'Position',tsFigPos)
 hold on
 plot(t, nanmean(wAmpsAtt(:,:,1),2),'color',trigBlue,'LineWidth',4)
 plot(t, nanmean(wAmpsAtt(:,:,2),2),'color',trigRed,'LineWidth',4)
 legend(attNames)
-[~, err] = rd_bootstrapCI(wAmpsAtt(:,:,1)');
-shadedErrorBar(t, nanmean(wAmpsAtt(:,:,1),2), err, {'color',trigBlue,'LineWidth',4}, 1)
-[~, err] = rd_bootstrapCI(wAmpsAtt(:,:,2)');
-shadedErrorBar(t, nanmean(wAmpsAtt(:,:,2),2), err, {'color',trigRed,'LineWidth',4}, 1)
+[~, emp, err] = rd_bootstrapCI(wAmpsAtt(:,:,1)');
+shadedErrorBar(t, emp, err, {'color',trigBlue,'LineWidth',4}, 1)
+[~, emp, err] = rd_bootstrapCI(wAmpsAtt(:,:,2)');
+shadedErrorBar(t, emp, err, {'color',trigRed,'LineWidth',4}, 1)
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
@@ -500,17 +508,19 @@ xlabel('time (ms)')
 ylabel('wavelet amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
-%%%% stopped working here
-
 % condition subplots
 fH(3) = figure;
 set(gcf,'Position',condFigPos)
 for iTrig = 1:(nTrigs-1)/2
     subplot((nTrigs-1)/2,1,iTrig)
-    set(gca,'ColorOrder',[trigBlue; trigRed])
-    hold all
-    plot(t, wAmps(:,iTrig*2-1:iTrig*2))
+    hold on
+    plot(t, nanmean(wAmps(:,:,iTrig*2-1),2),'color',trigBlue,'LineWidth',4)
+    plot(t, nanmean(wAmps(:,:,iTrig*2),2),'color',trigRed,'LineWidth',4)
     legend(trigNames{iTrig*2-1:iTrig*2})
+    [~, emp, err] = rd_bootstrapCI(wAmps(:,:,iTrig*2-1)');
+    shadedErrorBar(t, emp, err, {'color',trigBlue,'LineWidth',4}, 1)
+    [~, emp, err] = rd_bootstrapCI(wAmps(:,:,iTrig*2)');
+    shadedErrorBar(t, emp, err, {'color',trigRed,'LineWidth',4}, 1)
 %     ylim([-1 2.5])
     for iEv = 1:numel(eventTimes)
         vline(eventTimes(iEv),'k');
@@ -526,244 +536,212 @@ ylabel('wavelet amp')
 fH(4) = figure;
 set(gcf,'Position',tsFigPos)
 hold on
-for iTrig = 1:(nTrigs-1)/2 
-    p1 = plot(t, mean(wAmps(:,iTrig*2-1:iTrig*2),2));
-    set(p1, 'Color', trigColorsPA4(iTrig,:), 'LineWidth', 1.5)
+for iPA = 1:4
+    p1 = plot(t, nanmean(wAmpsPA(:,:,iPA),2));
+    set(p1, 'Color', trigColorsPA4(iPA,:), 'LineWidth', 4)
+end
+legend('T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a')
+for iPA = 1:4
+    [~, emp, err] = rd_bootstrapCI(wAmpsPA(:,:,iPA)');
+    shadedErrorBar(t, emp, err, {'color',trigColorsPA4(iPA,:),'LineWidth',4}, 1) 
 end
 % ylim([-1 2.5])
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
-legend('T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a')
+xlabel('time (ms)')
+ylabel('wavelet amp')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+
+fH(5) = figure;
+set(gcf,'Position',tsFigPos)
+[~, emp, err] = rd_bootstrapCI(wAmpsAll');
+shadedErrorBar(t, emp, err, {'color','k','LineWidth',4})
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+legend('all trials')
 xlabel('time (ms)')
 ylabel('wavelet amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 if saveFigs
     figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
-    rd_saveAllFigs(fH, {'waveletTrialAve','waveletTrialAveAtt','waveletTrialAveByCond','waveletTrialAvePA'}, figPrefix, figDir)
+    rd_saveAllFigs(fH, {'waveletTrialAve','waveletTrialAveAtt','waveletTrialAveByCond','waveletTrialAvePA','waveletTrialAveAll'}, figPrefix, figDir)
 end
 
-%% Hilbert on average across trials
-Fbp = ssvefFreq + [-1.6 1.6];
-hAmps = [];
-for iTrig = 1:nTrigs
-    data = trigMean(:,:,iTrig)'; % channels by samples
-    dataF = ft_preproc_bandpassfilter(data,Fs,Fbp);
-    dataFH = abs(hilbert(rd_wmean(dataF,chw))); % average bandpassed time series across channels
-    hAmps(:,iTrig) = dataFH; 
+%% PAAU
+twin = [-600 600];
+t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
+t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
+
+% calculate pres/abs x att/unattend for each target
+wPAAUT(:,:,1,1) = [wAmps(t1Tidx,:,1) wAmps(t1Tidx,:,5)]; % present/attended
+wPAAUT(:,:,2,1) = [wAmps(t1Tidx,:,2) wAmps(t1Tidx,:,6)]; % present/unattended
+wPAAUT(:,:,3,1) = [wAmps(t1Tidx,:,3) wAmps(t1Tidx,:,7)] ; % absent/attended
+wPAAUT(:,:,4,1) = [wAmps(t1Tidx,:,4) wAmps(t1Tidx,:,8)]; % absent/unattended
+
+wPAAUT(:,:,1,2) = [wAmps(t2Tidx,:,2) wAmps(t2Tidx,:,4)];
+wPAAUT(:,:,2,2) = [wAmps(t2Tidx,:,1) wAmps(t2Tidx,:,3)];
+wPAAUT(:,:,3,2) = [wAmps(t2Tidx,:,6) wAmps(t2Tidx,:,8)];
+wPAAUT(:,:,4,2) = [wAmps(t2Tidx,:,5) wAmps(t2Tidx,:,7)];
+
+% present vs. absent and attended vs. unattended
+for iT = 1:2
+    wPAT(:,:,1,iT) = cat(2, wPAAUT(:,:,1,iT), wPAAUT(:,:,2,iT)); % present
+    wPAT(:,:,2,iT) = cat(2, wPAAUT(:,:,3,iT), wPAAUT(:,:,4,iT)); % absent
+
+    wAUT(:,:,1,iT) = cat(2, wPAAUT(:,:,1,iT), wPAAUT(:,:,3,iT)); % attended
+    wAUT(:,:,2,iT) = cat(2, wPAAUT(:,:,2,iT), wPAAUT(:,:,4,iT)); % unattended 
 end
 
-% attT1T2 means
-hAmpsAtt(1,:) = mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
-hAmpsAtt(2,:) = mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
-
-% PA means
-for iTrig = 1:(nTrigs-1)/2 
-    hAmpsPA(iTrig,:) = mean(hAmps(:,iTrig*2-1:iTrig*2),2);
+% combining across T1 and T2
+for iPAAU = 1:4
+    wPAAU(:,:,iPAAU) = cat(2, wPAAUT(:,:,iPAAU,1), wPAAUT(:,:,iPAAU,2));
 end
+
+wPA(:,:,1) = cat(2, wPAAU(:,:,1), wPAAU(:,:,2)); % present
+wPA(:,:,2) = cat(2, wPAAU(:,:,3), wPAAU(:,:,4)); % absent
+
+wAU(:,:,1) = cat(2, wPAAU(:,:,1), wPAAU(:,:,3)); % attended
+wAU(:,:,2) = cat(2, wPAAU(:,:,2), wPAAU(:,:,4)); % unattended
 
 % store results
-A.hFbp = Fbp;
-A.hAmps = hAmps;
-A.hAmpsAtt = hAmpsAtt;
-A.hAmpsPA = hAmpsPA;
+A.wtwin = twin;
+A.wt1Tidx = wt1Tidx;
+A.wt2Tidx = wt2Tidx;
+A.wPAAUT = wPAAUT;
+A.wPAT = wPAT;
+A.wAUT = wAUT;
+A.wPAAU = wPAAU;
+A.wPA = wPA;
+A.wAU = wAU;
 
+% separate T1 and T2
 fH = [];
 fH(1) = figure;
-set(gcf,'Position',tsFigPos)
-set(gca,'ColorOrder',trigColors)
-hold all
-plot(t, hAmps(:,plotOrder))
-legend(trigNames(plotOrder))
-for iEv = 1:numel(eventTimes)
-    vline(eventTimes(iEv),'k');
+set(gcf,'Position',paau6FigPos)
+for iT = 1:2
+    colors = get(gca,'ColorOrder');
+    subplot(3,2,iT)
+    hold on
+    for iPAAU = 1:4
+        p1 = plot(twin(1):twin(end), nanmean(wPAAUT(:,:,iPAAU,iT),2));
+        set(p1, 'Color', colors(iPAAU,:), 'LineWidth', 4)
+    end
+    if iT==2
+        legend('P-att','P-unatt','A-att','A-unatt')
+    end
+    for iPAAU = 1:4
+        [~, emp, err] = rd_bootstrapCI(wPAAUT(:,:,iPAAU,iT)');
+        shadedErrorBar(twin(1):twin(end), emp, err, {'color',colors(iPAAU,:),'LineWidth',4}, 1)
+    end
+    vline(0,'k');
+    xlabel('time (ms)')
+    ylabel('wavelet amp')
+    title(sprintf('T%d',iT))
+    
+    colors = [trigBlue; trigRed];
+    subplot(3,2,iT+2)
+    hold on
+    for iAU = 1:2
+        p1 = plot(twin(1):twin(end), nanmean(wAUT(:,:,iAU,iT),2));
+        set(p1, 'Color', colors(iAU,:), 'LineWidth', 4)
+    end
+    if iT==2
+        legend('att','unatt')
+    end
+    for iAU = 1:2
+        [~, emp, err] = rd_bootstrapCI(wAUT(:,:,iAU,iT)');
+        shadedErrorBar(twin(1):twin(end), emp, err, {'color',colors(iAU,:),'LineWidth',4}, 1)
+    end
+    vline(0,'k');
+    xlabel('time (ms)')
+    ylabel('wavelet amp')
+    title(sprintf('T%d',iT))
+    
+    colors = trigColorsPA4([1 4],:);
+    subplot(3,2,iT+4)
+    hold on
+    for iPA = 1:2
+        p1 = plot(twin(1):twin(end), nanmean(wPAT(:,:,iPA,iT),2));
+        set(p1, 'Color', colors(iPA,:), 'LineWidth', 4)
+    end
+    if iT==2
+        legend('present','absent')
+    end
+    for iPA = 1:2
+        [~, emp, err] = rd_bootstrapCI(wPAT(:,:,iPA,iT)');
+        shadedErrorBar(twin(1):twin(end), emp, err, {'color',colors(iPA,:),'LineWidth',4}, 1)
+    end
+    vline(0,'k');
+    xlabel('time (ms)')
+    ylabel('wavelet amp')
+    title(sprintf('T%d',iT))
 end
-plot(t, mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2),'color',trigBlue,'LineWidth',4)
-plot(t, mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2),'color',trigRed,'LineWidth',4)
-legend(trigNames(plotOrder))
-xlabel('time (ms)')
-ylabel('Hilbert amp')
-title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+rd_supertitle([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+rd_raiseAxis(gca);
 
-% condition subplots
+% combined across T1 and T2
 fH(2) = figure;
-set(gcf,'Position',condFigPos)
-for iTrig = 1:(nTrigs-1)/2
-    subplot((nTrigs-1)/2,1,iTrig)
-    set(gca,'ColorOrder',[trigBlue; trigRed])
-    hold all
-    plot(t, hAmps(:,iTrig*2-1:iTrig*2))
-    legend(trigNames{iTrig*2-1:iTrig*2})
-    for iEv = 1:numel(eventTimes)
-        vline(eventTimes(iEv),'k');
-    end
-%     ylim([-1 2.5])
-    if iTrig==1
-        title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
-    end
-end
-xlabel('time (ms)')
-ylabel('Hilbert amp')
-
-% present/absent
-fH(3) = figure;
-set(gcf,'Position',tsFigPos)
+set(gcf,'Position',paau3FigPos)
+colors = get(gca,'ColorOrder');
+subplot(3,1,1)
 hold on
-for iTrig = 1:(nTrigs-1)/2 
-    p1 = plot(t, mean(hAmps(:,iTrig*2-1:iTrig*2),2));
-    set(p1, 'Color', trigColorsPA4(iTrig,:), 'LineWidth', 1.5)
+for iPAAU = 1:4
+    p1 = plot(twin(1):twin(end), nanmean(wPAAU(:,:,iPAAU),2));
+    set(p1, 'Color', colors(iPAAU,:), 'LineWidth', 4)
 end
-for iEv = 1:numel(eventTimes)
-    vline(eventTimes(iEv),'k');
+legend('P-att','P-unatt','A-att','A-unatt')
+for iPAAU = 1:4
+    [~, emp, err] = rd_bootstrapCI(wPAAU(:,:,iPAAU)');
+    shadedErrorBar(twin(1):twin(end), emp, err, {'color',colors(iPAAU,:),'LineWidth',4}, 1)
 end
-legend('T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a')
+vline(0,'k');
 xlabel('time (ms)')
-ylabel('Hilbert amp')
-title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+ylabel('wavelet amp')
+title('T1 & T2')
 
-% attend T1/T2 with condition error bars
-mean1 = mean(hAmps(:,plotOrder(1:(nTrigs-1)/2)),2);
-ste1 = std(hAmps(:,plotOrder(1:(nTrigs-1)/2)),0,2)./(sqrt((nTrigs-1)/2));
-mean2 = mean(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),2);
-ste2 = std(hAmps(:,plotOrder(end-(nTrigs-1)/2):end-1),0,2)./(sqrt((nTrigs-1)/2));
-fH(4) = figure;
-set(gcf,'Position',tsFigPos)
+colors = [trigBlue; trigRed];
+subplot(3,1,2)
 hold on
-shadedErrorBar(t, mean1, ste1, {'color',trigBlue,'LineWidth',4}, 1)
-shadedErrorBar(t, mean2, ste2, {'color',trigRed,'LineWidth',4}, 1)
-plot(t, hAmps(:,end), 'k')
-for iEv = 1:numel(eventTimes)
-    vline(eventTimes(iEv),'k');
+for iAU = 1:2
+    p1 = plot(twin(1):twin(end), nanmean(wAU(:,:,iAU),2));
+    set(p1, 'Color', colors(iAU,:), 'LineWidth', 4)
 end
-legend('attend T1','attend T2')
+legend('att','unatt')
+for iAU = 1:2
+    [~, emp, err] = rd_bootstrapCI(wAU(:,:,iAU)');
+    shadedErrorBar(twin(1):twin(end), emp, err, {'color',colors(iAU,:),'LineWidth',4}, 1)
+end
+vline(0,'k');
 xlabel('time (ms)')
-ylabel('Hilbert amp')
-title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+ylabel('wavelet amp')
+title('T1 & T2')
+
+colors = trigColorsPA4([1 4],:);
+subplot(3,1,3)
+hold on
+for iPA = 1:2
+    p1 = plot(twin(1):twin(end), nanmean(wPA(:,:,iPA),2));
+    set(p1, 'Color', colors(iPA,:), 'LineWidth', 4)
+end
+legend('present','absent')
+for iPA = 1:2
+    [~, emp, err] = rd_bootstrapCI(wPA(:,:,iPA)');
+    shadedErrorBar(twin(1):twin(end), emp, err, {'color',colors(iPA,:),'LineWidth',4}, 1)
+end
+vline(0,'k');
+xlabel('time (ms)')
+ylabel('wavelet amp')
+title('T1 & T2')
+
+rd_supertitle([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+rd_raiseAxis(gca);
 
 if saveFigs
     figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
-    rd_saveAllFigs(fH, {'hilbertTrialAve','hilbertTrialAveByCond','hilbertTrialAvePA','hilbertTrialAveAttT1T2Error'}, figPrefix, figDir)
-end
-
-%% Time-frequency
-taper          = 'hanning';
-foi            = 1:50;
-t_ftimwin      = 10 ./ foi;
-toi            = tstart/1000:0.01:tstop/1000;
-tfAmps = [];
-for iTrig = 1:nTrigs
-    data = trigMean(:,:,iTrig)'; % channels by samples
-    [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(data, t/1000, ...
-        'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
-        'taper', taper, 'dimord', 'chan_time_freqtap');
-    specAmp = squeeze(rd_wmean(abs(spectrum),chw,1)); % mean across channels
-    tfAmps(:,:,iTrig) = specAmp';
-end
-
-tfAmpsAtt(:,:,1) = nanmean(tfAmps(:,:,plotOrder(1:(nTrigs-1)/2)),3);
-tfAmpsAtt(:,:,2) = nanmean(tfAmps(:,:,plotOrder((nTrigs-1)/2+1:end-1)),3);
-
-for iTrig = 1:(nTrigs-1)/2 
-    tfAmpsPA(:,:,iTrig) = mean(tfAmps(:,:,iTrig*2-1:iTrig*2),3);
-end
-t1PADiff = mean(tfAmpsPA(:,:,[1 3]),3)-mean(tfAmpsPA(:,:,[2 4]),3);
-t2PADiff = mean(tfAmpsPA(:,:,[1 2]),3)-mean(tfAmpsPA(:,:,[3 4]),3);
-
-% store results
-A.tfTaper = taper;
-A.tfFoi = foi;
-A.tfTFTimwin = t_ftimwin;
-A.tfToi = toi;
-A.tfAmps = tfAmps;
-A.tfAmpsAtt = tfAmpsAtt;
-A.tfAmpsPA = tfAmpsPA;
-A.tfPADiff(:,:,1) = t1PADiff;
-A.tfPADiff(:,:,2) = t2PADiff;
-
-% figures
-ytick = 10:10:numel(foi);
-xtick = 51:50:numel(toi);
-clims = [0 30];
-diffClims = [-10 10];
-hack = plotOrder;
-hack(hack>4) = hack(hack>4)+1;
-
-fH = [];
-fH(1) = figure;
-set(gcf,'Position',tf9FigPos)
-for iTrig = 1:nTrigs
-    subplot(2,5,hack(iTrig))
-    imagesc(tfAmps(:,:,iTrig),clims)
-    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-    if iTrig==nTrigs
-        xlabel('time (s)')
-        ylabel('frequency (Hz)')
-    end
-    title(trigNames{iTrig})
-end
-rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
-rd_raiseAxis(gca);
-
-fH(2) = figure;
-set(gcf,'Position',tf3FigPos)
-attNames = {'attT1','attT2'};
-for iAtt = 1:size(tfAmpsAtt,3)
-    subplot(1,3,iAtt)
-    imagesc(tfAmpsAtt(:,:,iAtt),clims)
-    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-    xlabel('time (s)')
-    ylabel('frequency (Hz)')
-    title(attNames{iAtt})
-end
-subplot(1,3,3)
-imagesc(tfAmpsAtt(:,:,2)-tfAmpsAtt(:,:,1),diffClims)
-rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (s)')
-ylabel('frequency (Hz)')
-title('attT2 - attT1')
-rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
-rd_raiseAxis(gca);
-
-fH(3) = figure;
-set(gcf,'Position',tf9FigPos)
-paNames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
-for iPA = 1:size(tfAmpsPA,3)
-    subplot(2,4,iPA)
-    imagesc(tfAmpsPA(:,:,iPA),clims)
-    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-    xlabel('time (s)')
-    ylabel('frequency (Hz)')
-    title(paNames{iPA})
-end
-subplot(2,4,5)
-imagesc(t1PADiff,diffClims)
-rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (ms)')
-ylabel('frequency (Hz)')
-title('T1 P-A')
-subplot(2,4,6)
-imagesc(t2PADiff,diffClims)
-rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (s)')
-ylabel('frequency (Hz)')
-title('T2 P-A')
-subplot(2,4,7)
-imagesc(t2PADiff - t1PADiff,diffClims)
-rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (s)')
-ylabel('frequency (Hz)')
-title('T2 vs. T1 P-A')
-rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
-rd_raiseAxis(gca);
-
-if saveFigs
-    if numel(channels)==1
-        figPrefix = sprintf('im_ch%d', channels);
-    else
-        figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end)) wstr];
-    end
-    rd_saveAllFigs(fH, {'timeFreqByCond','timeFreqAtt','timeFreqPA'}, figPrefix, figDir)
+    rd_saveAllFigs(fH, {'waveletPAAU','waveletPAAUT1T2Comb'}, figPrefix, figDir)
 end
 
 %% Time-frequency - single trials
@@ -797,7 +775,11 @@ for iCh = 1:numel(channels)
 end
 
 % mean across channels
-tfSingleAmps = squeeze(rd_wmean(tfSingleAmps0,chw,1));
+tfSingleAmps1 = squeeze(rd_wmean(tfSingleAmps0,chw,1));
+
+% normalize by mean amplitude for each frequency
+m = nanmean(tfSingleAmps1,2);
+tfSingleAmps = tfSingleAmps1./repmat(m,1,numel(timeoi),1)-1; % proportion change from mean
 
 tfSingleAmpsAtt(:,:,1) = nanmean(tfSingleAmps(:,:,plotOrder(1:(nTrigs-1)/2)),3);
 tfSingleAmpsAtt(:,:,2) = nanmean(tfSingleAmps(:,:,plotOrder((nTrigs-1)/2+1:end-1)),3);
@@ -807,6 +789,42 @@ for iTrig = 1:(nTrigs-1)/2
 end
 t1SinglePADiff = mean(tfSingleAmpsPA(:,:,[1 3]),3)-mean(tfSingleAmpsPA(:,:,[2 4]),3);
 t2SinglePADiff = mean(tfSingleAmpsPA(:,:,[1 2]),3)-mean(tfSingleAmpsPA(:,:,[3 4]),3);
+
+% windows around targets
+twin = [-600 600];
+t1Tidx = find(isneq(timeoi*1000,eventTimes(3)+twin(1))):find(isneq(timeoi*1000,eventTimes(3)+twin(2)));
+t2Tidx = find(isneq(timeoi*1000,eventTimes(4)+twin(1))):find(isneq(timeoi*1000,eventTimes(4)+twin(2)));
+
+% calculate pres/abs x att/unattend for each target
+stfPAAUT(:,:,1,1) = (tfSingleAmps(:,t1Tidx,1) + tfSingleAmps(:,t1Tidx,5))/2; % present/attended
+stfPAAUT(:,:,2,1) = (tfSingleAmps(:,t1Tidx,2) + tfSingleAmps(:,t1Tidx,6))/2; % present/unattended
+stfPAAUT(:,:,3,1) = (tfSingleAmps(:,t1Tidx,3) + tfSingleAmps(:,t1Tidx,7))/2; % absent/attended
+stfPAAUT(:,:,4,1) = (tfSingleAmps(:,t1Tidx,4) + tfSingleAmps(:,t1Tidx,8))/2; % absent/unattended
+
+stfPAAUT(:,:,1,2) = (tfSingleAmps(:,t2Tidx,2) + tfSingleAmps(:,t2Tidx,4))/2;
+stfPAAUT(:,:,2,2) = (tfSingleAmps(:,t2Tidx,1) + tfSingleAmps(:,t2Tidx,3))/2;
+stfPAAUT(:,:,3,2) = (tfSingleAmps(:,t2Tidx,6) + tfSingleAmps(:,t2Tidx,8))/2;
+stfPAAUT(:,:,4,2) = (tfSingleAmps(:,t2Tidx,5) + tfSingleAmps(:,t2Tidx,7))/2;
+
+% present vs. absent and attended vs. unattended
+for iT = 1:2
+    stfPAT(:,:,1,iT) = (stfPAAUT(:,:,1,iT) + stfPAAUT(:,:,2,iT))/2; % present
+    stfPAT(:,:,2,iT) = (stfPAAUT(:,:,3,iT) + stfPAAUT(:,:,4,iT))/2; % absent
+
+    stfAUT(:,:,1,iT) = (stfPAAUT(:,:,1,iT) + stfPAAUT(:,:,3,iT))/2; % attended
+    stfAUT(:,:,2,iT) = (stfPAAUT(:,:,2,iT) + stfPAAUT(:,:,4,iT))/2; % unattended 
+end
+
+% combining across T1 and T2
+for iPAAU = 1:4
+    stfPAAU(:,:,iPAAU) = (stfPAAUT(:,:,iPAAU,1) + stfPAAUT(:,:,iPAAU,2))/2;
+end
+
+stfPA(:,:,1) = (stfPAAU(:,:,1) + stfPAAU(:,:,2))/2; % present
+stfPA(:,:,2) = (stfPAAU(:,:,3) + stfPAAU(:,:,4))/2; % absent
+
+stfAU(:,:,1) = (stfPAAU(:,:,1) + stfPAAU(:,:,3))/2; % attended
+stfAU(:,:,2) = (stfPAAU(:,:,2) + stfPAAU(:,:,4))/2; % unattended
 
 % store results
 A.stfTaper = taper;
@@ -818,12 +836,23 @@ A.stfAmpsAtt = tfSingleAmpsAtt;
 A.stfAmpsPA = tfSingleAmpsPA;
 A.stfPADiff(:,:,1) = t1SinglePADiff;
 A.stfPADiff(:,:,2) = t2SinglePADiff;
+A.stftwin = twin;
+A.stft1Tidx = t1Tidx;
+A.stft2Tidx = t2Tidx;
+A.stfPAAUT = stfPAAUT;
+A.stfPAT = stfPAT;
+A.stfAUT = stfAUT;
+A.stfPAAU = stfPAAU;
+A.stfPA = stfPA;
+A.stfAU = stfAU;
+
+%%% stopped working here, time to make 9 square figs
 
 % figures
 ytick = 10:10:numel(foi);
 xtick = 51:50:numel(toi);
-clims = [0 70];
-diffClims = [-10 10];
+clims = [-0.5 0.5]; % [0 70]
+diffClims = [-0.2 0.2];
 hack = plotOrder;
 hack(hack>4) = hack(hack>4)+1;
 
@@ -833,6 +862,7 @@ set(gcf,'Position',tf9FigPos)
 for iTrig = 1:nTrigs
     subplot(2,5,hack(iTrig))
     imagesc(tfSingleAmps(:,:,iTrig),clims)
+%     imagesc(tfSingleAmps(:,:,iTrig))
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
     if iTrig==nTrigs
         xlabel('time (s)')
