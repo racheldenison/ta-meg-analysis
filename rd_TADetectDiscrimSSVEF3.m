@@ -269,6 +269,8 @@ tf9FigPos = [0 250 1280 580];
 tf3FigPos = [200 475 980 330];
 paau3FigPos = [800 30 450 830];
 paau6FigPos = [0 90 1000 800];
+tf9SquareFigPos = [50 50 850 850];
+tf6SquareFigPos = [50 50 850 530];
 
 set(0,'defaultLineLineWidth',1)
 
@@ -327,7 +329,7 @@ if saveFigs
     rd_saveAllFigs(gcf, {'tsFFT'}, figPrefix, figDir)
 end
 
-%% Target present vs. absent
+%% Target present vs. absent %%%% come back & rewrite
 pp = [trigMeanMean(:,:,1) trigMeanMean(:,:,2)];
 pa = [trigMeanMean(:,:,5) trigMeanMean(:,:,6)];
 ap = [trigMeanMean(:,:,3) trigMeanMean(:,:,4)];
@@ -608,8 +610,8 @@ wAU(:,:,2) = cat(2, wPAAU(:,:,2), wPAAU(:,:,4)); % unattended
 
 % store results
 A.wtwin = twin;
-A.wt1Tidx = wt1Tidx;
-A.wt2Tidx = wt2Tidx;
+A.wt1Tidx = t1Tidx;
+A.wt2Tidx = t2Tidx;
 A.wPAAUT = wPAAUT;
 A.wPAT = wPAT;
 A.wAUT = wAUT;
@@ -853,8 +855,8 @@ A.stfAU = stfAU;
 % figures
 ytick = 10:10:numel(foi);
 xtick = 51:50:numel(toi);
-clims = [-0.5 0.5]; % [0 70]
-diffClims = [-0.3 0.3];
+clims = [-0.3 0.3]; % [0 70]
+diffClims = [-0.2 0.2];
 hack = plotOrder;
 hack(hack>4) = hack(hack>4)+1;
 cmap = flipud(lbmap(64,'RedBlue'));
@@ -867,6 +869,7 @@ for iTrig = 1:nTrigs
     subplot(2,5,hack(iTrig))
     imagesc(tfSingleAmps(:,:,iTrig),clims)
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    colormap(cmap)
     if iTrig==nTrigs
         xlabel('time (s)')
         ylabel('frequency (Hz)')
@@ -882,19 +885,20 @@ attNames = {'attT1','attT2'};
 for iAtt = 1:size(tfSingleAmpsAtt,3)
     subplot(1,3,iAtt)
     imagesc(tfSingleAmpsAtt(:,:,iAtt),clims)
-    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-    xlabel('time (s)')
-    ylabel('frequency (Hz)')
     title(attNames{iAtt})
 end
 subplot(1,3,3)
 imagesc(tfSingleAmpsAtt(:,:,2)-tfSingleAmpsAtt(:,:,1),diffClims)
-rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-xlabel('time (s)')
-ylabel('frequency (Hz)')
 title('attT2 - attT1')
-rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
-rd_raiseAxis(gca);
+aH = findall(gcf,'type','axes');
+for iAx = 1:numel(aH)
+    axes(aH(iAx));
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    xlabel('time (s)')
+    ylabel('frequency (Hz)')
+    colormap(cmap)
+end
+rd_supertitle2(['channel' sprintf(' %d', channels) wstrt]);
 
 fH(3) = figure;
 set(gcf,'Position',tf9FigPos)
@@ -929,7 +933,6 @@ rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
 rd_raiseAxis(gca);
 
 % 9 squares, attended-unattended
-tf9SquareFigPos = [50 50 850 850];
 fH(4) = figure;
 set(gcf,'Position',tf9SquareFigPos)
 % T1/T2 x pres/abs
@@ -970,14 +973,14 @@ for iAx = 1:numel(aH)
     axes(aH(iAx));
     rd_timeFreqPlotLabels(twinvals,foi,paauxtick,ytick,0);
     set(gca,'clim',diffClims)
+    colormap(cmap)
 end
 rd_supertitle2('attended vs. unattended')
 
 % 9 squares, present-absent
-tf9SquareFigPos = [50 50 850 850];
 fH(5) = figure;
 set(gcf,'Position',tf9SquareFigPos)
-% T1/T2 x pres/abs
+% T1/T2 x att/unatt
 subplot(3,3,1)
 imagesc(stfPAAUT(:,:,1,1)-stfPAAUT(:,:,3,1)) % T1-pres-att vs. abs-att
 ylabel('attended')
@@ -1018,6 +1021,78 @@ for iAx = 1:numel(aH)
     colormap(cmap)
 end
 rd_supertitle2('present vs. absent')
+
+% 6 squares, present
+fH(6) = figure;
+set(gcf,'Position',tf6SquareFigPos)
+% T1/T2 x att/unatt
+subplot(2,3,1)
+imagesc(stfPAAUT(:,:,1,1)) % T1-pres-att
+ylabel('attended')
+title('T1')
+subplot(2,3,2)
+imagesc(stfPAAUT(:,:,1,2)) % T2-pres-att
+title('T2')
+subplot(2,3,4)
+imagesc(stfPAAUT(:,:,2,1)) % T1-pres-unatt
+ylabel('unattended')
+subplot(2,3,5)
+imagesc(stfPAAUT(:,:,2,2)) % T2-pres-unatt
+% ave(T1,T2)
+subplot(2,3,3)
+imagesc(stfPAAU(:,:,1)) % pres-att
+title('ave(T1,T2)')
+subplot(2,3,6)
+imagesc(stfPAAU(:,:,2)) % pres-unatt
+xlabel('time (s)')
+ylabel('frequency (Hz)')
+title('ave(all)')
+% format subplots
+aH = findall(gcf,'type','axes');
+paauxtick = [11 61 111];
+for iAx = 1:numel(aH)
+    axes(aH(iAx));
+    rd_timeFreqPlotLabels(twinvals,foi,paauxtick,ytick,0);
+    set(gca,'clim',diffClims)
+    colormap(cmap)
+end
+rd_supertitle2('target present')
+
+% 6 squares, absent
+fH(7) = figure;
+set(gcf,'Position',tf6SquareFigPos)
+% T1/T2 x att/unatt
+subplot(2,3,1)
+imagesc(stfPAAUT(:,:,3,1)) % T1-abs-att
+ylabel('attended')
+title('T1')
+subplot(2,3,2)
+imagesc(stfPAAUT(:,:,3,2)) % T2-abs-att
+title('T2')
+subplot(2,3,4)
+imagesc(stfPAAUT(:,:,4,1)) % T1-abs-unatt
+ylabel('unattended')
+subplot(2,3,5)
+imagesc(stfPAAUT(:,:,4,2)) % T2-abs-unatt
+% ave(T1,T2)
+subplot(2,3,3)
+imagesc(stfPAAU(:,:,3)) % abs-att
+title('ave(T1,T2)')
+subplot(2,3,6)
+imagesc(stfPAAU(:,:,4)) % abs-unatt
+xlabel('time (s)')
+ylabel('frequency (Hz)')
+title('ave(all)')
+% format subplots
+aH = findall(gcf,'type','axes');
+paauxtick = [11 61 111];
+for iAx = 1:numel(aH)
+    axes(aH(iAx));
+    rd_timeFreqPlotLabels(twinvals,foi,paauxtick,ytick,0);
+    set(gca,'clim',diffClims)
+    colormap(cmap)
+end
+rd_supertitle2('target absent')
 
 if saveFigs
     if numel(channels)==1
