@@ -41,11 +41,11 @@ switch analStr
     case ''
         savename = sprintf('%s/%s_ssvef_workspace.mat', matDir, fileBase);
         channelsFileName = sprintf('%s/channels_%dHz.mat', matDir, ssvefFreq);
-        analysisFileName = sprintf('%s/analysis_%s_%s_%sTrials_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%sTrials_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, ssvefFreq);
     otherwise
         savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
         channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
-        analysisFileName = sprintf('%s/analysis_%s_%s_%s_%sTrials_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%s_%sTrials_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, ssvefFreq);
 end
 
 %% Get the data
@@ -132,14 +132,14 @@ if excludeTrialsFt
     % update analysis file
     switch analStr
         case ''
-            analysisFileName = sprintf('%s/analysis_%s_ft_%s_%sTrials_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_singleTrials_%s_ft_%s_%sTrials_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, ssvefFreq);
         otherwise
-            analysisFileName = sprintf('%s/analysis_%s_%s_ft_%s_%sTrials_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_ft_%s_%sTrials_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, ssvefFreq);
     end
 end
 
 %% Make figDir if needed
-figDir = sprintf('%s_%s_%sTrials', figDir, channelSelectionStr, trialSelection);
+figDir = sprintf('%s_singleTrials_%s_%sTrials', figDir, channelSelectionStr, trialSelection);
 
 if ~exist(figDir,'dir') && saveFigs
     mkdir(figDir)
@@ -288,7 +288,7 @@ set(gcf,'Position',ts2FigPos)
 subplot(3,1,1)
 hold on
 for iTrig = 1:nTrigs
-    plot(t, trigMeanMean(:,:,plotOrder(iTrig)),'color',trigColors(iTrig,:))
+    plot(t, squeeze(nanmean(trigMeanMean(:,:,plotOrder(iTrig)),2)),'color',trigColors(iTrig,:))
 end
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
@@ -302,7 +302,7 @@ title(['channel' sprintf(' %d', channels) wstrt])
 subplot(3,1,2)
 hold on
 for iTrig = 1:nTrigs
-    plot(f, ampsMean(:,:,plotOrder(iTrig)),'color',trigColors(iTrig,:))
+    plot(f, squeeze(nanmean(ampsMean(:,:,plotOrder(iTrig)),2)),'color',trigColors(iTrig,:))
 end
 xlim([1 200])
 ylim([0 60])
@@ -312,8 +312,8 @@ legend(trigNames(plotOrder))
 
 subplot(3,1,3)
 hold on
-plot(f, ampsMean(:,:,end),'color',trigColors(end,:))
-plot(f, mean(ampsMean(:,:,1:end-1),3),'color',[.66 .5 .78])
+plot(f, squeeze(nanmean(mean(ampsMean(:,:,1:end-1),3),2)),'color',[.66 .5 .78])
+plot(f, squeeze(nanmean(ampsMean(:,:,end),2)),'color',trigColors(end,:))
 xlim([1 200])
 ylim([0 60])
 xlabel('Frequency (Hz)')
@@ -362,10 +362,8 @@ targetAmpsAll = targetAmps(:,:);
 A.targetWindow = targetWindow;
 A.paauT = paauT;
 A.targetPADiff = targetPADiff;
-A.targetPADiffAll = targetPADiffAll;
 A.targetF = targetF;
 A.targetPADiffAmps = targetAmps;
-A.targetPADiffAmpsAll = targetAmpsAll;
 
 names = {'target present','target absent'};
 colors = get(gca,'ColorOrder');
@@ -678,8 +676,7 @@ for iT = 1:2
     ylabel('wavelet amp')
     title(sprintf('T%d',iT))
 end
-rd_supertitle([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
-rd_raiseAxis(gca);
+rd_supertitle2([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 % combined across T1 and T2
 fH(2) = figure;
@@ -735,8 +732,7 @@ xlabel('time (ms)')
 ylabel('wavelet amp')
 title('T1 & T2')
 
-rd_supertitle([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
-rd_raiseAxis(gca);
+rd_supertitle2([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 
 if saveFigs
     figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
@@ -1097,7 +1093,7 @@ if saveFigs
     else
         figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end)) wstr];
     end
-    rd_saveAllFigs(fH, {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA'}, figPrefix, figDir)
+    rd_saveAllFigs(fH, {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA','timeFreqSingleAUDiff','timeFreqSinglePADiff','timeFreqSinglePresent','timeFreqSingleAbsent'}, figPrefix, figDir)
 end
 
 %% save analysis
