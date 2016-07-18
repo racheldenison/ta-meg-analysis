@@ -329,81 +329,78 @@ if saveFigs
     rd_saveAllFigs(gcf, {'tsFFT'}, figPrefix, figDir)
 end
 
-%% Target present vs. absent %%%% come back & rewrite
-pp = [trigMeanMean(:,:,1) trigMeanMean(:,:,2)];
-pa = [trigMeanMean(:,:,5) trigMeanMean(:,:,6)];
-ap = [trigMeanMean(:,:,3) trigMeanMean(:,:,4)];
-aa = [trigMeanMean(:,:,7) trigMeanMean(:,:,8)];
+%% Target present vs. absent
+targetWindow = [-100 600];
+t1Tidx = t>=eventTimes(3) + targetWindow(1) & t<=eventTimes(3) + targetWindow(2);
+t2Tidx = t>=eventTimes(4) + targetWindow(1) & t<=eventTimes(4) + targetWindow(2);
 
-targetWindow = [-100 500];
-t1Window = t>=eventTimes(3) + targetWindow(1) & t<=eventTimes(3) + targetWindow(2);
-t2Window = t>=eventTimes(4) + targetWindow(1) & t<=eventTimes(4) + targetWindow(2);
-targetPA(1,:,1,:) = pp(t1Window,:);
-targetPA(2,:,1,:) = pp(t2Window,:);
-targetPA(3,:,1,:) = pa(t1Window,:);
-targetPA(4,:,1,:) = ap(t2Window,:);
-targetPA(1,:,2,:) = aa(t1Window,:);
-targetPA(2,:,2,:) = aa(t2Window,:);
-targetPA(3,:,2,:) = ap(t1Window,:);
-targetPA(4,:,2,:) = pa(t2Window,:);
+% calculate pres/abs x att/unattend for each target
+paauT(:,:,1,1) = [trigMeanMean(t1Tidx,:,1) trigMeanMean(t1Tidx,:,5)]; % present/attended
+paauT(:,:,2,1) = [trigMeanMean(t1Tidx,:,2) trigMeanMean(t1Tidx,:,6)]; % present/unattended
+paauT(:,:,3,1) = [trigMeanMean(t1Tidx,:,3) trigMeanMean(t1Tidx,:,7)] ; % absent/attended
+paauT(:,:,4,1) = [trigMeanMean(t1Tidx,:,4) trigMeanMean(t1Tidx,:,8)]; % absent/unattended
 
-targetPADiff0 = squeeze(targetPA(:,:,1,:)-targetPA(:,:,2,:)); % trial pairing not meaningful
-targetPADiff = reshape(shiftdim(targetPADiff0,1),...
-    size(targetPADiff0,2),size(targetPADiff0,1)*size(targetPADiff0,3));
+paauT(:,:,1,2) = [trigMeanMean(t2Tidx,:,2) trigMeanMean(t2Tidx,:,4)];
+paauT(:,:,2,2) = [trigMeanMean(t2Tidx,:,1) trigMeanMean(t2Tidx,:,3)];
+paauT(:,:,3,2) = [trigMeanMean(t2Tidx,:,6) trigMeanMean(t2Tidx,:,8)];
+paauT(:,:,4,2) = [trigMeanMean(t2Tidx,:,5) trigMeanMean(t2Tidx,:,7)];
 
-targetNfft = 2^nextpow2(diff(targetWindow)+1);
-targetY = fft(targetPADiff,targetNfft)/(diff(targetWindow)+1);
+% ave pres - ave abs. trial pairing not meaningful
+targetPADiff = squeeze((paauT(:,:,1,:)+paauT(:,:,2,:))/2 - ...
+    (paauT(:,:,3,:)+paauT(:,:,4,:))/2); 
+targetPADiffAll = targetPADiff(:,:);
+
+% calculate power only after the time of the target presentation
+tZeroIdx = find(targetWindow(1):targetWindow(2)==0);
+targetNfft = 2^nextpow2(targetWindow(2)+1);
+targetY = fft(targetPADiff(tZeroIdx:end,:,:),targetNfft)/(targetWindow(2)+1);
 targetF = Fs/2*linspace(0,1,targetNfft/2+1);
-targetAmps = 2*abs(targetY(1:targetNfft/2+1,:));
+targetAmps = 2*abs(targetY(1:targetNfft/2+1,:,:));
+targetAmpsAll = targetAmps(:,:);
 
 % store results
 A.targetWindow = targetWindow;
-A.targetPA = targetPA;
+A.paauT = paauT;
 A.targetPADiff = targetPADiff;
+A.targetPADiffAll = targetPADiffAll;
 A.targetF = targetF;
 A.targetPADiffAmps = targetAmps;
+A.targetPADiffAmpsAll = targetAmpsAll;
 
 names = {'target present','target absent'};
-colors = {'b','g','r','c'};
+colors = get(gca,'ColorOrder');
 fH = [];
 fH(1) = figure;
-set(gcf,'Position',ts2FigPos)
-for iPA = 1:2
-    subplot(2,1,iPA)
-    hold on
-    for iXO = 1:4
-        plot(targetWindow(1):targetWindow(2), squeeze(targetPA(iXO,:,iPA,:)), 'color', colors{iXO})
-    end
-    plot(targetWindow(1):targetWindow(2),squeeze(nanmean(nanmean(targetPA(:,:,iPA,:),1),4)),'k','LineWidth',4)
-    vline(0,'k');
-    if iPA==1
-        legend('xx1','xx2','xo1','ox2')
-    end
-    xlabel('time (ms)')
-    ylabel('amplitude')
-    title(names{iPA})
-end
-rd_supertitle(['channel' sprintf(' %d', channels) wstrt])
-rd_raiseAxis(gca);
-
-fH(2) = figure;
 set(gcf,'Position',ts3FigPos)
 subplot(3,1,1)
-plot(targetWindow(1):targetWindow(2), targetPADiff)
+hold on
+plot(targetWindow(1):targetWindow(2), squeeze(nanmean(targetPADiff,2)))
+legend('T1','T2')
+[~, emp, err] = rd_bootstrapCI(targetPADiff(:,:,1)');
+shadedErrorBar(targetWindow(1):targetWindow(2), emp, err, {'color',colors(1,:),'LineWidth',2}, 1)
+[~, emp, err] = rd_bootstrapCI(targetPADiff(:,:,2)');
+shadedErrorBar(targetWindow(1):targetWindow(2), emp, err, {'color',colors(2,:),'LineWidth',2}, 1)
+vline(0,'k')
 xlabel('time (ms)')
 ylabel('\Delta amplitude')
 title('target present - absent')
 subplot(3,1,2)
-plot(targetWindow(1):targetWindow(2), nanmean(targetPADiff,2), 'k');
+hold on
+[~, emp, err] = rd_bootstrapCI(targetPADiffAll');
+shadedErrorBar(targetWindow(1):targetWindow(2), emp, err, {'color','k','LineWidth',2}, 1)
+vline(0,'k')
+legend('T1 & T2')
 xlabel('time (ms)')
 ylabel('\Delta amplitude')
 subplot(3,1,3)
-plot(targetF, targetAmps)
-xlim([0 150])
+hold on
+[~, emp, err] = rd_bootstrapCI(targetAmpsAll');
+shadedErrorBar(targetF, emp, err, {'color','k','LineWidth',2}, 1)
+plot(targetF, nanmean(targetAmpsAll,2), 'b')
+xlim([0 50])
 xlabel('frequency (Hz)')
-ylabel('\Delta amplitude')
-rd_supertitle(['channel' sprintf(' %d', channels) wstrt])
-rd_raiseAxis(gca);
+ylabel('amplitude')
+rd_supertitle2(['channel' sprintf(' %d', channels) wstrt])
 
 if saveFigs
     if numel(channels)==1
@@ -411,7 +408,7 @@ if saveFigs
     else
         figPrefix = ['plot_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end)) wstr];
     end
-    rd_saveAllFigs(fH, {'targetPATrialAve','targetPATrialAveDiff'}, figPrefix, figDir)
+    rd_saveAllFigs(fH, {'targetPATrialAveDiff'}, figPrefix, figDir)
 end
 
 %% Wavelet on average across trials
@@ -896,8 +893,8 @@ for iAx = 1:numel(aH)
     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
     xlabel('time (s)')
     ylabel('frequency (Hz)')
-    colormap(cmap)
 end
+colormap(cmap)
 rd_supertitle2(['channel' sprintf(' %d', channels) wstrt]);
 
 fH(3) = figure;
@@ -929,8 +926,8 @@ rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('T2 vs. T1 P-A')
-rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
-rd_raiseAxis(gca);
+rd_supertitle2(['channel' sprintf(' %d', channels) wstrt]);
+colormap(cmap)
 
 % 9 squares, attended-unattended
 fH(4) = figure;
@@ -973,8 +970,8 @@ for iAx = 1:numel(aH)
     axes(aH(iAx));
     rd_timeFreqPlotLabels(twinvals,foi,paauxtick,ytick,0);
     set(gca,'clim',diffClims)
-    colormap(cmap)
 end
+colormap(cmap)
 rd_supertitle2('attended vs. unattended')
 
 % 9 squares, present-absent
@@ -1018,8 +1015,8 @@ for iAx = 1:numel(aH)
     axes(aH(iAx));
     rd_timeFreqPlotLabels(twinvals,foi,paauxtick,ytick,0);
     set(gca,'clim',diffClims)
-    colormap(cmap)
 end
+colormap(cmap)
 rd_supertitle2('present vs. absent')
 
 % 6 squares, present
@@ -1054,8 +1051,8 @@ for iAx = 1:numel(aH)
     axes(aH(iAx));
     rd_timeFreqPlotLabels(twinvals,foi,paauxtick,ytick,0);
     set(gca,'clim',diffClims)
-    colormap(cmap)
 end
+colormap(cmap)
 rd_supertitle2('target present')
 
 % 6 squares, absent
@@ -1090,8 +1087,8 @@ for iAx = 1:numel(aH)
     axes(aH(iAx));
     rd_timeFreqPlotLabels(twinvals,foi,paauxtick,ytick,0);
     set(gca,'clim',diffClims)
-    colormap(cmap)
 end
+colormap(cmap)
 rd_supertitle2('target absent')
 
 if saveFigs
