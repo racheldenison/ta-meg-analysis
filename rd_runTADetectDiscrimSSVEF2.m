@@ -3,11 +3,11 @@
 %% setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi'; % '', 'ebi', etc.
-ssvefFreqs = [30 40];
+ssvefFreqs = 30; %[30 40];
 nTopChs = 5; % 1, 5, [1 5], etc.
 iqrThreshs = [];
 weightChannels = 0;
-trialSelection = 'incorrect'; % 'all','correct,'incorrect','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
+trialSelection = 'all'; % 'all','correct,'incorrect','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...

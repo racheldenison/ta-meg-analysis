@@ -2,14 +2,19 @@ function rd_plotTADetectDiscrimGroup(measure)
 
 % Args
 if ~exist('measure','var')
-    measure = 'w'; % ts w h tf stf
+    measure = 'w-single'; % ts w h tf stf w-single stf-single
 end
 
 % Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
-selectionStr = 'topChannels5_correctTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+selectionStr = 'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+if strfind(measure,'single')
+    aggStr = '_singleTrials';
+else
+    aggStr = '';
+end
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -87,14 +92,14 @@ nSubjects = numel(subjects);
 
 saveFigs = 1;
 figDir = sprintf('%s/Group/figures/%s', exptDir, analStr);
-figStr = sprintf('gN%d_%dHz_%s', nSubjects, ssvefFreq, selectionStr);
+figStr = sprintf('gN%d%s_%dHz_%s', nSubjects, aggStr, ssvefFreq, selectionStr);
 
 tstart = -500; % ms
 tstop = 3600; % ms
 t = tstart:tstop;
 eventTimes = [0 500 1500 2100 3100];
 
-normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
+normalizeOption = 'amp'; % 'none','commonBaseline','amp','stim'
 
 %% Get data
 for iSubject = 1:nSubjects
@@ -104,8 +109,18 @@ for iSubject = 1:nSubjects
     dataDir = sprintf('%s/%s', exptDir, sessionDir);
     matDir = sprintf('%s/mat', dataDir);
     
-    analysisFile = dir(sprintf('%s/analysis_*_%s_%s_%dHz.mat', matDir, analStr, selectionStr, ssvefFreq));
+    analysisFile = dir(sprintf('%s/analysis%s_*_%s_%s_%dHz.mat', matDir, aggStr, analStr, selectionStr, ssvefFreq));
 
+    if isempty(aggStr)
+        removeFile = [];
+        for i = 1:numel(analysisFile)
+            if strfind(analysisFile.name,'singleTrials')
+                removeFile = i;
+            end
+        end
+        analysisFile(removeFile) = [];
+    end
+        
     if numel(analysisFile)==1
         load(sprintf('%s/%s', matDir, analysisFile.name))
     else
@@ -137,6 +152,29 @@ for iSubject = 1:nSubjects
             groupData.ampsAtt(:,:,:,iSubject) = A.stfAmpsAtt;
             groupData.ampsPA(:,:,:,iSubject) = A.stfAmpsPA;
             groupData.paDiff(:,:,:,iSubject) = A.stfPADiff;
+        case 'w-single'
+            groupData.amps(:,:,iSubject) = squeeze(nanmean(A.wAmps,2));
+            groupData.ampsAtt(:,:,iSubject) = squeeze(nanmean(A.wAmpsAtt,2)); % transponse if plotting with amps function
+            groupData.ampsPA(:,:,iSubject) = squeeze(nanmean(A.wAmpsPA,2)); % transpose if plotting with amps function
+            % comment out if plotting with amps function
+            groupData.ampsAll(:,iSubject) = squeeze(nanmean(A.wAmpsAll,2));
+            groupData.PAAUT(:,:,:,iSubject) = squeeze(nanmean(A.wPAAUT,2));
+            groupData.PAT(:,:,:,iSubject) = squeeze(nanmean(A.wPAT,2));
+            groupData.AUT(:,:,:,iSubject) = squeeze(nanmean(A.wAUT,2));
+            groupData.PAAU(:,:,iSubject) = squeeze(nanmean(A.wPAAU,2));
+            groupData.PA(:,:,iSubject) = squeeze(nanmean(A.wPA,2));
+            groupData.AU(:,:,iSubject) = squeeze(nanmean(A.wAU,2));
+        case 'stf-single'
+            groupData.amps(:,:,:,iSubject) = A.stfAmps;
+            groupData.ampsAtt(:,:,:,iSubject) = A.stfAmpsAtt;
+            groupData.ampsPA(:,:,:,iSubject) = A.stfAmpsPA;
+            groupData.paDiff(:,:,:,iSubject) = A.stfPADiff;
+            groupData.PAAUT(:,:,:,:,iSubject) = A.stfPAAUT;
+            groupData.PAT(:,:,:,:,iSubject) = A.stfPAT;
+            groupData.AUT(:,:,:,:,iSubject) = A.stfAUT;
+            groupData.PAAU(:,:,:,iSubject) = A.stfPAAU;
+            groupData.PA(:,:,:,iSubject) = A.stfPA;
+            groupData.AU(:,:,:,iSubject) = A.stfAU;
         otherwise
             error('measure not recognized')
     end
@@ -173,8 +211,18 @@ switch normalizeOption
             fieldName = fieldNames{iF};
             vals = groupData.(fieldName);
             sz = size(vals);
-            blankVals = repmat(baselineBlank, sz(1), sz(2));
-            baselineVals = repmat(baseline, sz(1), sz(2));
+            if numel(sz)==2
+                blankVals = repmat(squeeze(baselineBlank)', sz(1), 1);
+                baselineVals = repmat(squeeze(baseline)', sz(1), 1);
+            elseif numel(sz)==4
+                baselineBlank4(1,1,1,1:sz(4)) = squeeze(baselineBlank);
+                baseline4(1,1,1,1:sz(4)) = squeeze(baseline);
+                blankVals = repmat(baselineBlank4, sz(1), sz(2), sz(3));
+                baselineVals = repmat(baseline4, sz(1), sz(2), sz(3));
+            else
+                blankVals = repmat(baselineBlank, sz(1), sz(2));
+                baselineVals = repmat(baseline, sz(1), sz(2));
+            end
             groupData.(fieldName) = (vals - blankVals)./baselineVals; % relative to average amplitude
         end
     case 'stim'
@@ -217,13 +265,21 @@ switch measure
         rd_plotTADetectDiscrimGroupTS(A, ...
             groupMean, ...
             saveFigs, figDir, figStr)
+%     case {'w','h','w-single'}
     case {'w','h'}
         rd_plotTADetectDiscrimGroupAmps(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr)
-    case {'tf','stf'}
+    case {'tf','stf','stf-single'}
         rd_plotTADetectDiscrimGroupTimeFreq(A, measure, ...
-            groupMean, ...
+            groupMean, saveFigs, figDir, figStr)
+        if strcmp(measure, 'stf-single') % extra plots
+            rd_plotTADetectDiscrimGroupTimeFreqSingle(A, measure, ...
+                groupMean, saveFigs, figDir, figStr)
+        end
+    case 'w-single'
+        rd_plotTADetectDiscrimGroupAmpsSingle(A, measure, subjects, ...
+            groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr)
     otherwise
         error('measure not recognized')

@@ -48,6 +48,10 @@ switch measure
         ylims = [-5 30];
         diffYLims = [-5 5];
         diffYLimsGroup = [-2.5 2.5];
+    case 'w-single'
+        ylims = [300 700];
+        diffYLims = [-1.5 1.5];
+        diffYLimsGroup = [-1 1];
     otherwise
         error('measure not recognized')
 end

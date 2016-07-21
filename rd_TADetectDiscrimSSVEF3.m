@@ -55,8 +55,8 @@ load(savename)
 behav = behavior(behav);
 
 %% Settings after loading the data
-saveAnalysis = 0;
-saveFigs = 0;
+saveAnalysis = 1;
+saveFigs = 1;
 
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
@@ -457,10 +457,10 @@ attNames = {'attT1','attT2'};
 
 % PA combined
 wAmpsPA(:,:,1) = [wAmps(:,:,1) wAmps(:,:,2)];
-wAmpsPA(:,:,2) = [wAmps(:,:,5) wAmps(:,:,6)];
-wAmpsPA(:,:,3) = [wAmps(:,:,3) wAmps(:,:,4)];
+wAmpsPA(:,:,2) = [wAmps(:,:,3) wAmps(:,:,4)];
+wAmpsPA(:,:,3) = [wAmps(:,:,5) wAmps(:,:,6)];
 wAmpsPA(:,:,4) = [wAmps(:,:,7) wAmps(:,:,8)];
-PANames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
+PANames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'}; 
 
 % All combined
 wAmpsAll = [wAmpsAtt(:,:,1) wAmpsAtt(:,:,2)];

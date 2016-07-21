@@ -19,8 +19,22 @@ plotOrder = [1 5 3 7 2 6 4 8 9];
 tf9FigPos = [0 250 1280 580];
 tf3FigPos = [200 475 1000 275];
 
-foi = A.tfFoi;
-toi = A.tfToi;
+switch measure
+    case 'stf'
+        cmap = colormap;
+    case 'stf-single'
+        cmap = flipud(lbmap(64,'RedBlue'));
+    otherwise
+        error('measure not recognized')
+end
+
+try
+    foi = A.tfFoi;
+    toi = A.tfToi;
+catch
+    foi = A.stfFoi;
+    toi = A.stfToi;
+end
 eventTimes = A.eventTimes;
 trigNames = A.trigNames;
 attNames = A.attNames;
@@ -47,6 +61,9 @@ switch measure
     case 'stf'
         clims = [0 50];
         diffClims = [-5 5];
+    case 'stf-single'
+        clims = [-0.1 0.1];
+        diffClims = [-0.07 0.07];
     otherwise
         error('measure not recognized')
 end
@@ -65,6 +82,7 @@ for iTrig = 1:nTrigs
     end
     title(trigNames{iTrig})
 end
+colormap(cmap)
 rd_supertitle(figTitle);
 rd_raiseAxis(gca);
 
@@ -93,6 +111,7 @@ title('attT2 - attT1')
 %     ylabel('frequency (Hz)')
 %     title(attNames{iAtt})
 % end
+colormap(cmap)
 rd_supertitle(figTitle);
 rd_raiseAxis(gca);
 
@@ -125,6 +144,7 @@ rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
 title('T2 vs. T1 P-A')
+colormap(cmap)
 rd_supertitle(figTitle);
 rd_raiseAxis(gca);
 
@@ -133,7 +153,7 @@ if saveFigs
     switch measure
         case 'tf'
             figNames = {'timeFreqByCond','timeFreqAtt','timeFreqPA'};
-        case 'stf'
+        case {'stf','stf-single'}
             figNames = {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA'};
         otherwise
             error('measure not recognized')
