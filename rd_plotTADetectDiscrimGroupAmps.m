@@ -87,6 +87,9 @@ for iSample = 1:nSamples
         valsDiffShuffled(:,iSubject,iSample) = squeeze(shuffle(valsDiff(:,:,iSubject),2));
     end
 end
+valsDiffAbsCI = prctile(squeeze(nanmean(valsDiffShuffled,2)),[2.5 97.5],2);
+
+% absolute value
 valsDiffShuffledAbsMean = squeeze(nanmean(abs(valsDiffShuffled),2));
 % valsDiffAbsCI = prctile(valsDiffShuffledAbsMean,[2.5 97.5],2);
 valsDiffAbsCI = prctile(valsDiffShuffledAbsMean,95,2);
@@ -503,5 +506,42 @@ if saveFigs
         sprintf('%sAmpsPAUIndiv', measure), ...
         sprintf('%sAmpsPAUDiffGroup', measure)};
     rd_saveAllFigs(fH, figNames, figPrefix, figDir);
+end
+
+%% paau separately for T1 and T2
+paauDataT1T2(:,:,:,1) = t1PAAUData(t1Tidx,:,:); 
+paauDataT1T2(:,:,:,2) = t2PAAUData(t2Tidx,:,:);
+paauPresAUDiffT1T2 = squeeze(paauDataT1T2(:,1,:,:) - paauDataT1T2(:,2,:,:));
+
+for iT = 1:2
+    fH(5+iT) = figure;
+    set(gcf,'Position',tf9FigPos)
+    for iSubject = 1:nSubjects
+        subplot(nrows,ncols,iSubject)
+        hold on
+        plot(twin(1):twin(end), paauDataT1T2(:,1:2,iSubject,iT), 'LineWidth', 2)
+        %     xlim(xlims)
+        %     ylim(diffYLims)
+        vline(0,'color','k','LineStyle',':');
+        if iSubject==1
+            xlabel('time (ms)')
+            %         ylabel('amplitude difference (T2-T1)')
+        end
+        title(und2space(subjects{iSubject}))
+    end
+    legend('P-att','P-unatt')
+    rd_supertitle2(sprintf('T%d', iT))
+end
+
+fH(8) = figure;
+for iT = 1:2
+    subplot(1,2,iT)
+    hold on
+    plot(twin([1 end]), [0 0], 'k:')
+    shadedErrorBar(twin(1):twin(end), mean(paauPresAUDiffT1T2(:,:,iT),2), std(paauPresAUDiffT1T2(:,:,iT),0,2)/sqrt(nSubjects), {'color', 'k', 'LineWidth', 3}, 1)
+    vline(0,'color','k','LineStyle',':');
+    xlabel('time (ms)')
+    ylabel('amplitude difference (att-unatt)')
+    title(sprintf('T%d, target present trials', iT))
 end
 
