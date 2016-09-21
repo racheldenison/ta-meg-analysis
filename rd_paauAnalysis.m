@@ -10,6 +10,11 @@ nShuffles = 10000;
 
 paauPresAUDiffMean = squeeze(mean(paauPresAUDiffT1T2,2));
 
+% "evoked SSVEF": present-absent
+auPADiff = paauDataT1T2(:,1:2,:,:) - paauDataT1T2(:,3:4,:,:);
+auPADiffMean = squeeze(mean(auPADiff,3));
+auPADiffSte = squeeze(std(auPADiff,0,3)./sqrt(nSubjects));
+
 %% permutation test: any difference between A and U following target present?
 % shuffle condition labels to generate null distribution of PresAUDiff
 for iShuffle = 1:nShuffles
@@ -42,16 +47,36 @@ for iT = 1:2
     title(sprintf('T%d, target present trials', iT))
 end
 
+%% plot mean auPADiff with confidence intervals
+colors = {'b','g'};
+fH = figure;
+for iT = 1:2
+    subplot(1,2,iT)
+    hold on
+    plot(twin([1 end]), [0 0], 'k:')
+    for iAU = 1:2
+        shadedErrorBar(twin(1):twin(end), auPADiffMean(:,iAU,iT), auPADiffSte(:,iAU,iT), {'color', colors{iAU}, 'LineWidth', 3}, 1)
+    end
+    vline(0,'color','k','LineStyle',':');
+    xlabel('time (ms)')
+    ylabel('amplitude difference (att-unatt)')
+    title(sprintf('T%d, target present trials', iT))
+end
+
 %% fit line+Gaussian to individual subject curves
 fittwin = [0 600];
 t = fittwin(1):fittwin(end);
 fittidx = [find(twin(1):twin(end)==fittwin(1)) find(twin(1):twin(end)==fittwin(2))];
 opt = optimset('MaxFunEvals',20000,'MaxIter',20000);
 
-paramNames = {'m','b','mu','sigma','amp'}; % x
+% paramNames = {'m','b','mu','sigma','amp'}; % x
+paramNames = {'m','b'};
 linePlusGaussian = @(x,t) x(1)*t + x(2) + normpdf(t, x(3), x(4))*x(5);
-cost = @(x,y,t) sum((y - linePlusGaussian(x,t)).^2);
-x0 = [0, 1, 300, 50, -20];
+lineOnly = @(x,t) x(1)*t + x(2);
+model = lineOnly;
+cost = @(x,y,t) sum((y - model(x,t)).^2);
+% x0 = [0, 1, 300, 50, -20];
+x0 = [0 1];
 
 figure
 for iS = 1:nSubjects
@@ -65,7 +90,7 @@ for iS = 1:nSubjects
             [x,fval,exitflag,output] = fminsearch(fun,x0,opt);
             
             % results
-            yhat = linePlusGaussian(x,t);
+            yhat = model(x,t);
             
             % plot
             clf
@@ -86,6 +111,22 @@ end
 fit.sstot = squeeze(sum((fit.y - repmat(mean(fit.y),length(t),1,1,1)).^2));
 fit.R2 = 1-fit.cost./fit.sstot;
 fit.paramNames = paramNames;
+
+%% compare fits of line+gauss (lg) and line only (l) models
+rss1 = fitl.cost; % restricted
+rss2 = fitlg.cost; % unrestricted
+p1 = numel(fitl.paramNames);
+p2 = numel(fitlg.paramNames);
+n = size(fitl.y,1);
+
+for iS = 1:nSubjects
+    for iT = 1:2
+        for iAU = 1:2
+            [F(iAU,iT,iS), pval(iAU,iT,iS)] = ...
+                ftestnested(rss1(iAU,iT,iS), rss2(iAU,iT,iS), p1, p2, n);
+        end
+    end
+end
 
 %% plot indiv subjects with fits
 ncols = ceil(sqrt(nSubjects));
@@ -148,15 +189,32 @@ end
 % exclude subjects where the fitting is bad
 badFitSubjects = squeeze(any(any(fit.exitflag==0)));
 posAmpSubjects = squeeze(any(any(squeeze(fit.x(strcmp(paramNames,'amp'),:,:,:))>0)));
-excludeSubjects = badFitSubjects | posAmpSubjects;
+muOutOfRangeSubjects = squeeze(any(any(squeeze(fit.x(strcmp(paramNames,'mu'),:,:,:))<fittwin(1)))) | ...
+    squeeze(any(any(squeeze(fit.x(strcmp(paramNames,'mu'),:,:,:))>fittwin(2))));
+excludeSubjects = badFitSubjects | posAmpSubjects | muOutOfRangeSubjects;
 goodSubjects = find(~excludeSubjects);
 % goodSubjects = 1:nSubjects;
 
 mu = squeeze(fit.x(strcmp(paramNames,'mu'),:,:,goodSubjects));
 muDiff = squeeze(diff(mu));
 
+amp = squeeze(fit.x(strcmp(paramNames,'amp'),:,:,goodSubjects));
+sigma = squeeze(fit.x(strcmp(paramNames,'sigma'),:,:,goodSubjects));
+ampTrue = 0.4*amp./sigma; % in units of relative signal change (same as time series units)
+ampTrueDiff = squeeze(diff(ampTrue));
+
 figure
 bar(reshape(mu,4,numel(goodSubjects))')
 set(gca,'XTickLabel',goodSubjects)
+xlabel('subject')
+ylabel('mu')
+legend('T1 P-att','T1 P-unatt','T2 P-att','T2 P-unatt')
+
+figure
+bar(reshape(ampTrue,4,numel(goodSubjects))')
+set(gca,'XTickLabel',goodSubjects)
+xlabel('subject')
+ylabel('amp (relative signal change)')
+legend('T1 P-att','T1 P-unatt','T2 P-att','T2 P-unatt')
 
 

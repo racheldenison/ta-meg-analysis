@@ -2,14 +2,14 @@ function rd_plotTADetectDiscrimGroup(measure)
 
 % Args
 if ~exist('measure','var')
-    measure = 'w'; % ts w h tf stf w-single stf-single
+    measure = 'ts-single'; % ts w h tf stf w-single stf-single
 end
 
 % Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
-selectionStr = 'topChannels5'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+selectionStr = 'topChannels5_allTrials'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
 if strfind(measure,'single')
     aggStr = '_singleTrials';
 else
@@ -87,6 +87,11 @@ subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 % subjects = {'R0861_20150813','R0504_20150805','R0983_20150813',...
 %     'R1021_20151120','R1026_20151211','R0852_20151211',...
 %     'R1027_20151216','R1028_20151216','R1029_20151222'}; % discrim1 T1
+
+% subjects = {'R0817_20150504','R0504_20150805','R0983_20150813',...
+%     'R0436_20150904','R1018_20151118','R1019_20151118',...
+%     'R1021_20151120','R1026_20151211','R1028_20151216',...
+%     'R1029_20151222'}; % N=10, subjects with dip (as measured by fitting)
 
 nSubjects = numel(subjects);
 
@@ -175,6 +180,9 @@ for iSubject = 1:nSubjects
             groupData.PAAU(:,:,:,iSubject) = A.stfPAAU;
             groupData.PA(:,:,:,iSubject) = A.stfPA;
             groupData.AU(:,:,:,iSubject) = A.stfAU;
+        case 'ts-single'
+            groupData.tsAmpsS(:,:,:,iSubject) = A.trigMeanMean;
+            groupData.paauTS(:,:,:,:,iSubject) = A.paauT;
         otherwise
             error('measure not recognized')
     end
@@ -279,6 +287,10 @@ switch measure
         end
     case 'w-single'
         rd_plotTADetectDiscrimGroupAmpsSingle(A, measure, subjects, ...
+            groupData, groupMean, groupSte, ...
+            saveFigs, figDir, figStr)
+    case 'ts-single'
+        rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr)
     otherwise

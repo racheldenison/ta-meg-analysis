@@ -87,12 +87,37 @@ for iSample = 1:nSamples
         valsDiffShuffled(:,iSubject,iSample) = squeeze(shuffle(valsDiff(:,:,iSubject),2));
     end
 end
-valsDiffAbsCI = prctile(squeeze(nanmean(valsDiffShuffled,2)),[2.5 97.5],2);
+valsDiffCI = prctile(squeeze(nanmean(valsDiffShuffled,2)),[2.5 97.5],2);
 
 % absolute value
 valsDiffShuffledAbsMean = squeeze(nanmean(abs(valsDiffShuffled),2));
 % valsDiffAbsCI = prctile(valsDiffShuffledAbsMean,[2.5 97.5],2);
 valsDiffAbsCI = prctile(valsDiffShuffledAbsMean,95,2);
+
+%% permutation test: any difference between att T1 and att T2?
+% shuffle condition labels to generate null distribution of attDiff
+nShuffles = 1000;
+vals = groupData.ampsAtt;
+
+for iShuffle = 1:nShuffles
+    for iT = 1:2
+        attLabel = randi(2, 1, nSubjects); % att T1, att T2
+        for iS = 1:nSubjects
+            shuffleData(:,1,iS,iShuffle) = vals(attLabel(iS),:,iS);
+            shuffleData(:,2,iS,iShuffle) = vals(3-attLabel(iS),:,iS);
+        end
+    end
+end
+shuffleAttDiff = squeeze(diff(shuffleData,1,2)); % [time subject shuffle]
+shuffleAttDiffMean = squeeze(mean(shuffleAttDiff,2)); % [time shuffle]
+
+ci = prctile(shuffleAttDiffMean,[2.5 97.5],2);
+
+% figure
+% hold on
+% plot(t,valsDiffMean)
+% plot(t,valsDiffCI,'g') % time series shuffle
+% plot(t,ci) % condition label flip
 
 %% calculate pres-abs ste
 t1PA = cat(1, mean(groupData.ampsPA([1 3],:,:)), mean(groupData.ampsPA([2 4],:,:)));
