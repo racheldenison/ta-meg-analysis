@@ -104,7 +104,7 @@ tstop = 3600; % ms
 t = tstart:tstop;
 eventTimes = [0 500 1500 2100 3100];
 
-normalizeOption = 'amp'; % 'none','commonBaseline','amp','stim'
+normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
 
 %% Get data
 for iSubject = 1:nSubjects

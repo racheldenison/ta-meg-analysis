@@ -64,7 +64,32 @@ for iT = 1:2
 end
 groupDataB.adt = squeeze(mean(groupDataB.auDiff,2));
 [hh pp] = ttest(groupDataB.adt');
-    
+
+%% stats on paauTS
+vals = [];
+vals(:,1:4,:) = groupDataB.paauTS(:,:,1,:);
+vals(:,5:8,:) = groupDataB.paauTS(:,:,2,:);
+condNames = {'T1_P_att','T1_P_unatt','T1_A_att','T1_A_unatt',...
+    'T2_P_att','T2_P_unatt','T2_A_att','T2_A_unatt'}; 
+factorNames = {'T','PA','AU'};
+nLevels = [2 2 2];
+
+for it = 1:size(vals,1)
+    data = squeeze(vals(it,:,:))'; % subjects x conds
+    [fvals(it,:), pvals(it,:), rowNames] = rd_rmANOVA(data, condNames, factorNames, nLevels);
+end
+
+figure
+subplot(4,1,1:3)
+plot(twindow,fvals)
+ylabel('F value')
+legend(rowNames)
+subplot(4,1,4)
+plot(twindow,pvals<.05)
+ylim([0 2])
+xlabel('time (ms)')
+ylabel('p < .05')
+
 %% plot paauT, paDiff, au
 colors = get(gca,'ColorOrder');
 
