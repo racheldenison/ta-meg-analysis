@@ -41,17 +41,35 @@ set(0,'defaultLineLineWidth',1)
 
 switch measure
     case 'w'
-        ylims = [0 400];
-        diffYLims = [-50 50];
-        diffYLimsGroup = [-20 20];
+        switch A.normalizeOption
+            case 'none'
+                ylims = [0 400];
+                diffYLims = [-50 50];
+                diffYLimsGroup = [-20 20];
+            case 'commonBaseline'
+                ylims = [-1 2];
+                diffYLims = [-.8 .8];
+                diffYLimsGroup = [-.3 .3];               
+            otherwise
+                ylims = [0 2];
+                diffYLims = [-.8 .8];
+                diffYLimsGroup = [-.3 .3];
+        end
     case 'h'
         ylims = [-5 30];
         diffYLims = [-5 5];
         diffYLimsGroup = [-2.5 2.5];
     case 'w-single'
-        ylims = [300 700];
-        diffYLims = [-1.5 1.5];
-        diffYLimsGroup = [-1 1];
+        switch A.normalizeOption
+            case 'none'
+                ylims = [300 700];
+                diffYLims = [-1.5 1.5];
+                diffYLimsGroup = [-1 1];
+            otherwise
+                ylims = [.6 1.4];
+                diffYLims = [-.8 .8];
+                diffYLimsGroup = [-.3 .3];
+        end
     otherwise
         error('measure not recognized')
 end
@@ -413,7 +431,7 @@ end
 
 %% group pres-abs with ste error bars
 colors = allColors.ampsPA([1 4],:);
-ylims = [135 235];
+ylims0 = ylims(2).*[135 235]/400;
 twin = [-200 700];
 t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
 t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
@@ -427,7 +445,7 @@ hold on
 for iPA=1:2
     shadedErrorBar(twin(1):twin(end), mean(t1PA(iPA,t1Tidx,:),3), t1PADiffSte(t1Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
 end
-ylim(ylims)
+ylim(ylims0)
 vline(0,'color','k','LineStyle',':');
 xlim(twin)
 % xlim([t(t1Tidx(1)) t(t1Tidx(end))])
@@ -440,7 +458,7 @@ hold on
 for iPA=1:2
     shadedErrorBar(twin(1):twin(end), mean(t2PA(iPA,t2Tidx,:),3), t2PADiffSte(t2Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
 end
-ylim(ylims)
+ylim(ylims0)
 vline(0,'color','k','LineStyle',':');
 xlim(twin)
 % xlim([t(t2Tidx(1)) t(t2Tidx(end))])

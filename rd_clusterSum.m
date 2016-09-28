@@ -1,4 +1,4 @@
-function [clusterSums, maxClusterSum] = rd_clusterSum(ts, thresh)
+function [clusterSums, maxAbsClusterSum] = rd_clusterSum(ts, thresh)
 
 % example inputs
 % ts = rand(1,100);
@@ -32,4 +32,4 @@ for iC = 1:nClusters
     clusterSums(iC) = sum(vals);
 end
 
-maxClusterSum = max(clusterSums);
+maxAbsClusterSum = max(abs(clusterSums));

@@ -102,6 +102,43 @@ end
 paDiffClusterCI = prctile(paDiffClusterNull,[2.5 97.5],2);
 auDiffClusterCI = prctile(auDiffClusterNull,[2.5 97.5],2);
 
+%% max cluster sum of t-stat
+[h p ci stats] = ttest(paDiff(twoi,:)');
+paDiffTStat = stats.tstat;
+
+[h p ci stats] = ttest(auDiff(twoi,:)');
+auDiffTStat = stats.tstat;
+
+% t threshold
+tthresh = abs(tinv(.05/2,nSubjects-1));
+
+% empirical cluster sum
+[~, paDiffCluster] = rd_clusterSum(paDiffTStat, abs(paDiffTStat)>tthresh);
+[~, auDiffCluster] = rd_clusterSum(auDiffTStat, abs(auDiffTStat)>tthresh);
+
+for iShuffle = 1:nShuffles
+    % shuffle subject means independently
+    for iS = 1:nSubjects
+        idx = randperm(nConds);
+        valsShuffle(:,:,iS) = vals(twoi,idx,iS);
+    end
+
+    paDiffShData = squeeze(mean(valsShuffle(:,[1:2 5:6],:),2) - mean(valsShuffle(:,[3:4 7:8],:),2));
+    auDiffShData = squeeze(mean(valsShuffle(:,[1 3 5 7],:),2) - mean(valsShuffle(:,[2 4 6 8],:),2));
+    
+    [h p ci stats] = ttest(paDiffShData');
+    paDiffShTStat = stats.tstat;
+    [h p ci stats] = ttest(auDiffShData');
+    auDiffShTStat = stats.tstat;
+    audshts(:,iShuffle) = auDiffShTStat;
+    
+    [~, paDiffClusterNull(iShuffle)] = rd_clusterSum(paDiffShTStat, abs(paDiffShTStat)>tthresh);
+    [~, auDiffClusterNull(iShuffle)] = rd_clusterSum(auDiffShTStat, abs(auDiffShTStat)>tthresh);
+end
+
+paDiffClusterCI = prctile(paDiffClusterNull,95,2);
+auDiffClusterCI = prctile(auDiffClusterNull,95,2);
+
 
 
 
