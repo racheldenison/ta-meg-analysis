@@ -2,19 +2,17 @@ function rd_plotTADetectDiscrimGroup(measure)
 
 % Args
 if ~exist('measure','var')
-    measure = 'w'; % ts w h tf stf w-single stf-single
+    measure = 'stf-single'; % ts w h tf stf w-single stf-single
 end
 
 % Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
-selectionStr = 'topChannels5'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
-if strfind(measure,'single')
-    aggStr = '_singleTrials';
-else
-    aggStr = '';
-end
+selectionStr = 'topChannels5_allTrials'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
+
+saveFigs = 0;
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -65,6 +63,17 @@ subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 %     'R1021_20151120','R1026_20151211', ...
 %     'R0852_20151211','R1027_20151216','R1028_20151216'}; % N=7 suppressers
 
+% enhancers/suppressers topChannels5_allTrials_normStim [-250 -50] T1&T2 absent
+% subjects = {'R0817_20150504', 'R0973_20150727', ...
+%     'R0861_20150813', 'R0504_20150805', ...
+%     'R0898_20150828', 'R1018_20151118', ...
+%     'R1021_20151120','R0852_20151211','R1029_20151222'}; % N=9 enhancers 
+% 
+% subjects = {'R0974_20150728', ...
+%     'R0983_20150813', ...
+%     'R0436_20150904', ...
+%     'R1019_20151118','R1026_20151211', ...
+%     'R1027_20151216','R1028_20151216'}; % N=7 suppressers 
 
 % amp groups (based on topchannels10W all trials)
 % subjects = {'R0974_20150728','R0861_20150813', ...
@@ -74,7 +83,6 @@ subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 %     'R0852_20151211','R1029_20151222'}; % N=7 med (>100 & <150)
 % subjects = {'R0973_20150727','R0504_20150805', ...
 %     'R0898_20150828','R1021_20151120','R1028_20151216'}; % N=5 high (>150)
-
 
 % subjects = {'R0973_20150727','R0983_20150813', ...
 %     'R1021_20151120', ...
@@ -102,16 +110,20 @@ subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 
 nSubjects = numel(subjects);
 
-saveFigs = 0;
+if strfind(measure,'single')
+    aggStr = '_singleTrials';
+else
+    aggStr = '';
+end
+normStr = sprintf('_norm%s',[upper(normalizeOption(1)) normalizeOption(2:end)]);
+
 figDir = sprintf('%s/Group/figures/%s', exptDir, analStr);
-figStr = sprintf('gN%d%s_%dHz_%s', nSubjects, aggStr, ssvefFreq, selectionStr);
+figStr = sprintf('gN%d%s_%dHz_%s%s', nSubjects, aggStr, ssvefFreq, selectionStr, normStr);
 
 tstart = -500; % ms
 tstop = 3600; % ms
 t = tstart:tstop;
 eventTimes = [0 500 1500 2100 3100];
-
-normalizeOption = 'stim'; % 'none','commonBaseline','amp','stim'
 
 %% Get data
 for iSubject = 1:nSubjects
@@ -196,6 +208,7 @@ for iSubject = 1:nSubjects
 end
 
 %% Normalize to baseline for each subject - common baseline across conds
+A.normalizeOption = normalizeOption;
 switch normalizeOption
     case 'commonBaseline'
         bwin = [-500 0];
@@ -283,15 +296,14 @@ end
 % plot(t, ones(size(t))*(-log10(.05)))
 
 %% Plot figs
-A.normalizeOption = normalizeOption;
 switch measure
     case 'ts'
         rd_plotTADetectDiscrimGroupTS(A, ...
             groupMean, ...
             saveFigs, figDir, figStr)
-    case {'w','h','w-single'}
-%     case {'w','h'}
-        rd_plotTADetectDiscrimGroupAmps(A, measure, subjects, ...
+%     case {'w','h','w-single'}
+    case {'w','h'}
+        rd_plotTADetectDiscrimGroupAmps2(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr)
     case {'tf','stf','stf-single'}
@@ -301,10 +313,10 @@ switch measure
             rd_plotTADetectDiscrimGroupTimeFreqSingle(A, measure, ...
                 groupMean, saveFigs, figDir, figStr)
         end
-%     case 'w-single'
-%         rd_plotTADetectDiscrimGroupAmpsSingle(A, measure, subjects, ...
-%             groupData, groupMean, groupSte, ...
-%             saveFigs, figDir, figStr)
+    case 'w-single'
+        rd_plotTADetectDiscrimGroupAmpsSingle(A, measure, subjects, ...
+            groupData, groupMean, groupSte, ...
+            saveFigs, figDir, figStr)
     case 'ts-single'
         rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...

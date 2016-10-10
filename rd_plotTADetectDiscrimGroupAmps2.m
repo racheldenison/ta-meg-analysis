@@ -1,4 +1,4 @@
-function rd_plotTADetectDiscrimGroupAmps(A, measure, subjects, groupData, groupMean, groupSte, saveFigs, figDir, figStr)
+function rd_plotTADetectDiscrimGroupAmps2(A, measure, subjects, groupData, groupMean, groupSte, saveFigs, figDir, figStr)
 
 %% args
 if nargin<7
@@ -16,8 +16,11 @@ figTitle = und2space(figStr);
 %% setup
 plotOrder = [1 5 3 7 2 6 4 8 9];
 
+tsFigPos = [0 500 1250 375];
 tsFigPos0 = [0 500 850 375];
 tf9FigPos = [0 250 1280 580];
+paau3FigPos = [800 30 450 830];
+paau6FigPos = [0 90 1000 800];
 
 eventTimes = A.eventTimes;
 trigNames = A.trigNames;
@@ -98,21 +101,6 @@ valsDiffSte = squeeze(std(valsDiff,0,3)./sqrt(nSubjects));
 valsDiffAbsMean = squeeze(mean(abs(valsDiff),3));
 valsDiffAbsSte = squeeze(std(abs(valsDiff),0,3)./sqrt(nSubjects));
 
-%% permutation test: attT1 vs. attT2, time series shuffle
-% % generate null distribution by shuffling each subject's time series in time
-% nSamples = 1000;
-% for iSample = 1:nSamples
-%     for iSubject=1:nSubjects
-%         valsDiffShuffled(:,iSubject,iSample) = squeeze(shuffle(valsDiff(:,:,iSubject),2));
-%     end
-% end
-% valsDiffCI = prctile(squeeze(nanmean(valsDiffShuffled,2)),[2.5 97.5],2);
-% 
-% % absolute value
-% valsDiffShuffledAbsMean = squeeze(nanmean(abs(valsDiffShuffled),2));
-% % valsDiffAbsCI = prctile(valsDiffShuffledAbsMean,[2.5 97.5],2);
-% valsDiffAbsCI = prctile(valsDiffShuffledAbsMean,95,2);
-
 %% permutation test: any difference between att T1 and att T2?
 % shuffle condition labels to generate null distribution of attDiff
 shuffle = 0;
@@ -141,111 +129,6 @@ if shuffle
     plot(t,ci) % condition label flip
 end
 
-%% calculate pres-abs ste
-t1PA = cat(1, mean(groupData.ampsPA([1 3],:,:)), mean(groupData.ampsPA([2 4],:,:)));
-t2PA = cat(1, mean(groupData.ampsPA([1 2],:,:)), mean(groupData.ampsPA([3 4],:,:)));
-t1PADiffSte = squeeze(std(diff(t1PA),0,3)./sqrt(nSubjects)); % T1
-t2PADiffSte = squeeze(std(diff(t2PA),0,3)./sqrt(nSubjects)); % T2
-
-%% calculate pres/abs x att/unattend for each target, groupMean
-t1PAAU(:,1) = mean(groupMean.amps(:,[1 5]),2); % present/attended
-t1PAAU(:,2) = mean(groupMean.amps(:,[2 6]),2); % present/unattended
-t1PAAU(:,3) = mean(groupMean.amps(:,[3 7]),2); % absent/attended
-t1PAAU(:,4) = mean(groupMean.amps(:,[4 8]),2); % absent/unattended
-
-t2PAAU(:,1) = mean(groupMean.amps(:,[2 4]),2);
-t2PAAU(:,2) = mean(groupMean.amps(:,[1 3]),2);
-t2PAAU(:,3) = mean(groupMean.amps(:,[6 8]),2);
-t2PAAU(:,4) = mean(groupMean.amps(:,[5 7]),2);
-
-%% calculate pres/abs x att/unattend for each target, groupData
-t1PAAUData(:,1,:) = mean(groupData.amps(:,[1 5],:),2); % present/attended
-t1PAAUData(:,2,:) = mean(groupData.amps(:,[2 6],:),2); % present/unattended
-t1PAAUData(:,3,:) = mean(groupData.amps(:,[3 7],:),2); % absent/attended
-t1PAAUData(:,4,:) = mean(groupData.amps(:,[4 8],:),2); % absent/unattended
-
-t2PAAUData(:,1,:) = mean(groupData.amps(:,[2 4],:),2);
-t2PAAUData(:,2,:) = mean(groupData.amps(:,[1 3],:),2);
-t2PAAUData(:,3,:) = mean(groupData.amps(:,[6 8],:),2);
-t2PAAUData(:,4,:) = mean(groupData.amps(:,[5 7],:),2);
-
-t1PAAUSte = std(t1PAAUData,0,3)/sqrt(nSubjects); 
-t2PAAUSte = std(t2PAAUData,0,3)/sqrt(nSubjects);
-
-%% calculate mean amp over a window
-twin = [-100 100]; % [-200 200]
-t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
-t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
-winamp(:,1,:) = mean(t1PAAUData(t1Tidx,:,:),1); % T1
-winamp(:,2,:) = mean(t2PAAUData(t2Tidx,:,:),1); % T2
-winampAU(1,:) = mean(winamp(3,:,:),2); % absent/attended
-winampAU(2,:) = mean(winamp(4,:,:),2); % absent/unattended
-enhancers = subjects(diff(winampAU)<0);
-suppressers = subjects(diff(winampAU)>0);
-
-% winampAU2(1,:,:) = mean(winamp([1 3],:,:));
-% winampAU2(2,:,:) = mean(winamp([2 4],:,:));
-% winampAU2GroupMean = mean(winampAU2,3);
-% winampAU2GroupSte = std(winampAU2,0,3)/sqrt(nSubjects);
-% figure
-% barweb(winampAU2GroupMean',winampAU2GroupSte');
-% winampAU2N = normalizeDC(winampAU2);
-% wnmean = mean(winampAU2N,3);
-% wnste = std(winampAU2N,0,3)./sqrt(nSubjects);
-% figure
-% barweb(wnmean',wnste');
-% 
-% % effect size
-% winampAU2Diff = winampAU2(1,:,:)-winampAU2(2,:,:);
-% cohenD = mean(winampAU2Diff,3)./std(winampAU2Diff,0,3);
-
-% att-unatt consistency (correlation across subjects for P and A)
-a1(:,:,1) = t1PAAUData(:,1,:)-t1PAAUData(:,2,:);
-a1(:,:,2) = t1PAAUData(:,3,:)-t1PAAUData(:,4,:);
-
-a2(:,:,1) = t2PAAUData(:,1,:)-t2PAAUData(:,2,:);
-a2(:,:,2) = t2PAAUData(:,3,:)-t2PAAUData(:,4,:);
-
-for i = 1:numel(t)
-    temp = corr(squeeze(a1(i,:,:)));
-    a1corr(i) = temp(1,2);
-    temp = corr(squeeze(a2(i,:,:)));
-    a2corr(i) = temp(1,2);
-end
-
-twin = [-600 600];
-t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
-t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
-
-a1corr = a1corr(t1Tidx);
-a2corr = a2corr(t2Tidx);
-
-figure
-hold on
-plot(twin(1):twin(end),a1corr)
-plot(twin(1):twin(end),a2corr,'r')
-plot(twin,[0 0],'k:')
-vline(0,'color','k','LineStyle',':');
-xlabel('time (ms)')
-ylabel('correlation between present att-unatt and absent att-unatt')
-legend('T1','T2')
-
-% figure
-% for i = 1:16
-%     subplot(4,4,i)
-%     bar(winamp(:,:,i)')
-% end
-% legend('P-att','P-unatt','A-att','A-unatt')
-% 
-% figure
-% bar(winampAU')
-% legend('A-att','A-unatt')
-
-if saveFigs
-    figPrefix = sprintf('%s_plot', figStr);
-    rd_saveAllFigs(gcf, {'presVsAbsAUDiffCorr'}, figPrefix, figDir);
-end
-
 %% indiv subjects ts
 fH = [];
 for iF = 1:nFields
@@ -254,6 +137,11 @@ for iF = 1:nFields
     vals = groupData.(fieldName);
     valsMean = groupMean.(fieldName);
     colors = allColors.(fieldName);
+%     if isfield(allColors, fieldName)
+%         colors = allColors.(fieldName);
+%     else
+%         break % do not plot
+%     end
     
     fH(iF) = figure;
     set(gcf,'Position',tf9FigPos)
@@ -326,6 +214,11 @@ for iF = 1:nFields
     valsMean = groupMean.(fieldName);
     valsSte = groupSte.(fieldName);
     colors = allColors.(fieldName);
+%     if isfield(allColors, fieldName)
+%         colors = allColors.(fieldName);
+%     else
+%         break % do not plot
+%     end
     
     if strcmp(fieldName, 'amps')
         valsMean = valsMean(:,plotOrder)';
@@ -438,162 +331,255 @@ if saveFigs
     rd_saveAllFigs(fH, figNames, figPrefix, figDir);
 end
 
-%% group pres-abs with ste error bars
-colors = allColors.ampsPA([1 4],:);
-ylims0 = ylims(2).*[135 235]/400;
-twin = [-200 700];
+
+%% PAAU
+%% calculate PAAU
+twin = [-600 600];
 t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
 t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
+twindow = twin(1):twin(end);
 
-% PA
+% calculate pres/abs x att/unattend for each target, groupData
+groupData.PAAUT(:,1,1,:) = mean(groupData.amps(t1Tidx,[1 5],:),2); % present/attended
+groupData.PAAUT(:,2,1,:) = mean(groupData.amps(t1Tidx,[2 6],:),2); % present/unattended
+groupData.PAAUT(:,3,1,:) = mean(groupData.amps(t1Tidx,[3 7],:),2); % absent/attended
+groupData.PAAUT(:,4,1,:) = mean(groupData.amps(t1Tidx,[4 8],:),2); % absent/unattended
+
+groupData.PAAUT(:,1,2,:) = mean(groupData.amps(t2Tidx,[2 4],:),2);
+groupData.PAAUT(:,2,2,:) = mean(groupData.amps(t2Tidx,[1 3],:),2);
+groupData.PAAUT(:,3,2,:) = mean(groupData.amps(t2Tidx,[6 8],:),2);
+groupData.PAAUT(:,4,2,:) = mean(groupData.amps(t2Tidx,[5 7],:),2);
+
+% present vs. absent and attended vs. unattended
+for iT = 1:2
+    groupData.PAT(:,1,iT,:) = mean(groupData.PAAUT(:,[1 2],iT,:),2); % present
+    groupData.PAT(:,2,iT,:) = mean(groupData.PAAUT(:,[3 4],iT,:),2); % absent
+
+    groupData.AUT(:,1,iT,:) = mean(groupData.PAAUT(:,[1 3],iT,:),2); % attended
+    groupData.AUT(:,2,iT,:) = mean(groupData.PAAUT(:,[2 4],iT,:),2); % unattended 
+end
+
+% combining across T1 and T2
+for iPAAU = 1:4
+    groupData.PAAU(:,iPAAU,:) = mean(groupData.PAAUT(:,iPAAU,[1 2],:),3);
+end
+
+groupData.PA(:,1,:) = mean(groupData.PAAU(:,[1 2],:),2); % present
+groupData.PA(:,2,:) = mean(groupData.PAAU(:,[3 4],:),2); % absent
+
+groupData.AU(:,1,:) = mean(groupData.PAAU(:,[1 3],:),2); % attended
+groupData.AU(:,2,:) = mean(groupData.PAAU(:,[2 4],:),2); % unattended
+
+% finally, ampsAll
+groupData.ampsAll = squeeze(mean(groupData.amps(:,1:end-1,:),2));
+
+% group means and ste
+fieldNames = {'PAAUT','PAT','AUT','PAAU','PA','AU','ampsAll'};
+nFields = numel(fieldNames);
+for iF = 1:nFields
+    fieldName = fieldNames{iF};
+    vals = groupData.(fieldName);
+    sdim = numel(size(vals)); % subject dimension
+    groupMean.(fieldName) = mean(vals, sdim);
+    groupSte.(fieldName) = std(vals, 0, sdim)./sqrt(nSubjects);
+end
+
+%% separate T1 and T2
 fH = [];
 fH(1) = figure;
-set(gcf,'Position',tsFigPos0);
-subplot(1,2,1)
-hold on
-for iPA=1:2
-    shadedErrorBar(twin(1):twin(end), mean(t1PA(iPA,t1Tidx,:),3), t1PADiffSte(t1Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
-end
-ylim(ylims0)
-vline(0,'color','k','LineStyle',':');
-xlim(twin)
-% xlim([t(t1Tidx(1)) t(t1Tidx(end))])
-xlabel('time (ms)')
-ylabel('amplitude')
-title('T1')
-
-subplot(1,2,2)
-hold on
-for iPA=1:2
-    shadedErrorBar(twin(1):twin(end), mean(t2PA(iPA,t2Tidx,:),3), t2PADiffSte(t2Tidx), {'color', colors(iPA,:), 'LineWidth', 3}, 1)
-end
-ylim(ylims0)
-vline(0,'color','k','LineStyle',':');
-xlim(twin)
-% xlim([t(t2Tidx(1)) t(t2Tidx(end))])
-xlabel('time (ms)')
-ylabel('amplitude')
-title('T2')
-
-rd_supertitle(figTitle)
-
-% PAAU
-fH(2) = figure;
-colors = get(gca,'ColorOrder');
-set(gcf,'Position',tsFigPos0);
-subplot(1,2,1)
-hold on
-plot(twin(1):twin(end), t1PAAU(t1Tidx,:))
-for iPAAU = 1:4
-    shadedErrorBar(twin(1):twin(end), t1PAAU(t1Tidx,iPAAU), t1PAAUSte(t1Tidx,iPAAU), {'color', colors(iPAAU,:), 'LineWidth', 3}, 1)
-end
-% ylim(ylims)
-vline(0,'color','k','LineStyle',':'); 
-xlim(twin)
-% xlim([t(t1Tidx(1)) t(t1Tidx(end))])
-xlabel('time (ms)')
-ylabel('amplitude')
-title('T1')
-
-subplot(1,2,2)
-hold on
-plot(twin(1):twin(end), t2PAAU(t2Tidx,:))
-for iPAAU = 1:4
-    shadedErrorBar(twin(1):twin(end), t2PAAU(t2Tidx,iPAAU), t2PAAUSte(t2Tidx,iPAAU), {'color', colors(iPAAU,:), 'LineWidth', 3}, 1)
-end
-% ylim(ylims)
-vline(0,'color','k','LineStyle',':');
-xlim(twin)
-% xlim([t(t2Tidx(1)) t(t2Tidx(end))])
-xlabel('time (ms)')
-ylabel('amplitude')
-title('T2')
-legend('P-att','P-unatt','A-att','A-unatt')
-
-rd_supertitle(figTitle)
-
-paau = (t1PAAU(t1Tidx,:) + t2PAAU(t2Tidx,:))/2;
-fH(3) = figure;
-plot(twin(1):twin(end),paau)
-vline(0,'color','k','LineStyle',':');
-legend('P-att','P-unatt','A-att','A-unatt')
-xlabel('time (ms)')
-ylabel('amplitude')
-title('T1 & T2')
-box off
-
-paauData = (t1PAAUData(t1Tidx,:,:) + t2PAAUData(t2Tidx,:,:))/2;
-paauPresAUDiff = squeeze(paauData(:,1,:) - paauData(:,2,:));
-fH(4) = figure;
-set(gcf,'Position',tf9FigPos)
-for iSubject = 1:nSubjects
-    subplot(nrows,ncols,iSubject)
+set(gcf,'Position',paau6FigPos)
+for iT = 1:2
+    colors = get(gca,'ColorOrder');
+    subplot(3,2,iT)
     hold on
-    plot(twin(1):twin(end), paauData(:,1:2,iSubject), 'LineWidth', 2)
-%     xlim(xlims)
-%     ylim(diffYLims)
-    vline(0,'color','k','LineStyle',':');
-    if iSubject==1
-        xlabel('time (ms)')
-%         ylabel('amplitude difference (T2-T1)')
+    for iPAAU = 1:4
+        p1 = plot(twin(1):twin(end), groupMean.PAAUT(:,iPAAU,iT));
+        set(p1, 'Color', colors(iPAAU,:), 'LineWidth', 4)
     end
-    title(und2space(subjects{iSubject}))
+    if iT==2
+        legend('P-att','P-unatt','A-att','A-unatt')
+    end
+    for iPAAU = 1:4
+        shadedErrorBar(twin(1):twin(end), groupMean.PAAUT(:,iPAAU,iT), groupSte.PAAUT(:,iPAAU,iT), {'color',colors(iPAAU,:),'LineWidth',4}, 1)
+    end
+    vline(0,'k');
+    xlabel('time (ms)')
+    ylabel('wavelet amp')
+    title(sprintf('T%d',iT))
+    
+    colors = [trigBlue; trigRed];
+    subplot(3,2,iT+2)
+    hold on
+    for iAU = 1:2
+        p1 = plot(twin(1):twin(end), groupMean.AUT(:,iAU,iT));
+        set(p1, 'Color', colors(iAU,:), 'LineWidth', 4)
+    end
+    if iT==2
+        legend('att','unatt')
+    end
+    for iAU = 1:2
+        shadedErrorBar(twin(1):twin(end), groupMean.AUT(:,iAU,iT), groupSte.AUT(:,iAU,iT), {'color',colors(iAU,:),'LineWidth',4}, 1)
+    end
+    vline(0,'k');
+    xlabel('time (ms)')
+    ylabel('wavelet amp')
+    title(sprintf('T%d',iT))
+    
+    colors = trigColorsPA4([1 4],:);
+    subplot(3,2,iT+4)
+    hold on
+    for iPA = 1:2
+        p1 = plot(twin(1):twin(end), groupMean.PAT(:,iPA,iT));
+        set(p1, 'Color', colors(iPA,:), 'LineWidth', 4)
+    end
+    if iT==2
+        legend('present','absent')
+    end
+    for iPA = 1:2
+        shadedErrorBar(twin(1):twin(end), groupMean.PAT(:,iPA,iT), groupSte.PAT(:,iPA,iT), {'color',colors(iPA,:),'LineWidth',4}, 1)
+    end
+    vline(0,'k');
+    xlabel('time (ms)')
+    ylabel('wavelet amp')
+    title(sprintf('T%d',iT))
 end
-legend('P-att','P-unatt')
+rd_supertitle2(figTitle)
 
-fH(5) = figure;
+%% combined across T1 and T2
+fH(2) = figure;
+set(gcf,'Position',paau3FigPos)
+colors = get(gca,'ColorOrder');
+subplot(3,1,1)
 hold on
-plot(twin([1 end]), [0 0], 'k:')
-shadedErrorBar(twin(1):twin(end), mean(paauPresAUDiff,2), std(paauPresAUDiff,0,2)/sqrt(nSubjects), {'color', 'k', 'LineWidth', 3}, 1)
-vline(0,'color','k','LineStyle',':');
+for iPAAU = 1:4
+    p1 = plot(twin(1):twin(end), groupMean.PAAU(:,iPAAU));
+    set(p1, 'Color', colors(iPAAU,:), 'LineWidth', 4)
+end
+legend('P-att','P-unatt','A-att','A-unatt')
+for iPAAU = 1:4
+    shadedErrorBar(twin(1):twin(end), groupMean.PAAU(:,iPAAU), groupSte.PAAU(:,iPAAU), {'color',colors(iPAAU,:),'LineWidth',4}, 1)
+end
+vline(0,'k');
 xlabel('time (ms)')
-ylabel('amplitude difference (att-unatt)')
-title('target present trials')
+ylabel('wavelet amp')
+title('T1 & T2')
 
+colors = [trigBlue; trigRed];
+subplot(3,1,2)
+hold on
+for iAU = 1:2
+    p1 = plot(twin(1):twin(end), groupMean.AU(:,iAU));
+    set(p1, 'Color', colors(iAU,:), 'LineWidth', 4)
+end
+legend('att','unatt')
+for iAU = 1:2
+    shadedErrorBar(twin(1):twin(end), groupMean.AU(:,iAU), groupSte.AU(:,iAU), {'color',colors(iAU,:),'LineWidth',4}, 1)
+end
+vline(0,'k');
+xlabel('time (ms)')
+ylabel('wavelet amp')
+title('T1 & T2')
+
+colors = trigColorsPA4([1 4],:);
+subplot(3,1,3)
+hold on
+for iPA = 1:2
+    p1 = plot(twin(1):twin(end), groupMean.PA(:,iPA));
+    set(p1, 'Color', colors(iPA,:), 'LineWidth', 4)
+end
+legend('present','absent')
+for iPA = 1:2
+    shadedErrorBar(twin(1):twin(end), groupMean.PA(:,iPA), groupSte.PA(:,iPA), {'color',colors(iPA,:),'LineWidth',4}, 1)
+end
+vline(0,'k');
+xlabel('time (ms)')
+ylabel('wavelet amp')
+title('T1 & T2')
+
+rd_supertitle2(figTitle)
+
+%% all combined
+fH(3) = figure;
+set(gcf,'Position',tsFigPos)
+shadedErrorBar(t, groupMean.ampsAll, groupSte.ampsAll, {'color','k','LineWidth',4})
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+legend('all trials')
+xlabel('time (ms)')
+ylabel('wavelet amp')
+title(figTitle)
+
+%% save
 if saveFigs
     figPrefix = sprintf('%s_plot', figStr);
-    figNames = {sprintf('%sAmpsPAByTargetGroup', measure), ...
-        sprintf('%sAmpsPAAUGroupSte', measure), ...
-        sprintf('%sAmpsPAAUT1T2AveGroup', measure), ...
-        sprintf('%sAmpsPAUIndiv', measure), ...
-        sprintf('%sAmpsPAUDiffGroup', measure)};
+    figNames = {sprintf('%sAmpsPAAU', measure), ...
+        sprintf('%sAmpsPAAUT1T2Comb', measure), ...
+        sprintf('%sAmpsAll', measure)};
     rd_saveAllFigs(fH, figNames, figPrefix, figDir);
 end
 
-%% paau separately for T1 and T2
-paauDataT1T2(:,:,:,1) = t1PAAUData(t1Tidx,:,:); 
-paauDataT1T2(:,:,:,2) = t2PAAUData(t2Tidx,:,:);
-paauPresAUDiffT1T2 = squeeze(paauDataT1T2(:,1,:,:) - paauDataT1T2(:,2,:,:));
+%% enhancers/suppressers
+% calculate mean amp over a window
+twinm = [-250 50]; % [-200 200]
+tidx = find(twindow==twinm(1)):find(twindow==twinm(2));
+winamp(:,1,:) = mean(groupData.PAAUT(tidx,:,1,:),1); % T1
+winamp(:,2,:) = mean(groupData.PAAUT(tidx,:,2,:),1); % T2
+winampAU(1,:) = mean(winamp(3,:,:),2); % absent/attended
+winampAU(2,:) = mean(winamp(4,:,:),2); % absent/unattended
+enhancers = subjects(diff(winampAU)<0);
+suppressers = subjects(diff(winampAU)>0);
 
-for iT = 1:2
-    fH(5+iT) = figure;
-    set(gcf,'Position',tf9FigPos)
-    for iSubject = 1:nSubjects
-        subplot(nrows,ncols,iSubject)
-        hold on
-        plot(twin(1):twin(end), paauDataT1T2(:,1:2,iSubject,iT), 'LineWidth', 2)
-        %     xlim(xlims)
-        %     ylim(diffYLims)
-        vline(0,'color','k','LineStyle',':');
-        if iSubject==1
-            xlabel('time (ms)')
-            %         ylabel('amplitude difference (T2-T1)')
-        end
-        title(und2space(subjects{iSubject}))
-    end
-    legend('P-att','P-unatt')
-    rd_supertitle2(sprintf('T%d', iT))
+% winampAU2(1,:,:) = mean(winamp([1 3],:,:));
+% winampAU2(2,:,:) = mean(winamp([2 4],:,:));
+% winampAU2GroupMean = mean(winampAU2,3);
+% winampAU2GroupSte = std(winampAU2,0,3)/sqrt(nSubjects);
+% figure
+% barweb(winampAU2GroupMean',winampAU2GroupSte');
+% winampAU2N = normalizeDC(winampAU2);
+% wnmean = mean(winampAU2N,3);
+% wnste = std(winampAU2N,0,3)./sqrt(nSubjects);
+% figure
+% barweb(wnmean',wnste');
+% 
+% % effect size
+% winampAU2Diff = winampAU2(1,:,:)-winampAU2(2,:,:);
+% cohenD = mean(winampAU2Diff,3)./std(winampAU2Diff,0,3);
+
+% att-unatt consistency (correlation across subjects for P and A)
+a1(:,1,:,:) = squeeze(groupData.PAAUT(:,1,:,:)-groupData.PAAUT(:,2,:,:)); % time x P/A x target x subject
+a1(:,2,:,:) = squeeze(groupData.PAAUT(:,3,:,:)-groupData.PAAUT(:,4,:,:));
+
+for i = 1:numel(twindow)
+    temp = corr(squeeze(a1(i,:,1,:))'); % T1
+    a1corr(i) = temp(1,2);
+    temp = corr(squeeze(a1(i,:,2,:))'); % T2
+    a2corr(i) = temp(1,2);
 end
 
-fH(8) = figure;
-for iT = 1:2
-    subplot(1,2,iT)
-    hold on
-    plot(twin([1 end]), [0 0], 'k:')
-    shadedErrorBar(twin(1):twin(end), mean(paauPresAUDiffT1T2(:,:,iT),2), std(paauPresAUDiffT1T2(:,:,iT),0,2)/sqrt(nSubjects), {'color', 'k', 'LineWidth', 3}, 1)
-    vline(0,'color','k','LineStyle',':');
-    xlabel('time (ms)')
-    ylabel('amplitude difference (att-unatt)')
-    title(sprintf('T%d, target present trials', iT))
+figure
+hold on
+plot(twindow,a1corr)
+plot(twindow,a2corr,'r')
+plot(twindow([1 end]),[0 0],'k:')
+vline(0,'color','k','LineStyle',':');
+xlabel('time (ms)')
+ylabel('correlation between present att-unatt and absent att-unatt')
+legend('T1','T2')
+
+% figure
+% for i = 1:16
+%     subplot(4,4,i)
+%     bar(winamp(:,:,i)')
+% end
+% legend('P-att','P-unatt','A-att','A-unatt')
+% 
+% figure
+% bar(winampAU')
+% legend('A-att','A-unatt')
+
+if saveFigs
+    figPrefix = sprintf('%s_plot', figStr);
+    rd_saveAllFigs(gcf, {'wAmpsPresVsAbsAUDiffCorr'}, figPrefix, figDir);
 end
 
