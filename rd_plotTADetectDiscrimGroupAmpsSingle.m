@@ -85,7 +85,7 @@ for iT = 1:2
     for iAU = 1:2
         shadedErrorBar(twin(1):twin(end), groupMean.AUT(:,iAU,iT), groupSte.AUT(:,iAU,iT), {'color',colors(iAU,:),'LineWidth',4}, 1)
     end
-    vline(0,'k');
+    vline(0,'k'); vline(0,'k');
     xlabel('time (ms)')
     ylabel('wavelet amp')
     title(sprintf('T%d',iT))
@@ -124,7 +124,7 @@ legend('P-att','P-unatt','A-att','A-unatt')
 for iPAAU = 1:4
     shadedErrorBar(twin(1):twin(end), groupMean.PAAU(:,iPAAU), groupSte.PAAU(:,iPAAU), {'color',colors(iPAAU,:),'LineWidth',4}, 1)
 end
-vline(0,'k');
+vline(0,'k'); vline(0,'k');
 xlabel('time (ms)')
 ylabel('wavelet amp')
 title('T1 & T2')

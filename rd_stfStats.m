@@ -90,9 +90,9 @@ auThresh = auDiffMean>auDiffCI(:,:,2) | auDiffMean<auDiffCI(:,:,1);
 paXauThresh = paXauMean>paXauCI(:,:,2) | paXauMean<paXauCI(:,:,1);
 
 % empirical cluster sum
-[~, paDiffCluster] = rd_clusterSum2D(paDiffMean, paThresh);
-[~, auDiffCluster] = rd_clusterSum2D(auDiffMean, auThresh);
-[~, paXauCluster] = rd_clusterSum2D(paXauMean, paXauThresh);
+[~, paDiffCluster] = rd_clusterStat(paDiffMean, paThresh);
+[~, auDiffCluster] = rd_clusterStat(auDiffMean, auThresh);
+[~, paXauCluster] = rd_clusterStat(paXauMean, paXauThresh);
 
 figure
 subplot(2,2,1)
@@ -213,9 +213,9 @@ end
 tthresh = abs(tinv(.05/2,nSubjects-1));
 
 % empirical cluster sum
-[~, paDiffCluster] = rd_clusterSum2D(paDiffTStat, abs(paDiffTStat)>tthresh);
-[~, auDiffCluster] = rd_clusterSum2D(auDiffTStat, abs(auDiffTStat)>tthresh);
-[~, paXauCluster] = rd_clusterSum2D(paXauTStat, abs(paXauTStat)>tthresh);
+[~, paDiffCluster] = rd_clusterStat(paDiffTStat, abs(paDiffTStat)>tthresh);
+[~, auDiffCluster] = rd_clusterStat(auDiffTStat, abs(auDiffTStat)>tthresh);
+[~, paXauCluster] = rd_clusterStat(paXauTStat, abs(paXauTStat)>tthresh);
 
 % plot
 clims = [-4 4];

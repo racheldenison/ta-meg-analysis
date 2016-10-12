@@ -1,5 +1,7 @@
 % rd_runTADetectDiscrimSSVEF2.m
 
+% works with SSVEF2 or 3 (just change number in function call)
+
 %% setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi'; % '', 'ebi', etc.
@@ -7,7 +9,10 @@ ssvefFreqs = 30; %[30 40];
 nTopChs = 5; % 1, 5, [1 5], etc.
 iqrThreshs = [];
 weightChannels = 0;
-trialSelection = 'all'; % 'all','correct,'incorrect','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
+trialSelections = {'correct','incorrect'}; 
+% trialSelections = {'detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect','validCorrect'}; 
+% 'all','correct','incorrect','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
+respTargetSelection = 'T1Resp';
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -19,47 +24,53 @@ subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 nSubjects = numel(subjects);
 
 %% run analysis
-for iSubject = 1:nSubjects
-    % get fileBase
-    sessionDir = subjects{iSubject};
-    fprintf('%s\n',sessionDir)
+% trial selection
+for iTS = 1:numel(trialSelections)
+    trialSelection = trialSelections{iTS};
     
-    sqdFile = dir(sprintf('%s/%s/*_%s.sqd', exptDir, sessionDir, analStr));
-    if numel(sqdFile)~=1
-        error('More or fewer than 1 matching data file\n%s/%s/*_%s.sqd', exptDir, sessionDir, analStr);
-    end
-    [~,didx] = getTag(sqdFile.name,'_');
-    fileBase = sqdFile.name(1:didx-1);
-    
-    % run freq/top channels combos
-    for ssvefFreq = ssvefFreqs
+    % subject
+    for iSubject = 1:nSubjects
+        % get fileBase
+        sessionDir = subjects{iSubject};
+        fprintf('%s\n',sessionDir)
         
-        if ~isempty(nTopChs) && ~isempty(iqrThreshs)
-            error('set either nTopChs or iqrThreshs to empty')
-        else
-            if ~isempty(nTopChs)
-                for nTopChannels = nTopChs
-                    rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
-                        analStr, ssvefFreq, nTopChannels, [], weightChannels, trialSelection);
-                    close all;
-                end
-            elseif ~isempty(iqrThreshs)
-                for iqrThresh = iqrThreshs
-                    rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
-                        analStr, ssvefFreq, [], iqrThresh, weightChannels, trialSelection);
-                    close all;
-                end
-            else
-                error('set either nTopChannels or iqrThresh to a value for channel selection')
-            end
+        sqdFile = dir(sprintf('%s/%s/*_%s.sqd', exptDir, sessionDir, analStr));
+        if numel(sqdFile)~=1
+            error('More or fewer than 1 matching data file\n%s/%s/*_%s.sqd', exptDir, sessionDir, analStr);
         end
+        [~,didx] = getTag(sqdFile.name,'_');
+        fileBase = sqdFile.name(1:didx-1);
         
+        % run freq/top channels combos
+        for ssvefFreq = ssvefFreqs
+            
+            if ~isempty(nTopChs) && ~isempty(iqrThreshs)
+                error('set either nTopChs or iqrThreshs to empty')
+            else
+                if ~isempty(nTopChs)
+                    for nTopChannels = nTopChs
+                        rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, ...
+                            analStr, ssvefFreq, nTopChannels, [], weightChannels, trialSelection, respTargetSelection);
+                        close all;
+                    end
+                elseif ~isempty(iqrThreshs)
+                    for iqrThresh = iqrThreshs
+                        rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
+                            analStr, ssvefFreq, [], iqrThresh, weightChannels, trialSelection);
+                        close all;
+                    end
+                else
+                    error('set either nTopChannels or iqrThresh to a value for channel selection')
+                end
+            end
+            
+        end
     end
 end
 fprintf('done.\n')
     
     
-    
+
     
     
     

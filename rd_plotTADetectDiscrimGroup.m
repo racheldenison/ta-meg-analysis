@@ -1,18 +1,23 @@
-function rd_plotTADetectDiscrimGroup(measure)
+function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measure, selectionStr, normalizeOption)
 
 % Args
-if ~exist('measure','var')
-    measure = 'stf-single'; % ts w h tf stf w-single stf-single
+if ~exist('measure','var') || isempty(measure)
+    measure = 'ts-single'; % ts w h tf stf w-single stf-single ts-single
+end
+if ~exist('selectionStr','var') || isempty(selectionStr)
+    selectionStr = 'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+end
+if ~exist('normalizeOption','var') || isempty(normalizeOption)
+    normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
 end
 
 % Setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
-selectionStr = 'topChannels5_allTrials'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
-normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
 
-saveFigs = 0;
+plotFigs = 0;
+saveFigs = 1;
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -200,8 +205,13 @@ for iSubject = 1:nSubjects
             groupData.PA(:,:,:,iSubject) = A.stfPA;
             groupData.AU(:,:,:,iSubject) = A.stfAU;
         case 'ts-single'
+            groupData.tsAmps(:,:,:,iSubject) = squeeze(nanmean(A.trigMean,3));
+            groupData.fAmps(:,:,:,iSubject) = squeeze(nanmean(A.amps,3));
             groupData.tsAmpsS(:,:,:,iSubject) = A.trigMeanMean;
             groupData.paauTS(:,:,:,:,iSubject) = A.paauT;
+            % number of trials
+            excludedTrials = squeeze(all(isnan(A.trigMeanMean),1));
+            groupData.nTrialsPerCond(:,iSubject) = sum(1-excludedTrials);
         otherwise
             error('measure not recognized')
     end
@@ -296,10 +306,10 @@ end
 % plot(t, ones(size(t))*(-log10(.05)))
 
 %% Plot figs
+if plotFigs
 switch measure
     case 'ts'
-        rd_plotTADetectDiscrimGroupTS(A, ...
-            groupMean, ...
+        rd_plotTADetectDiscrimGroupTS(A, measure, groupMean, ...
             saveFigs, figDir, figStr)
 %     case {'w','h','w-single'}
     case {'w','h'}
@@ -320,8 +330,9 @@ switch measure
     case 'ts-single'
         rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...
-            saveFigs, figDir, figStr)
+            saveFigs, figDir, figStr, selectionStr)
     otherwise
         error('measure not recognized')
+end
 end
 

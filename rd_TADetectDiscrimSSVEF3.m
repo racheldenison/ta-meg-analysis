@@ -1,4 +1,4 @@
-function rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection)
+function rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection, respTargetSelection)
 
 % single trial analysis
 
@@ -13,6 +13,7 @@ if nargin==0 || ~exist('exptDir','var')
     iqrThresh = []; % 10, or [] for nTopChannels
     weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
     trialSelection = 'all'; % 'all','validCorrect'
+    respTargetSelection = ''; % '','T1Resp','T2Resp'
 end
 
 topChannels = 1:nTopChannels;
@@ -41,11 +42,11 @@ switch analStr
     case ''
         savename = sprintf('%s/%s_ssvef_workspace.mat', matDir, fileBase);
         channelsFileName = sprintf('%s/channels_%dHz.mat', matDir, ssvefFreq);
-        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%sTrials_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%sTrials%s_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
     otherwise
         savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
         channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
-        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%s_%sTrials_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%s_%sTrials%s_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
 end
 
 %% Get the data
@@ -56,7 +57,8 @@ behav = behavior(behav);
 
 %% Settings after loading the data
 saveAnalysis = 1;
-saveFigs = 1;
+saveFigs = 0;
+plotFigs = 0;
 
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
@@ -132,14 +134,14 @@ if excludeTrialsFt
     % update analysis file
     switch analStr
         case ''
-            analysisFileName = sprintf('%s/analysis_singleTrials_%s_ft_%s_%sTrials_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_singleTrials_%s_ft_%s_%sTrials%s_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
         otherwise
-            analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_ft_%s_%sTrials_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_ft_%s_%sTrials%s_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
     end
 end
 
 %% Make figDir if needed
-figDir = sprintf('%s_singleTrials_%s_%sTrials', figDir, channelSelectionStr, trialSelection);
+figDir = sprintf('%s_singleTrials_%s_%sTrials%s', figDir, channelSelectionStr, trialSelection, respTargetSelection);
 
 if ~exist(figDir,'dir') && saveFigs
     mkdir(figDir)
@@ -150,6 +152,17 @@ cueCondIdx = strcmp(behav.responseData_labels, 'cue condition');
 t1CondIdx = strcmp(behav.responseData_labels, 'target type T1');
 t2CondIdx = strcmp(behav.responseData_labels, 'target type T2');
 nTrials = size(behav.responseData_all,1);
+
+switch respTargetSelection
+    case 'T1Resp'
+        rSelect = behav.responseTarget==1;
+    case 'T2Resp'
+        rSelect = behav.responseTarget==2;
+    case ''
+        rSelect = ones(nTrials,1);
+    otherwise
+        error('respTargetSelection not recognized')
+end
 
 switch trialSelection
     case 'correct'
@@ -177,6 +190,8 @@ switch trialSelection
     otherwise
         error('trialSelection not recognized')
 end
+wSelect = wSelect & rSelect;
+
 trigDataSelected = trigData; % make a copy so we use it for condData but not blankData
 trigDataSelected(:,:,wSelect~=1)=NaN;
 
@@ -281,6 +296,7 @@ ampsMean = squeeze(rd_wmean(amps,chw,2));
 A.trigMeanMean = trigMeanMean;
 A.ampsMean = ampsMean;
 
+if plotFigs
 figure
 set(gcf,'Position',ts2FigPos)
 
@@ -319,6 +335,7 @@ ylim([0 60])
 xlabel('Frequency (Hz)')
 ylabel('|Y(f)|')
 legend('stim average','blank')
+end
 
 if saveFigs
     if numel(channels)==1
@@ -365,6 +382,7 @@ A.targetPADiff = targetPADiff;
 A.targetF = targetF;
 A.targetPADiffAmps = targetAmps;
 
+if plotFigs
 names = {'target present','target absent'};
 colors = get(gca,'ColorOrder');
 fH = [];
@@ -399,6 +417,7 @@ xlim([0 50])
 xlabel('frequency (Hz)')
 ylabel('amplitude')
 rd_supertitle2(['channel' sprintf(' %d', channels) wstrt])
+end
 
 if saveFigs
     if numel(channels)==1
@@ -474,6 +493,7 @@ A.wAmpsAtt = wAmpsAtt;
 A.wAmpsPA = wAmpsPA;
 A.wAmpsAll = wAmpsAll;
 
+if plotFigs
 fH = [];
 fH(1) = figure;
 set(gcf,'Position',tsFigPos)
@@ -561,6 +581,7 @@ legend('all trials')
 xlabel('time (ms)')
 ylabel('wavelet amp')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+end
 
 if saveFigs
     figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
@@ -614,6 +635,7 @@ A.wPAAU = wPAAU;
 A.wPA = wPA;
 A.wAU = wAU;
 
+if plotFigs
 % separate T1 and T2
 fH = [];
 fH(1) = figure;
@@ -733,6 +755,7 @@ ylabel('wavelet amp')
 title('T1 & T2')
 
 rd_supertitle2([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+end
 
 if saveFigs
     figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
@@ -855,6 +878,7 @@ hack(hack>4) = hack(hack>4)+1;
 cmap = flipud(lbmap(64,'RedBlue'));
 % cmap = colormap;
 
+if plotFigs
 fH = [];
 fH(1) = figure;
 set(gcf,'Position',tf9FigPos)
@@ -1086,6 +1110,7 @@ for iAx = 1:numel(aH)
 end
 colormap(cmap)
 rd_supertitle2('target absent')
+end
 
 if saveFigs
     if numel(channels)==1

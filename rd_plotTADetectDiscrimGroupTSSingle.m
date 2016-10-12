@@ -1,4 +1,4 @@
-function rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, groupData, groupMean, groupSte, saveFigs, figDir, figStr)
+function rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, groupData, groupMean, groupSte, saveFigs, figDir, figStr, selectionStr)
 
 %% args
 if nargin<7
@@ -10,6 +10,8 @@ if nargin<9
         error('If youre saving figs, you should specify a figStr')
     end
 end
+
+doStats = 0;
 
 figTitle = und2space(figStr);
 
@@ -66,29 +68,31 @@ groupDataB.adt = squeeze(mean(groupDataB.auDiff,2));
 [hh pp] = ttest(groupDataB.adt');
 
 %% stats on paauTS
-vals = [];
-vals(:,1:4,:) = groupDataB.paauTS(:,:,1,:);
-vals(:,5:8,:) = groupDataB.paauTS(:,:,2,:);
-condNames = {'T1_P_att','T1_P_unatt','T1_A_att','T1_A_unatt',...
-    'T2_P_att','T2_P_unatt','T2_A_att','T2_A_unatt'}; 
-factorNames = {'T','PA','AU'};
-nLevels = [2 2 2];
-
-for it = 1:size(vals,1)
-    data = squeeze(vals(it,:,:))'; % subjects x conds
-    [fvals(it,:), pvals(it,:), rowNames] = rd_rmANOVA(data, condNames, factorNames, nLevels);
+if doStats
+    vals = [];
+    vals(:,1:4,:) = groupDataB.paauTS(:,:,1,:);
+    vals(:,5:8,:) = groupDataB.paauTS(:,:,2,:);
+    condNames = {'T1_P_att','T1_P_unatt','T1_A_att','T1_A_unatt',...
+        'T2_P_att','T2_P_unatt','T2_A_att','T2_A_unatt'};
+    factorNames = {'T','PA','AU'};
+    nLevels = [2 2 2];
+    
+    for it = 1:size(vals,1)
+        data = squeeze(vals(it,:,:))'; % subjects x conds
+        [fvals(it,:), pvals(it,:), rowNames] = rd_rmANOVA(data, condNames, factorNames, nLevels);
+    end
+    
+    figure
+    subplot(4,1,1:3)
+    plot(twindow,fvals)
+    ylabel('F value')
+    legend(rowNames)
+    subplot(4,1,4)
+    plot(twindow,pvals<.05)
+    ylim([0 2])
+    xlabel('time (ms)')
+    ylabel('p < .05')
 end
-
-figure
-subplot(4,1,1:3)
-plot(twindow,fvals)
-ylabel('F value')
-legend(rowNames)
-subplot(4,1,4)
-plot(twindow,pvals<.05)
-ylim([0 2])
-xlabel('time (ms)')
-ylabel('p < .05')
 
 %% plot paauT, paDiff, au
 colors = get(gca,'ColorOrder');
@@ -98,7 +102,7 @@ tw = twindow.paauTS;
 % paauT
 valsMean = groupMeanB.paauTS;
 valsSte = groupSteB.paauTS;
-figure
+fH(1) = figure;
 for iT = 1:2
     subplot(2,1,iT)
     plot(tw, valsMean(:,:,iT))
@@ -117,7 +121,7 @@ legend('P-att','P-unatt','A-att','A-unatt')
 ylims = [-100 100];
 valsMean = groupMeanB.paDiff;
 valsSte = groupSteB.paDiff;
-figure
+fH(2) = figure;
 for iT = 1:2
     subplot(2,1,iT)
     plot(tw, valsMean(:,:,iT))
@@ -138,7 +142,7 @@ rd_supertitle2('P-A')
 ylims = [-70 70];
 valsMean = groupMeanB.au;
 valsSte = groupSteB.au;
-figure
+fH(3) = figure;
 for iT = 1:2
     subplot(2,1,iT)
     plot(tw, valsMean(:,:,iT))
@@ -156,7 +160,7 @@ end
 legend('att','unatt')
 
 % adt
-figure
+fH(4) = figure;
 hold on
 plot(tw,mean(groupDataB.adt,2),'k')
 shadedErrorBar(tw,mean(groupDataB.adt,2),std(groupDataB.adt,0,2)/4)
@@ -167,5 +171,26 @@ xlabel('time (ms)')
 ylabel('amplitude difference (att-unatt)')
 title('T1 & T2')
 
+%% number of trials
+nConds = size(groupData.nTrialsPerCond,1);
+fH(5) = figure;
+hold on
+plot(1:nConds, groupData.nTrialsPerCond,'o')
+plot(1:nConds, mean(groupData.nTrialsPerCond,2), '.k')
+errorbar(1:nConds, mean(groupData.nTrialsPerCond,2), ...
+    std(groupData.nTrialsPerCond,0,2)/sqrt(nSubjects), '.k')
+plot([0 nConds+1],[56 56],'--k')
+ylim([0 60])
+ylabel('number of trials')
+set(gca,'XTick', 1:nConds)
+set(gca,'XTickLabel',A.trigNames)
+rotateXLabels(gca,45)
+title(und2space(selectionStr))
 
+%% save
+if saveFigs
+    figPrefix = sprintf('%s_plot', figStr);
+    figNames = {'tsbPAAU','tsbPADiffAU','tsbAU','tsbAUDiffT1T2Comb','nTrials'};
+    rd_saveAllFigs(fH, figNames, figPrefix, figDir);
+end
 

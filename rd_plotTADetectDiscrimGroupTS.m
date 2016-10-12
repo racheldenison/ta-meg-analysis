@@ -1,4 +1,4 @@
-function rd_plotTADetectDiscrimGroupTS(A, groupMean, saveFigs, figDir, figStr)
+function rd_plotTADetectDiscrimGroupTS(A, measure, groupMean, saveFigs, figDir, figStr)
 
 %% args
 if nargin<3
