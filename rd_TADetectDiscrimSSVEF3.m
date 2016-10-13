@@ -56,7 +56,7 @@ load(savename)
 behav = behavior(behav);
 
 %% Settings after loading the data
-saveAnalysis = 1;
+saveAnalysis = 0;
 saveFigs = 0;
 plotFigs = 0;
 
@@ -428,7 +428,7 @@ if saveFigs
     rd_saveAllFigs(fH, {'targetPATrialAveDiff'}, figPrefix, figDir)
 end
 
-%% Wavelet on average across trials
+%% Wavelet
 switch ssvefFreq
     case 30
         width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth

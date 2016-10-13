@@ -91,10 +91,11 @@ switch lower(plotType)
         cfg.style='straight';
 %         cfg.style='blank';
 
-        cfg.electrodes ='numbers';
-%         cfg.electrodes = 'off';
+%         cfg.electrodes ='numbers';
+        cfg.electrodes = 'off';
         
-        cfg.colorbar='yes';
+%         cfg.colorbar='yes';
+        cfg.colorbar='no';
         cfg.maplimits='maxmin';
         cfg.data = sensor_data';
 

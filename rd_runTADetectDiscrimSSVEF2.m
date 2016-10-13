@@ -12,7 +12,7 @@ weightChannels = 0;
 trialSelections = {'correct','incorrect'}; 
 % trialSelections = {'detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect','validCorrect'}; 
 % 'all','correct','incorrect','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
-respTargetSelection = 'T1Resp';
+respTargetSelection = 'T2Resp';
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...

@@ -1,9 +1,9 @@
 % rd_plotTADetectDiscrimGroupHMFACR.m
 
 %% setup
-% trialSelections = {'detectHit','detectMiss','detectFA','detectCR'};
-trialSelections = {'correct','incorrect'};
-respTarget = 'T1Resp';
+trialSelections = {'detectHit','detectMiss','detectFA','detectCR'};
+% trialSelections = {'correct','incorrect'};
+respTarget = 'T2Resp';
 
 %% get data
 for i = 1:numel(trialSelections)
@@ -92,14 +92,16 @@ title('absent')
 legend(trialSelections)
 
 %% PAT
+% col = colors([1 4],:);
+col = colors;
 ylims = [.9 1.15];
 figure
 subplot(1,2,1)
 hold on
 plot(twin(1):twin(end), squeeze(hmfcMean.PAT(:,1,:)),'LineWidth',4)
 for j = 1:2
-    shadedErrorBar(twin(1):twin(end), squeeze(hmfcMean.PAAUT(:,1,j)), ...
-        squeeze(hmfcSte.PAAUT(:,1,j)), {'color',colors(j,:),'LineWidth',4}, 1)
+    shadedErrorBar(twin(1):twin(end), squeeze(hmfcMean.PAT(:,1,j)), ...
+        squeeze(hmfcSte.PAT(:,1,j)), {'color',col(j,:),'LineWidth',4}, 1)
 end
 xlim(twin)
 ylim(ylims);
@@ -109,10 +111,13 @@ ylabel('wavelet amp')
 title('present')
 subplot(1,2,2)
 hold on
-plot(twin(1):twin(end), squeeze(hmfcMean.PAT(:,2,:)),'LineWidth',4)
+% plot(twin(1):twin(end), squeeze(hmfcMean.PAAUT(:,3,:)),'LineWidth',4)
 for j = 1:2
+    plot(twin(1):twin(end), squeeze(hmfcMean.PAT(:,2,j)),'LineWidth',4, 'color', col(j,:))
+end
+for j = 3:4 %1:2
     shadedErrorBar(twin(1):twin(end), squeeze(hmfcMean.PAT(:,2,j)), ...
-        squeeze(hmfcSte.PAT(:,2,j)), {'color',colors(j,:),'LineWidth',4}, 1)
+        squeeze(hmfcSte.PAT(:,2,j)), {'color',col(j,:),'LineWidth',4}, 1)
 end
 xlim(twin)
 ylim(ylims);
