@@ -107,7 +107,7 @@ switch lower(plotType)
         end
         %figure; clf;
         topoplot(cfg,cfg.data);
-        
+
         fH = gcf;
         
         % add a title if requested

@@ -2,10 +2,10 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 % Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'ts-single'; % ts w h tf stf w-single stf-single ts-single
+    measure = 'stf-single'; % ts w h tf stf w-single stf-single ts-single w-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
-    selectionStr = 'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+    selectionStr = 'topChannels5_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
 end
 if ~exist('normalizeOption','var') || isempty(normalizeOption)
     normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
@@ -16,8 +16,8 @@ exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
 
-plotFigs = 0;
-saveFigs = 1;
+plotFigs = 1;
+saveFigs = 0;
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -212,6 +212,15 @@ for iSubject = 1:nSubjects
             % number of trials
             excludedTrials = squeeze(all(isnan(A.trigMeanMean),1));
             groupData.nTrialsPerCond(:,iSubject) = sum(1-excludedTrials);
+        case 'w-single-wb'
+            groupData.amps(:,:,:,iSubject) = A.wAmps;
+            groupData.ampsAll(:,:,iSubject) = A.wAmpsAll;
+            groupData.PAAUT(:,:,:,:,iSubject) = A.wPAAUT;
+            groupData.PAT(:,:,:,:,iSubject) = A.wPAT;
+            groupData.AUT(:,:,:,:,iSubject) = A.wAUT;
+            groupData.PAAU(:,:,:,iSubject) = A.wPAAU;
+            groupData.PA(:,:,:,iSubject) = A.wPA;
+            groupData.AU(:,:,:,iSubject) = A.wAU;
         otherwise
             error('measure not recognized')
     end
@@ -266,7 +275,11 @@ switch normalizeOption
     case 'stim'
         bwin = [500 3100];
         vals = groupData.amps;
-        baselineStim = nanmean(nanmean(vals(t>=bwin(1) & t<bwin(2),1:end-1,:),2),1);
+        if strfind(measure,'wb')
+            baselineStim = nanmean(nanmean(vals(t>=bwin(1) & t<bwin(2),:,1:end-1,:),3),1);
+        else
+            baselineStim = nanmean(nanmean(vals(t>=bwin(1) & t<bwin(2),1:end-1,:),2),1);
+        end
         baseline = baselineStim;
         fieldNames = fieldnames(groupData);
         nFields = numel(fieldNames);
@@ -274,14 +287,32 @@ switch normalizeOption
             fieldName = fieldNames{iF};
             vals = groupData.(fieldName);
             sz = size(vals);
-%             baselineVals = repmat(baseline, sz(1), sz(2));
-            if numel(sz)==2
-                baselineVals = repmat(squeeze(baseline)', sz(1), 1);
-            elseif numel(sz)==4
-                baseline4(1,1,1,1:sz(4)) = squeeze(baseline);
-                baselineVals = repmat(baseline4, sz(1), sz(2), sz(3));
+            if strfind(measure,'wb')
+                if numel(sz)==3
+                    baselineVals = squeeze(repmat(baseline, sz(1), 1, 1, 1));
+                elseif numel(sz)==4
+                    baselineVals = repmat(baseline, sz(1), 1, sz(3), 1);
+                elseif numel(sz)==5
+                    baseline5(1,:,1,1,:) = baseline;
+                    baselineVals = repmat(baseline5, sz(1), 1, sz(3), sz(4), 1);
+                else
+                    error('baseline not currently supported for matrix dim ')
+                end
             else
-                baselineVals = repmat(baseline, sz(1), sz(2));
+                % baselineVals = repmat(baseline, sz(1), sz(2));
+                if numel(sz)==2
+                    baselineVals = repmat(squeeze(baseline)', sz(1), 1);
+                elseif numel(sz)==4
+                    baseline4(1,1,1,1:sz(4)) = squeeze(baseline);
+                    baselineVals = repmat(baseline4, sz(1), sz(2), sz(3));
+                elseif numel(sz)==5
+                    baseline5(1,1,1,1,1:sz(5)) = squeeze(baseline);
+                    baselineVals = repmat(baseline5, sz(1), sz(2), sz(3), sz(4));
+                elseif numel(sz)>5
+                    error('baseline for matrix dim>5 not currently supported')
+                else
+                    baselineVals = repmat(baseline, sz(1), sz(2));
+                end
             end
             groupData.(fieldName) = vals./baselineVals; % relative to average stim 
         end
@@ -331,6 +362,10 @@ switch measure
         rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr, selectionStr)
+    case 'w-single-wb'
+        rd_plotTADetectDiscrimGroupAmpsWholebrain(A, measure, subjects, ...
+            groupData, groupMean, groupSte, ...
+            saveFigs, figDir, figStr)
     otherwise
         error('measure not recognized')
 end

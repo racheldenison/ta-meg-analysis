@@ -6,13 +6,16 @@
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi'; % '', 'ebi', etc.
 ssvefFreqs = 30; %[30 40];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% channel selection: choose nTopChs, iqrThreshs, or wholeBrain
 nTopChs = 5; % 1, 5, [1 5], etc.
 iqrThreshs = [];
+wholeBrain = 1;
 weightChannels = 0;
-trialSelections = {'correct','incorrect'}; 
-% trialSelections = {'detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect','validCorrect'}; 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 'all','correct','incorrect','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
-respTargetSelection = 'T2Resp';
+trialSelections = {'all'}; 
+respTargetSelection = '';
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -43,27 +46,31 @@ for iTS = 1:numel(trialSelections)
         
         % run freq/top channels combos
         for ssvefFreq = ssvefFreqs
-            
-            if ~isempty(nTopChs) && ~isempty(iqrThreshs)
-                error('set either nTopChs or iqrThreshs to empty')
+            if wholeBrain
+                rd_TADetectDiscrimSSVEF5(exptDir, sessionDir, fileBase, ...
+                    analStr, ssvefFreq, trialSelection, respTargetSelection);
+                close all;
             else
-                if ~isempty(nTopChs)
-                    for nTopChannels = nTopChs
-                        rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, ...
-                            analStr, ssvefFreq, nTopChannels, [], weightChannels, trialSelection, respTargetSelection);
-                        close all;
-                    end
-                elseif ~isempty(iqrThreshs)
-                    for iqrThresh = iqrThreshs
-                        rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
-                            analStr, ssvefFreq, [], iqrThresh, weightChannels, trialSelection);
-                        close all;
-                    end
+                if ~isempty(nTopChs) && ~isempty(iqrThreshs)
+                    error('set either nTopChs or iqrThreshs to empty')
                 else
-                    error('set either nTopChannels or iqrThresh to a value for channel selection')
+                    if ~isempty(nTopChs)
+                        for nTopChannels = nTopChs
+                            rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, ...
+                                analStr, ssvefFreq, nTopChannels, [], weightChannels, trialSelection, respTargetSelection);
+                            close all;
+                        end
+                    elseif ~isempty(iqrThreshs)
+                        for iqrThresh = iqrThreshs
+                            rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
+                                analStr, ssvefFreq, [], iqrThresh, weightChannels, trialSelection);
+                            close all;
+                        end
+                    else
+                        error('set either nTopChannels or iqrThresh to a value for channel selection')
+                    end
                 end
             end
-            
         end
     end
 end
