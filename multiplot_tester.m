@@ -2,6 +2,7 @@
 
 %% example with my data
 load data/data_hdr.mat
+cfg = [];
 layout = ft_prepare_layout(cfg, data_hdr);
 
 foi = A.stfFoi;
