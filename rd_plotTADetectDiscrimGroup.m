@@ -2,10 +2,10 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 % Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'stf-single'; % ts w h tf stf w-single stf-single ts-single w-single-wb
+    measure = 'w-single-wb'; % ts w h tf stf w-single stf-single ts-single w-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
-    selectionStr = 'topChannels5_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+    selectionStr = 'wholebrain_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
 end
 if ~exist('normalizeOption','var') || isempty(normalizeOption)
     normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'

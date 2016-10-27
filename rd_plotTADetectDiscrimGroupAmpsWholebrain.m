@@ -26,6 +26,7 @@ cmap = flipud(lbmap(64,'RedBlue'));
 twindow = twin(1):twin(end);
 nBins = 6;
 binSize = round(numel(twindow)/nBins);
+load parula
 
 %% movie
 tstep = 10;
@@ -36,7 +37,7 @@ for iTime = 1:tstep:numel(twindow)
     fH = ssm_plotOnMesh(wPAAUT(iTime,:,iPAAU,iT), ...
         sprintf('wPAAUT t=%d',twindow(iTime)),[], data_hdr, '2d');
     set(gca,'CLim',clims)
-    colormap(cmap)
+    colormap(parula)
     pause(.1)
 end
 
@@ -53,45 +54,65 @@ for iT = 1:2
             vals = mean(wPAAUT(tidx,:,iPAAU,iT),1);
             fH = ssm_plotOnMesh(vals,str,[], data_hdr, '2d');
             set(gca,'CLim',clims)
-            colormap(cmap)
+            colormap(parula)
         end
     end
     rd_supertitle2(sprintf('T%d',iT))
 end
 
 % AU
-figPos = [32 250 200*nBins 450];
+figPos = [32 250 200*nBins 650];
 for iT = 1:2
     figure('Position',figPos);
     for iAU = 1:2
         for iBin = 1:nBins
-            subplot(2,nBins,iBin + nBins*(iAU-1))
+            subplot(3,nBins,iBin + nBins*(iAU-1))
             tidx = (1:binSize+1) + (iBin-1)*binSize;
             str = sprintf('wAUT, %s, t=[%d %d]',auNames{iAU}, twindow(tidx(1)), twindow(tidx(end)));
             vals = mean(wAUT(tidx,:,iAU,iT),1);
             fH = ssm_plotOnMesh(vals,str,[], data_hdr, '2d');
             set(gca,'CLim',clims)
-            colormap(cmap)
+            colormap(parula)
+            freezeColors
         end
     end
+    for iBin = 1:nBins
+        subplot(3,nBins,iBin + nBins*2)
+        tidx = (1:binSize+1) + (iBin-1)*binSize;
+        str = sprintf('wAUT, A-U, t=[%d %d]',twindow(tidx(1)), twindow(tidx(end)));
+        vals = mean((wAUT(tidx,:,1,iT) - wAUT(tidx,:,2,iT)),1);
+        ssm_plotOnMesh(vals,str,[], data_hdr, '2d');
+        set(gca,'CLim',diffClims)
+    end
+    colormap(cmap)
     rd_supertitle2(sprintf('T%d',iT))
 end
 
 % PA
-figPos = [32 250 200*nBins 450];
+figPos = [32 250 200*nBins 650];
 for iT = 1:2
     figure('Position',figPos);
     for iPA = 1:2
         for iBin = 1:nBins
-            subplot(2,nBins,iBin + nBins*(iPA-1))
+            subplot(3,nBins,iBin + nBins*(iPA-1))
             tidx = (1:binSize+1) + (iBin-1)*binSize;
             str = sprintf('wPAT, %s, t=[%d %d]',paNames{iPA}, twindow(tidx(1)), twindow(tidx(end)));
             vals = mean(wPAT(tidx,:,iPA,iT),1);
             fH = ssm_plotOnMesh(vals,str,[], data_hdr, '2d');
             set(gca,'CLim',clims)
-            colormap(cmap)
+            colormap(parula)
+            freezeColors
         end
     end
+    for iBin = 1:nBins
+        subplot(3,nBins,iBin + nBins*2)
+        tidx = (1:binSize+1) + (iBin-1)*binSize;
+        str = sprintf('wPAT, P-A, t=[%d %d]',twindow(tidx(1)), twindow(tidx(end)));
+        vals = mean((wPAT(tidx,:,1,iT) - wPAT(tidx,:,2,iT)),1);
+        ssm_plotOnMesh(vals,str,[], data_hdr, '2d');
+        set(gca,'CLim',diffClims)
+    end
+    colormap(cmap)
     rd_supertitle2(sprintf('T%d',iT))
 end
 
@@ -167,4 +188,9 @@ for iBin = 1:nBins
     colormap(cmap)
 end
 rd_supertitle2('T1 & T2')
+
+if saveFigs
+    figPrefix = ['map_wholebrain' sprintf('%dHz', ssvefFreq)];
+    rd_saveAllFigs(fH, {'wPATT1','wPATT2','wAUDiffPADiffT1','wAUDiffPADiffT2','wPAAUDiffT1','wPAAUDiffT2','wPAAUDiffT1T2Comb'}, figPrefix, figDir)
+end
 

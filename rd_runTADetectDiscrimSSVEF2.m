@@ -1,6 +1,6 @@
 % rd_runTADetectDiscrimSSVEF2.m
 
-% works with SSVEF2 or 3 (just change number in function call)
+% works with SSVEF2, 3, or 5 (just change number in function call)
 
 %% setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
