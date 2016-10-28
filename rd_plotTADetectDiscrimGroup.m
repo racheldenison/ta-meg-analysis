@@ -2,7 +2,7 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 % Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'w-single-wb'; % ts w h tf stf w-single stf-single ts-single w-single-wb
+    measure = 'stf-single-wb'; % ts w h tf stf w-single stf-single ts-single w-single-wb stf-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
     selectionStr = 'wholebrain_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
@@ -221,6 +221,17 @@ for iSubject = 1:nSubjects
             groupData.PAAU(:,:,:,iSubject) = A.wPAAU;
             groupData.PA(:,:,:,iSubject) = A.wPA;
             groupData.AU(:,:,:,iSubject) = A.wAU;
+        case 'stf-single-wb'
+            groupData.amps(:,:,:,:,iSubject) = A.stfAmps;
+            groupData.ampsAtt(:,:,:,:,iSubject) = A.stfAmpsAtt;
+            groupData.ampsPA(:,:,:,:,iSubject) = A.stfAmpsPA;
+            groupData.paDiff(:,:,:,:,iSubject) = A.stfPADiff;
+            groupData.PAAUT(:,:,:,:,:,iSubject) = A.stfPAAUT;
+            groupData.PAT(:,:,:,:,:,iSubject) = A.stfPAT;
+            groupData.AUT(:,:,:,:,:,iSubject) = A.stfAUT;
+            groupData.PAAU(:,:,:,:,iSubject) = A.stfPAAU;
+            groupData.PA(:,:,:,:,iSubject) = A.stfPA;
+            groupData.AU(:,:,:,:,iSubject) = A.stfAU;
         otherwise
             error('measure not recognized')
     end
@@ -364,6 +375,10 @@ switch measure
             saveFigs, figDir, figStr, selectionStr)
     case 'w-single-wb'
         rd_plotTADetectDiscrimGroupAmpsWholebrain(A, measure, subjects, ...
+            groupData, groupMean, groupSte, ...
+            saveFigs, figDir, figStr)
+    case 'stf-wb'
+        rd_plotTADetectDiscrimGroupTimeFreqWholeBrain(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr)
     otherwise
