@@ -2,7 +2,7 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 % Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'stf-single-wb'; % ts w h tf stf w-single stf-single ts-single w-single-wb stf-single-wb
+    measure = 'stf-single-wb'; % ts w h tf stf w-single stf-single ts-single w-single-wb stf-single-wb itpc-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
     selectionStr = 'wholebrain_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
@@ -231,10 +231,27 @@ for iSubject = 1:nSubjects
             groupData.AUT(:,:,:,:,:,iSubject) = A.stfAUT;
             groupData.PAAU(:,:,:,:,iSubject) = A.stfPAAU;
             groupData.PA(:,:,:,:,iSubject) = A.stfPA;
-            groupData.AU(:,:,:,:,iSubject) = A.stfAU;
+            groupData.AU(:,:,:,:,iSubject) = A.stfAU;  
+        case 'itpc-single-wb'
+            groupData.amps(:,:,:,:,iSubject) = A.itpcAmps;
+            groupData.PAAUT(:,:,:,:,:,iSubject) = A.itpcPAAUT;
+            groupData.PAT(:,:,:,:,:,iSubject) = A.itpcPAT;
+            groupData.AUT(:,:,:,:,:,iSubject) = A.itpcAUT;
+            groupData.PAAU(:,:,:,:,iSubject) = A.itpcPAAU;
+            groupData.PA(:,:,:,:,iSubject) = A.itpcPA;
+            groupData.AU(:,:,:,:,iSubject) = A.itpcAU;              
         otherwise
             error('measure not recognized')
     end
+end
+
+switch measure
+    case {'stf-single-wb','itpc-single-wb'}
+        groupDataDiff.AU = squeeze(groupData.AU(:,:,:,1,:)-groupData.AU(:,:,:,2,:));
+        groupDataDiff.PA = squeeze(groupData.PA(:,:,:,1,:)-groupData.PA(:,:,:,2,:));
+        groupDataDiff.AUT = squeeze(groupData.AUT(:,:,:,1,:,:)-groupData.AUT(:,:,:,2,:,:));
+    otherwise
+        error('measure not recognized')
 end
 
 %% Normalize to baseline for each subject - common baseline across conds
@@ -340,6 +357,17 @@ for iF = 1:nFields
     groupSte.(fieldName) = std(vals, 0, sdim)./sqrt(nSubjects);
 end
 
+%% Calculate group t-stat (uncorrected)
+fieldNames = fieldnames(groupDataDiff);
+nFields = numel(fieldNames);
+for iF = 1:nFields
+    fieldName = fieldNames{iF};
+    vals = groupDataDiff.(fieldName);
+    sdim = numel(size(vals)); % subject dimension
+    [h p ci stat] = ttest(vals,0,'dim',sdim);
+    groupTStat.(fieldName) = stat.tstat;
+end
+
 %% A bit of stats
 % [h p] = ttest(squeeze(groupData.ampsAtt(1,:,:))', squeeze(groupData.ampsAtt(2,:,:))');
 % hold on
@@ -377,9 +405,9 @@ switch measure
         rd_plotTADetectDiscrimGroupAmpsWholebrain(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr)
-    case 'stf-wb'
+    case {'stf-single-wb','itpc-single-wb'}
         rd_plotTADetectDiscrimGroupTimeFreqWholeBrain(A, measure, subjects, ...
-            groupData, groupMean, groupSte, ...
+            groupData, groupMean, groupSte, groupTStat, ...
             saveFigs, figDir, figStr)
     otherwise
         error('measure not recognized')
