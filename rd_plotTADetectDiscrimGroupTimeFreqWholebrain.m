@@ -6,6 +6,7 @@ function rd_plotTADetectDiscrimGroupTimeFreqWholebrain(A, measure, subjects, ...
 foi = A.stfFoi;
 toi = A.stfToi;
 twinvals = A.stftwinvals;
+eventTimes = A.eventTimes;
 trigNames = A.trigNames;
 nTrigs = numel(trigNames);
 
@@ -273,10 +274,11 @@ legend('PP','AP','PA','AA')
 
 %% multiplots
 % channel plot setup
+tstatLims = [-5 5];
 cfg = [];
 cfg.layout = layout;
 cfg.colormap = cmap;
-cfg.zlim = [-5 5];
+cfg.zlim = tstatLims;
 
 TFdata.label = data_hdr.label(1:numel(A.channels));
 TFdata.dimord = 'chan_freq_time';
@@ -328,3 +330,33 @@ if saveFigs
     figPrefix = sprintf('%s_immap_wholebrain_%s', figStr, measure);
     rd_saveAllFigs(fH, {'timeFreqSingleAUDiffTStat','timeFreqSinglePADiffTStat','timeFreqSingleAUDiffT1TStat','timeFreqSingleAUDiffT2TStat'}, figPrefix, figDir)
 end
+
+%% Map t-tstats
+nBins = 6;
+binSize = round(numel(twinvals)/nBins);
+freq = 10;
+
+% AU
+figPos = [32 250 200*nBins 650];
+figure('Position',figPos)
+for iT = 1:2
+    for iBin = 1:nBins
+        subplot(3,nBins,iBin + nBins*(iT-1))
+        tidx = (1:binSize+1) + (iBin-1)*binSize;
+        str = sprintf('A-U T%d t-stat, t=[%1.1f %1.1f]', iT, twinvals(tidx(1)), twinvals(tidx(end)));
+        vals = squeeze(nanmean(nanmean(groupTStat.AUT(:,freq,tidx,iT),2),3))';
+        ssm_plotOnMesh(vals,str,[], data_hdr, '2d');
+        set(gca,'CLim',tstatLims)
+    end
+end
+for iBin = 1:nBins
+    subplot(3,nBins,iBin + nBins*2)
+    tidx = (1:binSize+1) + (iBin-1)*binSize;
+    str = sprintf('A-U T1&T2 t-stat, t=[%1.1f %1.1f]', twinvals(tidx(1)), twinvals(tidx(end)));
+    vals = squeeze(nanmean(nanmean(groupTStat.AU(:,freq,tidx),2),3))';
+    ssm_plotOnMesh(vals,str,[], data_hdr, '2d');
+    set(gca,'CLim',tstatLims)
+end
+colormap(cmap)
+rd_supertitle2(['freq = [' sprintf('%d ', freq([1 end])) '] Hz'])
+

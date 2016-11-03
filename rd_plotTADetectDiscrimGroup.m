@@ -2,7 +2,7 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 % Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'stf-single-wb'; % ts w h tf stf w-single stf-single ts-single w-single-wb stf-single-wb itpc-single-wb
+    measure = 'itpc-single-wb'; % ts w h tf stf w-single stf-single ts-single w-single-wb stf-single-wb itpc-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
     selectionStr = 'wholebrain_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
@@ -406,7 +406,7 @@ switch measure
             groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr)
     case {'stf-single-wb','itpc-single-wb'}
-        rd_plotTADetectDiscrimGroupTimeFreqWholeBrain(A, measure, subjects, ...
+        rd_plotTADetectDiscrimGroupTimeFreqWholebrain(A, measure, subjects, ...
             groupData, groupMean, groupSte, groupTStat, ...
             saveFigs, figDir, figStr)
     otherwise

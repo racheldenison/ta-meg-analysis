@@ -5,10 +5,33 @@ function rd_plotTADetectDiscrimGroupAmpsWholebrain(A, measure, subjects, ...
 %% setup
 load data/data_hdr.mat
 twin = A.wtwin;
+twindow = twin(1):twin(end);
 wPAAUT = groupMean.PAAUT;
 wPAAU = groupMean.PAAU;
 wAUT = groupMean.AUT;
 wPAT = groupMean.PAT;
+
+%% itpc
+% twindow = A.stftwinvals;
+% freq = 30;
+% wPAAUT0 = squeeze(groupMean.PAAUT(:,freq,:,:,:));
+% wPAAU0 = squeeze(groupMean.PAAU(:,freq,:,:));
+% wAUT0 = squeeze(groupMean.AUT(:,freq,:,:,:));
+% wPAT0 = squeeze(groupMean.PAT(:,freq,:,:,:));
+% 
+% % switch time and channels dimensions
+% for i=1:4
+%     for j=1:2
+%         wPAAUT(:,:,i,j) = wPAAUT0(:,:,i,j)';
+%     end
+%     wPAAU(:,:,i) = wPAAU0(:,:,i)';
+% end
+% for i=1:2
+%     for j=1:2
+%         wAUT(:,:,i,j) = wAUT0(:,:,i,j)';
+%         wPAT(:,:,i,j) = wPAT0(:,:,i,j)';
+%     end
+% end
 
 %% plot setup
 paauNames = {'P-att','P-unatt','A-att','A-unatt'};
@@ -23,13 +46,12 @@ switch A.normalizeOption
         diffClims = [-.3 .3];
 end
 cmap = flipud(lbmap(64,'RedBlue'));
-twindow = twin(1):twin(end);
 nBins = 6;
 binSize = round(numel(twindow)/nBins);
 load parula
 
 %% movie
-tstep = 10;
+tstep = 2;
 iPAAU = 1;
 iT = 1;
 figure
