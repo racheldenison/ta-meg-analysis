@@ -1,6 +1,6 @@
 % rd_runTADetectDiscrimSSVEF2.m
 
-% works with SSVEF2, 3, or 5 (just change number in function call)
+% works with SSVEF2, 3, 5, 6 (just change number in function call)
 
 %% setup
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
@@ -47,7 +47,7 @@ for iTS = 1:numel(trialSelections)
         % run freq/top channels combos
         for ssvefFreq = ssvefFreqs
             if wholeBrain
-                rd_TADetectDiscrimSSVEF5(exptDir, sessionDir, fileBase, ...
+                rd_TADetectDiscrimSSVEF6(exptDir, sessionDir, fileBase, ...
                     analStr, ssvefFreq, trialSelection, respTargetSelection);
                 close all;
             else

@@ -1,7 +1,7 @@
 function rd_TADetectDiscrimSSVEF6(exptDir, sessionDir, fileBase, analStr, ssvefFreq, trialSelection, respTargetSelection)
 
 % whole brain single trial analysis part 2: fft for select windows and
-% frequencies
+% frequencies (FOI)
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
@@ -22,16 +22,11 @@ matDir = sprintf('%s/mat', dataDir);
 switch analStr
     case ''
         savename = sprintf('%s/%s_ssvef_workspace.mat', matDir, fileBase);
-        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%sTrials%s_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%sTrials%s_FOI.mat', matDir, fileBase, channelSelectionStr, trialSelection, respTargetSelection);
     otherwise
         savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
-        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%s_%sTrials%s_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
+        analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%s_%sTrials%s_FOI.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, respTargetSelection);
 end
-
-% load data header for plotting topologies
-load data/data_hdr.mat
-cfg = [];
-layout = ft_prepare_layout(cfg, data_hdr);
 
 %% Get the data
 load(savename)
@@ -41,8 +36,8 @@ behav = behavior(behav);
 
 %% Settings after loading the data
 saveAnalysis = 1;
-saveFigs = 1;
-plotFigs = 1;
+saveFigs = 0;
+plotFigs = 0;
 
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
@@ -50,10 +45,17 @@ excludeSaturatedEpochs = 0;
 channels = 1:157;
 
 %% Plotting setup
+if plotFigs
 load parula
 cmap = flipud(lbmap(64,'RedBlue'));
 attNames = {'att','unatt'};
 set(0,'defaultLineLineWidth',1)
+
+% load data header for plotting topologies
+load data/data_hdr.mat
+cfg = [];
+layout = ft_prepare_layout(cfg, data_hdr);
+end
 
 %% Store settings for this analysis
 A.fileBase = fileBase;
@@ -98,9 +100,9 @@ if excludeTrialsFt
     % update analysis file
     switch analStr
         case ''
-            analysisFileName = sprintf('%s/analysis_singleTrials_%s_ft_%s_%sTrials%s_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_singleTrials_%s_ft_%s_%sTrials%s_FOI.mat', matDir, fileBase, channelSelectionStr, trialSelection, respTargetSelection);
         otherwise
-            analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_ft_%s_%sTrials%s_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
+            analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_ft_%s_%sTrials%s_FOI.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, respTargetSelection);
     end
 end
 
@@ -212,12 +214,7 @@ trigMean(:,:,:,end+1) = blankData(:,channels,randomBlankTrials(1:size(condData,3
 nTrigs = size(trigMean,4);
 nTrialsPerCond = size(trigMean,3);
 
-% mean across trials
-trigMeanMean = squeeze(nanmean(trigMean,3));
-
 A.nTrialsCond = nTrialsCond;
-% A.trigMean = trigMean; % very big, so not saving
-A.trigMeanMean = trigMeanMean;
 
 %% 600 ms pre-stimulus
 %% Select time windows of interest
@@ -241,6 +238,7 @@ preAU{2}(:,:,:,2) = reshape(valsUnatt,numel(t1Tidx),nChannels,nTrialsPerCond*2);
 A.preAU600 = preAU;
 
 %% FFT
+ampsAll = [];
 preAUTAmps = [];
 for iT = 1:2
     % taper
@@ -257,21 +255,40 @@ for iT = 1:2
     f = Fs/2*linspace(0,1,nfft/2+1); % Fs/2 is the maximum frequency that can be measured
     amps = 2*abs(Y(1:nfft/2+1,:,:,:)); % Multiply by 2 since only half the energy is in the positive half of the spectrum?
     
+    ampsAll{iT} = amps;
+    
     % average across trials
     preAUTAmps(:,:,:,iT) = squeeze(nanmean(amps,3));
 end
 
+% calculate z-score across trials
+ampsAllC = cat(3,ampsAll{1},ampsAll{2}); % combine T1 and T2
+sz = size(ampsAllC);
+ampsAllC = reshape(ampsAllC,sz(1),sz(2),sz(3)*sz(4));
+m = nanmean(ampsAllC,3);
+sd = nanstd(ampsAllC,0,3);
+
+preAUTAmpsZ = [];
+for iT = 1:2
+    ampsAllZ = (ampsAll{iT}-repmat(m,1,1,size(ampsAll{iT},3),size(ampsAll{iT},4)))./...
+        repmat(sd,1,1,size(ampsAll{iT},3),size(ampsAll{iT},4));
+    preAUTAmpsZ(:,:,:,iT) = squeeze(nanmean(ampsAllZ,3));
+end
+
 A.preAUTAmps600 = preAUTAmps;
+A.preAUTAmpsZ600 = preAUTAmpsZ;
 
 %% Alpha
 freqRange = [8 12];
 fIdx = f>=freqRange(1) & f<=freqRange(2);
 preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:)));
+preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:)));
 
+if plotFigs
 clims = [10 70];
 diffClims = [-5 5];
 fH = [];
-fH(1) = figure('Position',[360 280 450 630])
+fH(1) = figure('Position',[360 280 450 630]);
 for iT = 1:2
     for iAU = 1:2
         subplot(3,2,iT+2*(iAU-1))
@@ -290,10 +307,12 @@ for iT = 1:2
     colormap(cmap)
 end
 rd_supertitle2(sprintf('f = [%d %d] Hz',freqRange(1),freqRange(2)))
+end
 
 A.alpha.twin = twin;
 A.alpha.freqRange = freqRange;
 A.alpha.preAUT = preAUT;
+A.alpha.preAUTZ = preAUTZ;
 
 %% 200 ms pre-stimulus
 %% Select time windows of interest
@@ -333,17 +352,36 @@ for iT = 1:2
     f = Fs/2*linspace(0,1,nfft/2+1); % Fs/2 is the maximum frequency that can be measured
     amps = 2*abs(Y(1:nfft/2+1,:,:,:)); % Multiply by 2 since only half the energy is in the positive half of the spectrum?
     
+    ampsAll{iT} = amps;
+    
     % average across trials
     preAUTAmps(:,:,:,iT) = squeeze(nanmean(amps,3));
 end
 
+% calculate z-score across trials
+ampsAllC = cat(3,ampsAll{1},ampsAll{2}); % combine T1 and T2
+sz = size(ampsAllC);
+ampsAllC = reshape(ampsAllC,sz(1),sz(2),sz(3)*sz(4));
+m = nanmean(ampsAllC,3);
+sd = nanstd(ampsAllC,0,3);
+
+preAUTAmpsZ = [];
+for iT = 1:2
+    ampsAllZ = (ampsAll{iT}-repmat(m,1,1,size(ampsAll{iT},3),size(ampsAll{iT},4)))./...
+        repmat(sd,1,1,size(ampsAll{iT},3),size(ampsAll{iT},4));
+    preAUTAmpsZ(:,:,:,iT) = squeeze(nanmean(ampsAllZ,3));
+end
+
 A.preAUTAmps200 = preAUTAmps;
+A.preAUTAmpsZ200 = preAUTAmpsZ;
 
 %% SSVEF 30
 freqRange = [30 30];
 fIdx = f>=freqRange(1) & f<=freqRange(2);
 preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:),1));
+preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:)));
 
+if plotFigs
 clims = [0 40];
 diffClims = [-4 4];
 fH(2) = figure('Position',[360 280 450 630]);
@@ -365,16 +403,20 @@ for iT = 1:2
     colormap(cmap)
 end
 rd_supertitle2(sprintf('f = [%d %d] Hz',freqRange(1),freqRange(2)))
+end
 
 A.ssvef30.twin = twin;
 A.ssvef30.freqRange = freqRange;
 A.ssvef30.preAUT = preAUT;
+A.ssvef30.preAUTZ = preAUTZ;
 
 %% SSVEF 40
 freqRange = [40 40];
 fIdx = f>=freqRange(1) & f<=freqRange(2);
 preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:),1));
+preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:)));
 
+if plotFigs
 clims = [0 40];
 diffClims = [-4 4];
 fH(3) = figure('Position',[360 280 450 630]);
@@ -396,16 +438,20 @@ for iT = 1:2
     colormap(cmap)
 end
 rd_supertitle2(sprintf('f = [%d %d] Hz',freqRange(1),freqRange(2)))
+end
 
 A.ssvef40.twin = twin;
 A.ssvef40.freqRange = freqRange;
 A.ssvef40.preAUT = preAUT;
+A.ssvef40.preAUTZ = preAUTZ;
 
 %% Broadband
 freqRange = [70 100];
 fIdx = f>=freqRange(1) & f<=freqRange(2);
 preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:)));
+preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:)));
 
+if plotFigs
 clims = [0 20];
 diffClims = [-2 2];
 fH(4) = figure('Position',[360 280 450 630]);
@@ -427,13 +473,20 @@ for iT = 1:2
     colormap(cmap)
 end
 rd_supertitle2(sprintf('f = [%d %d] Hz',freqRange(1),freqRange(2)))
+end
 
 A.broadband.twin = twin;
 A.broadband.freqRange = freqRange;
 A.broadband.preAUT = preAUT;
+A.broadband.preAUTZ = preAUTZ;
 
 %% Save figs
 if saveFigs
     figPrefix = 'map_wholebrain';
     rd_saveAllFigs(fH, {'pre600_8-12Hz','pre200_30Hz','pre200_40Hz','pre200_70-100Hz'}, figPrefix, figDir)
+end
+
+%% save analysis
+if saveAnalysis
+    save(analysisFileName, 'A') 
 end

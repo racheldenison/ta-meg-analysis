@@ -864,7 +864,7 @@ rd_supertitle2('itpc, A-U')
 
 if saveFigs
     figPrefix = 'immap_wholebrain';
-    rd_saveAllFigs(gcf, {'timeFreqSingleAUDiff','itpcAUDiff'}, figPrefix, figDir)
+    rd_saveAllFigs(fH, {'timeFreqSingleAUDiff','itpcAUDiff'}, figPrefix, figDir)
 end
 
 end
