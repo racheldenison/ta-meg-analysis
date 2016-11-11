@@ -243,10 +243,10 @@ for iSubject = 1:nSubjects
             groupData.PA(:,:,:,:,iSubject) = A.itpcPA;
             groupData.AU(:,:,:,:,iSubject) = A.itpcAU;   
         case 'pre-single-wb'
-            groupData.alpha(:,:,:,iSubject) = A.alpha.preAUT;
-            groupData.ssvef30(:,:,:,iSubject) = A.ssvef30.preAUT;
-            groupData.ssvef40(:,:,:,iSubject) = A.ssvef40.preAUT;
-            groupData.broadband(:,:,:,iSubject) = A.broadband.preAUT;
+            groupData.alpha(:,:,:,iSubject) = A.alpha.preAUTZ;
+            groupData.ssvef30(:,:,:,iSubject) = A.ssvef30.preAUTZ;
+            groupData.ssvef40(:,:,:,iSubject) = A.ssvef40.preAUTZ;
+            groupData.broadband(:,:,:,iSubject) = A.broadband.preAUTZ;
         otherwise
             error('measure not recognized')
     end

@@ -281,8 +281,8 @@ A.preAUTAmpsZ600 = preAUTAmpsZ;
 %% Alpha
 freqRange = [8 12];
 fIdx = f>=freqRange(1) & f<=freqRange(2);
-preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:)));
-preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:)));
+preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:),1));
+preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:),1));
 
 if plotFigs
 clims = [10 70];
@@ -379,7 +379,7 @@ A.preAUTAmpsZ200 = preAUTAmpsZ;
 freqRange = [30 30];
 fIdx = f>=freqRange(1) & f<=freqRange(2);
 preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:),1));
-preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:)));
+preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:),1));
 
 if plotFigs
 clims = [0 40];
@@ -414,7 +414,7 @@ A.ssvef30.preAUTZ = preAUTZ;
 freqRange = [40 40];
 fIdx = f>=freqRange(1) & f<=freqRange(2);
 preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:),1));
-preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:)));
+preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:),1));
 
 if plotFigs
 clims = [0 40];
@@ -448,8 +448,8 @@ A.ssvef40.preAUTZ = preAUTZ;
 %% Broadband
 freqRange = [70 100];
 fIdx = f>=freqRange(1) & f<=freqRange(2);
-preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:)));
-preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:)));
+preAUT = squeeze(mean(preAUTAmps(fIdx,:,:,:),1));
+preAUTZ = squeeze(mean(preAUTAmpsZ(fIdx,:,:,:),1));
 
 if plotFigs
 clims = [0 20];
