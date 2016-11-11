@@ -12,7 +12,6 @@ load data/grad.mat
 cfg = [];
 cfg.method = 'distance';
 % cfg.neighbourdist = 4.5; % default is 4
-% cfg.layout = layout;
 cfg.grad = grad;
 cfg.feedback = 'yes';
 neighbours = ft_prepare_neighbours(cfg);
@@ -98,38 +97,4 @@ for iT = 1:2
     set(gca,'clim',clims)
     rd_supertitle2(fieldName)
 end
-
-%% shuffle stats
-% t threshold
-tthresh = abs(tinv(.05/2,nSubjects-1));
-
-nShuffle = 1000;
-vals = groupData.alpha;
-tstatEmp = groupTStat.alpha;
-valsSh = vals;
-for iShuffle = 1:nShuffle
-    flip = logical(mod(randperm(nSubjects),2));
-    valsSh(:,1,:,flip) = vals(:,2,:,flip);
-    valsSh(:,2,:,flip) = vals(:,1,:,flip);
-    valsShDiff = squeeze(valsSh(:,1,:,:)-valsSh(:,2,:,:));
-    sdim = numel(size(valsShDiff)); % subject dimension
-    [h p ci stat] = ttest(valsShDiff,0,'dim',sdim);
-    tstatSh(:,:,iShuffle) = stat.tstat;
-    
-%     for iT = 1:2
-%         [~, clusterNull(iT,iShuffle)] = rd_clusterStat(tstatSh(:,iT,iShuffle), abs(tstatSh(:,iT,iShuffle))>tthresh);
-%     end
-end
-
-
-tstatCI = prctile(tstatSh,[2.5 97.5],3);
-tstatThresh = tstatEmp>tstatCI(:,:,2) | tstatEmp<tstatCI(:,:,1);
-
-% empirical cluster sum
-[~, paDiffCluster] = rd_clusterStat(paDiffMean, paThresh);
-
-% empirical cluster sum
-[~, paDiffCluster] = rd_clusterStat(paDiffTStat, abs(paDiffTStat)>tthresh);
-paDiffClusterCI = prctile(paDiffClusterNull,95);
-
 
