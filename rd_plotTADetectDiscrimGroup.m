@@ -2,10 +2,10 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 % Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'pre-single-wb'; % ts w h tf stf w-single stf-single ts-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
+    measure = 'ts-single'; % ts w h tf stf w-single stf-single ts-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
-    selectionStr = 'wholebrain_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+    selectionStr = 'wholebrain_allTrials'; %'topChannels5'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
 end
 if ~exist('normalizeOption','var') || isempty(normalizeOption)
     normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
@@ -15,8 +15,8 @@ end
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi_ft'; % '', 'ebi', etc.
 ssvefFreq = 30;
-% ssvefStr = sprintf('%dHz',ssvefFreq);
-ssvefStr = 'FOI';
+ssvefStr = sprintf('%dHz',ssvefFreq);
+% ssvefStr = 'FOI';
 
 plotFigs = 1;
 saveFigs = 0;
@@ -257,14 +257,16 @@ switch measure
         groupDataDiff.AU = squeeze(groupData.AU(:,:,:,1,:)-groupData.AU(:,:,:,2,:));
         groupDataDiff.PA = squeeze(groupData.PA(:,:,:,1,:)-groupData.PA(:,:,:,2,:));
         groupDataDiff.AUT = squeeze(groupData.AUT(:,:,:,1,:,:)-groupData.AUT(:,:,:,2,:,:));
+        dotstat = 1;
     case 'pre-single-wb'
         fieldNames = fields(groupData);
         for iF = 1:numel(fieldNames)
             groupDataDiff.(fieldNames{iF}) = squeeze(groupData.(fieldNames{iF})(:,1,:,:) - ...
                 groupData.(fieldNames{iF})(:,2,:,:));
         end
+        dotstat = 1;
     otherwise
-        error('measure not recognized')
+        dotstat = 0;
 end
 
 %% Normalize to baseline for each subject - common baseline across conds
@@ -371,14 +373,16 @@ for iF = 1:nFields
 end
 
 %% Calculate group t-stat (uncorrected)
-fieldNames = fieldnames(groupDataDiff);
-nFields = numel(fieldNames);
-for iF = 1:nFields
-    fieldName = fieldNames{iF};
-    vals = groupDataDiff.(fieldName);
-    sdim = numel(size(vals)); % subject dimension
-    [h p ci stat] = ttest(vals,0,'dim',sdim);
-    groupTStat.(fieldName) = stat.tstat;
+if dotstat
+    fieldNames = fieldnames(groupDataDiff);
+    nFields = numel(fieldNames);
+    for iF = 1:nFields
+        fieldName = fieldNames{iF};
+        vals = groupDataDiff.(fieldName);
+        sdim = numel(size(vals)); % subject dimension
+        [h p ci stat] = ttest(vals,0,'dim',sdim);
+        groupTStat.(fieldName) = stat.tstat;
+    end
 end
 
 %% A bit of stats

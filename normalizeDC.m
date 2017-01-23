@@ -1,5 +1,9 @@
 function dataNorm = normalizeDC(data)
 
+% function dataNorm = normalizeDC(data)
+%
+% data must be 2 or 3 dimensional with subjects as last dimension
+
 dim = numel(size(data));
 
 switch dim

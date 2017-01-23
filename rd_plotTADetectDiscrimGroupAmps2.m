@@ -103,7 +103,7 @@ valsDiffAbsSte = squeeze(std(abs(valsDiff),0,3)./sqrt(nSubjects));
 
 %% permutation test: any difference between att T1 and att T2?
 % shuffle condition labels to generate null distribution of attDiff
-shuffle = 0;
+shuffle = 1;
 if shuffle
     nShuffles = 1000;
     vals = groupData.ampsAtt;
@@ -125,7 +125,6 @@ if shuffle
     figure
     hold on
     plot(t,valsDiffMean)
-    plot(t,valsDiffCI,'g') % time series shuffle
     plot(t,ci) % condition label flip
 end
 
