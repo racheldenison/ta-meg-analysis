@@ -90,8 +90,16 @@ title(respTargetSelection)
 %% get mean of interesting time window
 dvaDiff = dvaIncorrect-dvaCorrect;
 [h, p, ci, stat] = ttest(dvaDiff');
-w = t>=1500 & t<=1850;
-dvaDiffWinMean = mean(dvaDiff(w,:));
+
+switch respTargetSelection
+    case 'T1Resp'
+        w = t>=1600 & t<=1600;
+    case 'T2Resp'
+        w = t>=2000 & t<=2250;
+    otherwise
+        w = [];
+end
+dvaDiffWinMean = mean(dvaDiff(w,:),1);
 
 figure
 hold on
@@ -102,6 +110,29 @@ for iEv = 1:numel(eventTimes)
 end
 xlabel('time (ms)')
 ylabel('incorrect-correct dva')
+
+%% load behavior
+b = load('/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/Behavior/Group/groupBehav_N16.mat');
+
+switch respTargetSelection
+    case 'T1Resp'
+        iT = 1;
+    case 'T2Resp'
+        iT = 2;
+    otherwise
+        iT = [];
+end
+acc = b.groupData.overallAcc;
+acc = squeeze(acc(:,iT,:));
+accDiff = acc(1,:)-acc(2,:);
+accDiff = accDiff(subsToInclude);
+
+figure
+twin = t(w);
+scatter(accDiff, dvaDiffWinMean)
+xlabel('accuracy (correct-incorrect)')
+ylabel(sprintf('dva (incorrect-correct), %d-%d ms', twin(1), twin(end)))
+[r p] = corr(accDiff', dvaDiffWinMean')
 
 
 
