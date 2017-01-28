@@ -1,7 +1,7 @@
 function rd_TADetectDiscrimDVA(exptDir, sessionDir, fileBase, analStr, ~, trialSelection, respTargetSelection)
 
 % stability - dva
-% whole brain single trial analysis (first part as in SSVEF5)
+% whole brain or topChannels single trial analysis (first part as in SSVEF5)
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
@@ -13,7 +13,7 @@ if nargin==0 || ~exist('exptDir','var')
     respTargetSelection = ''; % '','T1Resp','T2Resp'
 end
 
-channelSelectionStr = 'wholebrain';
+channelSelectionStr = 'topChannels10'; % 'wholebrain';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
@@ -21,9 +21,11 @@ matDir = sprintf('%s/mat', dataDir);
 switch analStr
     case ''
         savename = sprintf('%s/%s_ssvef_workspace.mat', matDir, fileBase);
+        channelsFileName = sprintf('%s/channels_30Hz.mat', matDir);
         analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%sTrials%s_dva.mat', matDir, fileBase, channelSelectionStr, trialSelection, respTargetSelection);
     otherwise
         savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
+        channelsFileName = sprintf('%s/channels_30Hz_%s.mat', matDir, analStr);
         analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%s_%sTrials%s_dva.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, respTargetSelection);
 end
 
@@ -41,7 +43,17 @@ plotFigs = 1;
 excludeTrialsFt = 1;
 excludeSaturatedEpochs = 0;
 
-channels = 1:157;
+%% Channels
+load(channelsFileName);
+switch channelSelectionStr
+    case 'topChannels10'
+        topChannels = 1:10;
+        channels = channelsRanked(topChannels);
+    case 'wholebrain'
+        channels = 1:157;
+    otherwise
+        error('channelSelectionStr not recognized')
+end
 
 %% Plotting setup
 set(0,'defaultLineLineWidth',1)
@@ -152,6 +164,9 @@ wSelect = wSelect & rSelect;
 blankCond = 1;
 wBlank = behav.responseData_all(:,cueCondIdx) == blankCond;
 
+%% select channels in trigData
+trigData = trigData(:,channels,:);
+
 %% remove unselected and blank trials
 trigDataSelected = trigData;
 trigDataSelected(:,:,~wSelect) = NaN;
@@ -163,7 +178,7 @@ data = trigDataSelected(:,:,~excludedTrials);
 %% visualize one trial
 if plotFigs
     figure('Position',[200 500 1000 400])
-    imagesc(data(:,:,1)')
+    imagesc(data(:,:,13)')
     for iEv = 1:numel(eventTimes)
         vline(find(t==eventTimes(iEv)),'k');
     end
@@ -175,6 +190,11 @@ end
 % initialize
 R = nan(size(data,1),size(data,3));
 L2 = nan(size(R));
+L2s = nan(size(R));
+D = nan(size(R));
+Dn = nan(size(R));
+eD = nan(size(R));
+eDn = nan(size(R));
 n = 100; % n time points in each bin
 
 for iTrial = 1:size(data,3)
@@ -184,18 +204,40 @@ for iTrial = 1:size(data,3)
     for idx = n/2+1:size(data,1)-n/2; % center of each bin
         d = data(idx-n/2:idx+n/2-1,:,iTrial)'; % n time points, all channels, one trial
         % normalize each vector
-        for iTime = 1:size(d,2)
+        for iTime = 1:n
             dnorm(:,iTime) = d(:,iTime)/norm(d(:,iTime));
+            l2(:,iTime) = norm(d(:,iTime));
         end
-        R(idx,iTrial) = norm(sum(dnorm,2))/n;
+        R(idx,iTrial) = norm(sum(dnorm,2))/n; % =norm(mean(dnorm,2)), i.e. length of average vector
         L2(idx,iTrial) = norm(data(idx,:,iTrial));
+        L2s(idx,iTrial) = mean(l2);
+        % mean distance to average vector
+        av = mean(d,2); % not normalized
+        dist = d - repmat(av,1,n);
+        avn = mean(dnorm,2); % normalized
+        distn = dnorm - repmat(avn,1,n);
+        for iTime=1:n
+            distlength(iTime) = norm(dist(:,iTime));
+            distnlength(iTime) = norm(distn(:,iTime));
+        end
+        D(idx,iTrial) = mean(distlength);
+        Dn(idx,iTrial) = mean(distnlength);
+        % distance between successive time points
+        eD(idx,iTrial) = norm(d(:,n/2+1)-d(:,n/2));
+        eDn(idx,iTrial) = norm(dnorm(:,n/2+1)-dnorm(:,n/2));
     end
 end
 dva = 1-R;
 
+A.n = n;
 A.R = R;
 A.dva = dva;
 A.L2 = L2;
+A.L2s = L2s;
+A.D = D;
+A.Dn = Dn;
+A.eD = eD;
+A.eDn = eDn;
 
 %% plot
 if plotFigs
