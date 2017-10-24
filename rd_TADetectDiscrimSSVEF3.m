@@ -75,8 +75,8 @@ load(savename)
 behav = behavior(behav);
 
 %% Settings after loading the data
-saveAnalysis = 1;
-saveFigs = 1;
+saveAnalysis = 0;
+saveFigs = 0;
 plotFigs = 1;
 
 excludeTrialsFt = 1;
@@ -495,12 +495,14 @@ wBaselineWindow = NaN;
 
 % only frequency of interest
 wAmps0 = [];
+wITPC0 = [];
 foi = ssvefFreq;
 for iTrig = 1:nTrigs
-    for iTrial = 1:nTrialsPerCond
-        data = trigMean(:,:,iTrial,iTrig)'; % channels by samples
+    for iCh = 1:numel(channels)
+        data = squeeze(trigMean(:,iCh,:,iTrig))'; % trials by samples
         [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'freqoi', foi, 'width', width);
         specAmp = abs(squeeze(spectrum));
+        itpc = squeeze(abs(nanmean(exp(1i*angle(spectrum)),1))); % mean across trials
         
         if all(size(specAmp)>1) % if two-dimensional
             wAmp = specAmp;
@@ -509,10 +511,12 @@ for iTrig = 1:nTrigs
         end
         %     wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
         %     wAmps0(:,:,iTrig) = wAmpNorm';
-        wAmps0(:,:,iTrial,iTrig) = wAmp';
+        wAmps0(:,iCh,:,iTrig) = wAmp';
+        wITPC0(:,iCh,iTrig) = itpc;
     end
 end
 wAmps = squeeze(rd_wmean(wAmps0,chw,2)); % mean across channels
+wITPC = squeeze(rd_wmean(wITPC0,chw,2));
 
 % attT1T2 combined
 att1 = []; att2 = [];
@@ -546,6 +550,24 @@ end
 % All combined
 wAmpsAll = [wAmpsAtt(:,:,1) wAmpsAtt(:,:,2)];
 
+% ITPC - note, we're taking the means across conditions rather than
+% recomputing the itpc for all trials in a given attention condition. can
+% reconsider this choice.
+% attT1T2 combined
+conds1 = plotOrder(1:(nTrigs-1)/2);
+conds2 = plotOrder((nTrigs-1)/2+1:nTrigs-1);
+wITPCAtt(:,1) = nanmean(wITPC(:,conds1),2);
+wITPCAtt(:,2) = nanmean(wITPC(:,conds2),2);
+
+% PA combined
+wITPCPA(:,1) = nanmean(wITPC(:,[1 2]),2);
+wITPCPA(:,2) = nanmean(wITPC(:,[3 4]),2);
+wITPCPA(:,3) = nanmean(wITPC(:,[5 6]),2);
+wITPCPA(:,4) = nanmean(wITPC(:,[7 8]),2); 
+
+% All combined
+wITPCAll = nanmean(wITPC,2);
+
 % store results
 A.attNames = attNames;
 A.PANames = PANames;
@@ -555,6 +577,11 @@ A.wAmps = wAmps;
 A.wAmpsAtt = wAmpsAtt;
 A.wAmpsPA = wAmpsPA;
 A.wAmpsAll = wAmpsAll;
+
+A.wITPC = wITPC;
+A.wITPCAtt = wITPCAtt;
+A.wITPCPA = wITPCPA;
+A.wITPCAll = wITPCAll;
 
 if plotFigs
 fH = [];
@@ -832,12 +859,86 @@ if saveFigs
     rd_saveAllFigs(fH, {'waveletPAAU','waveletPAAUT1T2Comb'}, figPrefix, figDir)
 end
 
+%% ITPC plots
+if plotFigs
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tsFigPos)
+set(gca,'ColorOrder',trigColors)
+hold all
+plot(t, wITPC(:,plotOrder))
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+legend(trigNames(plotOrder))
+xlabel('time (ms)')
+ylabel('wavelet itpc')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+
+fH(2) = figure;
+set(gcf,'Position',tsFigPos)
+hold on
+plot(t, wITPCAtt(:,1),'color',trigBlue,'LineWidth',2)
+plot(t, wITPCAtt(:,2),'color',trigRed,'LineWidth',2)
+legend(attNames)
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+xlabel('time (ms)')
+ylabel('wavelet itpc')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+
+% condition subplots
+fH(3) = figure;
+set(gcf,'Position',condFigPos)
+for iTrig = 1:(nTrigs-1)/2
+    subplot((nTrigs-1)/2,1,iTrig)
+    hold on
+    plot(t, wITPC(:,iTrig*2-1),'color',trigBlue,'LineWidth',2)
+    plot(t, wITPC(:,iTrig*2),'color',trigRed,'LineWidth',2)
+    legend(trigNames{iTrig*2-1:iTrig*2})
+%     ylim([-1 2.5])
+    for iEv = 1:numel(eventTimes)
+        vline(eventTimes(iEv),'k');
+    end
+    if iTrig==1
+        title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+    end
+end
+xlabel('time (ms)')
+ylabel('wavelet itpc')
+
+% present/absent
+fH(4) = figure;
+set(gcf,'Position',tsFigPos)
+hold on
+for iPA = 1:4
+    p1 = plot(t, wITPCPA(:,iPA));
+    set(p1, 'Color', trigColorsPA4(iPA,:), 'LineWidth', 2)
+end
+legend(PANames)
+% ylim([-1 2.5])
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+xlabel('time (ms)')
+ylabel('wavelet itpc')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+end
+
+if saveFigs
+    figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
+    rd_saveAllFigs(fH, {'itpc','itpcAtt','itpcByCond','itpcPA'}, figPrefix, figDir)
+end
+
+
 %% Time-frequency - single trials
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
 toi            = tstart/1000:0.01:tstop/1000;
 tfSingleAmps0 = [];
+tfSingleITPC0 = [];
 for iCh = 1:numel(channels)
     channel = channels(iCh);
     for iTrig = 1:nTrigs-1
@@ -847,7 +948,9 @@ for iCh = 1:numel(channels)
             'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
             'taper', taper, 'dimord', 'chan_time_freqtap');
         specAmp = squeeze(nanmean(abs(spectrum),1)); % mean across trials
+        itpc = squeeze(abs(nanmean(exp(1i*angle(spectrum)),1)));
         tfSingleAmps0(iCh,:,:,iTrig) = specAmp';
+        tfSingleITPC0(iCh,:,:,iTrig) = itpc';
     end
 end
 
@@ -859,11 +962,14 @@ for iCh = 1:numel(channels)
         'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
         'taper', taper, 'dimord', 'chan_time_freqtap');
     specAmp = squeeze(nanmean(abs(spectrum),1)); % mean across trials
+    itpc = squeeze(abs(nanmean(exp(1i*angle(spectrum)),1)));
     tfSingleAmps0(iCh,:,:,nTrigs) = specAmp';
+    tfSingleITPC0(iCh,:,:,nTrigs) = itpc';
 end
 
 % mean across channels
 tfSingleAmps1 = squeeze(rd_wmean(tfSingleAmps0,chw,1));
+tfSingleITPC = squeeze(rd_wmean(tfSingleITPC0,chw,1));
 
 % normalize by mean amplitude for each frequency
 m = nanmean(tfSingleAmps1,2);
@@ -917,6 +1023,7 @@ stfAU(:,:,2) = (stfPAAU(:,:,2) + stfPAAU(:,:,4))/2; % unattended
 % get values of the time points with respect to target, for plotting
 twinvals = toi(t1Tidx)-toi(isneq(toi*1000,eventTimes(3)));
 
+
 % store results
 A.stfTaper = taper;
 A.stfFoi = foi;
@@ -937,6 +1044,7 @@ A.stfAUT = stfAUT;
 A.stfPAAU = stfPAAU;
 A.stfPA = stfPA;
 A.stfAU = stfAU;
+
 
 % figures
 ytick = 10:10:numel(foi);
@@ -1188,6 +1296,114 @@ if saveFigs
         figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end)) wstr];
     end
     rd_saveAllFigs(fH, {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA','timeFreqSingleAUDiff','timeFreqSinglePADiff','timeFreqSinglePresent','timeFreqSingleAbsent'}, figPrefix, figDir)
+end
+
+%% inter-trial phase coherence
+tfSingleITPCAtt(:,:,1) = nanmean(tfSingleITPC(:,:,plotOrder(1:(nTrigs-1)/2)),3);
+tfSingleITPCAtt(:,:,2) = nanmean(tfSingleITPC(:,:,plotOrder((nTrigs-1)/2+1:end-1)),3);
+
+for iTrig = 1:(nTrigs-1)/2 
+    tfSingleITPCPA(:,:,iTrig) = mean(tfSingleITPC(:,:,iTrig*2-1:iTrig*2),3);
+end
+t1SingleITPCPADiff = mean(tfSingleITPCPA(:,:,[1 3]),3)-mean(tfSingleITPCPA(:,:,[2 4]),3);
+t2SingleITPCPADiff = mean(tfSingleITPCPA(:,:,[1 2]),3)-mean(tfSingleITPCPA(:,:,[3 4]),3);
+
+% in twin
+% calculate pres/abs x att/unattend for each target
+itpcPAAUT(:,:,1,1) = (tfSingleITPC(:,t1Tidx,1) + tfSingleITPC(:,t1Tidx,5))/2; % present/attended
+itpcPAAUT(:,:,2,1) = (tfSingleITPC(:,t1Tidx,2) + tfSingleITPC(:,t1Tidx,6))/2; % present/unattended
+itpcPAAUT(:,:,3,1) = (tfSingleITPC(:,t1Tidx,3) + tfSingleITPC(:,t1Tidx,7))/2; % absent/attended
+itpcPAAUT(:,:,4,1) = (tfSingleITPC(:,t1Tidx,4) + tfSingleITPC(:,t1Tidx,8))/2; % absent/unattended
+
+itpcPAAUT(:,:,1,2) = (tfSingleITPC(:,t2Tidx,2) + tfSingleITPC(:,t2Tidx,4))/2;
+itpcPAAUT(:,:,2,2) = (tfSingleITPC(:,t2Tidx,1) + tfSingleITPC(:,t2Tidx,3))/2;
+itpcPAAUT(:,:,3,2) = (tfSingleITPC(:,t2Tidx,6) + tfSingleITPC(:,t2Tidx,8))/2;
+itpcPAAUT(:,:,4,2) = (tfSingleITPC(:,t2Tidx,5) + tfSingleITPC(:,t2Tidx,7))/2;
+
+% present vs. absent and attended vs. unattended
+for iT = 1:2
+    itpcPAT(:,:,1,iT) = (itpcPAAUT(:,:,1,iT) + itpcPAAUT(:,:,2,iT))/2; % present
+    itpcPAT(:,:,2,iT) = (itpcPAAUT(:,:,3,iT) + itpcPAAUT(:,:,4,iT))/2; % absent
+
+    itpcAUT(:,:,1,iT) = (itpcPAAUT(:,:,1,iT) + itpcPAAUT(:,:,3,iT))/2; % attended
+    itpcAUT(:,:,2,iT) = (itpcPAAUT(:,:,2,iT) + itpcPAAUT(:,:,4,iT))/2; % unattended 
+end
+
+% combining across T1 and T2
+for iPAAU = 1:4
+    itpcPAAU(:,:,iPAAU) = (itpcPAAUT(:,:,iPAAU,1) + itpcPAAUT(:,:,iPAAU,2))/2;
+end
+
+itpcPA(:,:,1) = (itpcPAAU(:,:,1) + itpcPAAU(:,:,2))/2; % present
+itpcPA(:,:,2) = (itpcPAAU(:,:,3) + itpcPAAU(:,:,4))/2; % absent
+
+itpcAU(:,:,1) = (itpcPAAU(:,:,1) + itpcPAAU(:,:,3))/2; % attended
+itpcAU(:,:,2) = (itpcPAAU(:,:,2) + itpcPAAU(:,:,4))/2; % unattended
+
+A.stfITPCAmps = tfSingleITPC;
+A.stfITPCAtt = tfSingleITPCAtt;
+A.stfITPCPA = tfSingleITPCPA;
+A.stfITPCPADiff(:,:,1) = t1SingleITPCPADiff;
+A.stfITPCPADiff(:,:,2) = t2SingleITPCPADiff;
+A.stfITPCPAAUT = itpcPAAUT;
+A.stfITPCPAT = itpcPAT;
+A.stfITPCAUT = itpcAUT;
+A.stfITPCPAAU = itpcPAAU;
+A.stfITPCPA = itpcPA;
+A.stfITPCAU = itpcAU;
+
+% figures
+clims = [0 1]; % [0 70]
+diffClims = [-0.2 0.2];
+cmap = parula;
+
+if plotFigs
+fH = [];
+fH(1) = figure;
+set(gcf,'Position',tf9FigPos)
+for iTrig = 1:nTrigs
+    subplot(2,5,hack(iTrig))
+    imagesc(tfSingleITPC(:,:,iTrig),clims)
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    colormap(cmap)
+    if iTrig==nTrigs
+        xlabel('time (s)')
+        ylabel('frequency (Hz)')
+    end
+    title(trigNames{iTrig})
+end
+rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
+rd_raiseAxis(gca);
+
+fH(2) = figure;
+set(gcf,'Position',tf3FigPos)
+attNames = {'attT1','attT2'};
+for iAtt = 1:size(tfSingleITPCAtt,3)
+    subplot(1,3,iAtt)
+    imagesc(tfSingleITPCAtt(:,:,iAtt),clims)
+    title(attNames{iAtt})
+end
+subplot(1,3,3)
+imagesc(tfSingleITPCAtt(:,:,2)-tfSingleITPCAtt(:,:,1))%,diffClims)
+title('attT2 - attT1')
+aH = findall(gcf,'type','axes');
+for iAx = 1:numel(aH)
+    axes(aH(iAx));
+    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    xlabel('time (s)')
+    ylabel('frequency (Hz)')
+end
+colormap(cmap)
+rd_supertitle2(['channel' sprintf(' %d', channels) wstrt]);
+end
+
+if saveFigs
+    if numel(channels)==1
+        figPrefix = sprintf('im_ch%d', channels);
+    else
+        figPrefix = ['im_ch' sprintf('%d_', channels(1:end-1)) sprintf('%d', channels(end)) wstr];
+    end
+    rd_saveAllFigs(fH, {'timeFreqITPCByCond','timeFreqITPCAtt'}, figPrefix, figDir)
 end
 
 %% save analysis
