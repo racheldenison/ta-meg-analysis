@@ -1,4 +1,4 @@
-function [clusterSums, maxAbsClusterSum] = rd_clusterSum(ts, thresh)
+function [clusterSums, maxAbsClusterSum, clusterWins] = rd_clusterSum(ts, thresh)
 
 % example inputs
 % ts = rand(1,100);
@@ -10,6 +10,9 @@ clusterEnds = find(diff(thresh)==-1);
 sz = size(clusterStarts);
 if sz(1)>sz(2)
     clusterStarts = clusterStarts';
+end
+sz = size(clusterEnds);
+if sz(1)>sz(2)
     clusterEnds = clusterEnds';
 end
 
@@ -33,3 +36,5 @@ for iC = 1:nClusters
 end
 
 maxAbsClusterSum = max(abs(clusterSums));
+
+clusterWins = [clusterStarts' clusterEnds'];

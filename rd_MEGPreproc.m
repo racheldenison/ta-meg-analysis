@@ -21,7 +21,7 @@ end
 Fl = 60; % line noise frequency
 environmentalDenoise = 1;
 applyLineNoiseFilter = 0;
-removeBadChannels = 1;
+removeBadChannels = 1; 
 TSPCA = 0;
 components = 0; % pca/ica
 interpolate = 1;
@@ -270,7 +270,11 @@ if saveFigs
     end
     f = sort(findobj('Type','figure'));
     for iF = 1:numel(f)
-        figNames{iF} = num2str(f(iF));
+        if isnumeric(f)
+            figNames{iF} = num2str(f(iF));
+        else
+            figNames{iF} = num2str(f(iF).Number);
+        end
     end
     rd_saveAllFigs(f,figNames,[],figSubDir);
     close all

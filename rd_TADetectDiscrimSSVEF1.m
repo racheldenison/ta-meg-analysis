@@ -2,12 +2,21 @@ function rd_TADetectDiscrimSSVEF1(sessionDir)
 % rd_TADetectDiscrimSSVEF1.m
 
 %% Setup
-exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-% sessionDir = 'R0817_20150504';
-fileBase = sessionDirToFileBase(sessionDir);
+exptType = 'TAContrast'; % 'TADetectDiscrim','TAContrast';
+
+switch exptType
+    case 'TADetectDiscrim'
+        exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+        exptShortName = 'TADeDi';
+    case 'TAContrast'
+        exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
+        exptShortName = 'TACont';
+end
+sessionDir = 'R0817_20171019';
+fileBase = sessionDirToFileBase(sessionDir, exptShortName);
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
 excludeTrialsFt = 1;
-excludeSaturatedEpochs = 0;
+excludeSaturatedEpochs = 1;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
@@ -27,8 +36,6 @@ behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
 behavFile = dir(sprintf('%s/*.mat', behavDir));
 behav = load(sprintf('%s/%s', behavDir, behavFile.name));
 
-% trigChan = 160:167;
-trigChan = [160:163 166]; % stim/blank blocks
 megChannels = 0:156;
 channelSets = {0:39,40:79,80:119,120:156};
 % for checking triggers:
@@ -44,20 +51,52 @@ switch sessionDir
         weightChannels = sort(unique([59 92 10 60 15 14 32 2 51 1 50 39 7 24 55 103 98 8]));
     otherwise
         badChannels = [];
-        fprintf('sessionDir not found ... no bad channels selected\n\n')
 end
 
-Fs = 1000;
-tstart = -500; % ms 
-tstop = 3600; % ms 
+switch exptType
+    case 'TADetectDiscrim'
+        % trigChan = 160:167;
+        trigChan = [160:163 166]; % stim/blank blocks
+        tstart = -500; % ms
+        tstop = 3600; % ms
+        
+        eventTimes = [0 500 1500 2100 3100];
+        
+        trigNames = {'attT1-T1p-T2p','attT2-T1p-T2p','attT1-T1a-T2p','attT2-T1a-T2p',...
+            'attT1-T1p-T2a','attT2-T1p-T2a','attT1-T1a-T2a','attT2-T1a-T2a','blank'};
+        % for checking triggers:
+        % tn = {'1-1','1-2','2-1','2-2','abs','pres','blank','cue'};
+        
+        targetCondNames = {'target type T1','target type T2'};
+        t1Conds = {[1 2], 0}; % present, absent
+        t2Conds = {[1 2], 0}; % present, absent
+        
+        ssvefFreqs = [30 40];
+        clims = [0 20];
+
+    case 'TAContrast'
+        trigChan = 166:167; % blank and pre-cue
+        tstart = -1500; % ms
+        tstop = 5700; % ms
+
+        eventTimes = [-1500 0 1000 1300 2300];
+        
+        trigNames = {'attT1-T1d-T2d','attT2-T1d-T2d','attT1-T1i-T2d','attT2-T1i-T2d',...
+            'attT1-T1d-T2i','attT2-T1d-T2i','attT1-T1i-T2i','attT2-T1i-T2i','blank'};
+        
+        targetCondNames = {'target pedestal T1','target pedestal T2'};
+        t1Conds = {1, 2}; % pedestal decrement, pedestal increment
+        t2Conds = {1, 2}; % pedestal decrement, pedestal increment
+        
+        ssvefFreqs = 20;
+        clims = [0 70];
+
+    otherwise
+        error('exptType not found')
+end
+
 t = tstart:tstop;
-
-eventTimes = [0 500 1500 2100 3100];
-
-trigNames = {'attT1-T1p-T2p','attT2-T1p-T2p','attT1-T1a-T2p','attT2-T1a-T2p',...
-    'attT1-T1p-T2a','attT2-T1p-T2a','attT1-T1a-T2a','attT2-T1a-T2a','blank'};
-% for checking triggers:
-% tn = {'1-1','1-2','2-1','2-2','abs','pres','blank','cue'};
+Fs = 1000;
 
 saveData = 0;
 saveFigs = 0;
@@ -95,9 +134,9 @@ if saveData
 end
 
 %% Find saturated channels and trials in raw data
-if strcmp(analStr, '')
+if excludeSaturatedEpochs
     saturatedChannelEpochs = rd_findSaturatedChannelEpochs(trigData);
-    if size(saturatedChannelEpochs, 2)~=41*14
+    if size(saturatedChannelEpochs, 2)~=41*12 %41*14
         fprintf('\nMake sure we are taking the right trials!\n')
         saturatedChannelEpochs = saturatedChannelEpochs(:,42:end);
         fprintf('\nNew size: [%d %d]\n\n', size(saturatedChannelEpochs))
@@ -140,13 +179,11 @@ end
 
 %% Organize trials into conditions
 cueCondIdx = strcmp(behav.responseData_labels, 'cue condition');
-t1CondIdx = strcmp(behav.responseData_labels, 'target type T1');
-t2CondIdx = strcmp(behav.responseData_labels, 'target type T2');
+t1CondIdx = strcmp(behav.responseData_labels, targetCondNames{1});
+t2CondIdx = strcmp(behav.responseData_labels, targetCondNames{2});
 
 blankCond = 1;
 cueConds = {[2 3], [4 5]}; % cue T1, cue T2
-t1Conds = {[1 2], 0}; % present, absent
-t2Conds = {[1 2], 0}; % present, absent
 
 condData = [];
 for iCue = 1:numel(cueConds)
@@ -188,8 +225,17 @@ nTrigs = size(trigMean,3);
 
 %% FFT on mean time series for each trigger type
 % do the fft for each channel
-nfft = 2^nextpow2(nSamples); % Next power of 2 from length of y
-Y = fft(trigMean,nfft)/nSamples; % Scale by number of samples
+% whole epoch (this is what was done for TADetectDiscrim)
+% nfft = 2^nextpow2(nSamples); % Next power of 2 from length of y
+% Y = fft(trigMean,nfft)/nSamples; % Scale by number of samples
+% f = Fs/2*linspace(0,1,nfft/2+1); % Fs/2 is the maximum frequency that can be measured
+% amps = 2*abs(Y(1:nfft/2+1,:,:)); % Multiply by 2 since only half the energy is in the positive half of the spectrum?
+
+% only go from cue to post-cue
+tidx1 = find(t==eventTimes(2));
+tidx2 = find(t==eventTimes(5))-1;
+nfft = numel(tidx1:tidx2);
+Y = fft(trigMean(tidx1:tidx2,:,:),nfft)/nfft; % Scale by number of samples
 f = Fs/2*linspace(0,1,nfft/2+1); % Fs/2 is the maximum frequency that can be measured
 amps = 2*abs(Y(1:nfft/2+1,:,:)); % Multiply by 2 since only half the energy is in the positive half of the spectrum?
 
@@ -248,7 +294,7 @@ if saveFigs
 end
 
 %% Get the component peaks
-ssvefFreqs = [15 20 30 40];
+% ssvefFreqs = [15 20 30 40];
 % ssvefFreqs = [10 50 57.62 60];
 % ssvefFreqs = [1 2.68 4 5 6.7 8.4 13.43];
 freqWindow = 0.2; % +/- this window value
@@ -274,7 +320,7 @@ if saveFigs
 end
 
 %% Plot peaks for stim ave, save channelsRanked
-for ssvefFreq = [30 40]
+for ssvefFreq = ssvefFreqs
     % ssvefFreq = 40;
     peakMeansStimAve = squeeze(mean(peakMeans(ssvefFreqs==ssvefFreq,:,1:end-1),3));
     peakMeansBlank = squeeze(mean(peakMeans(ssvefFreqs==ssvefFreq,:,end),3));
@@ -322,13 +368,15 @@ for iF = 1:numel(ssvefFreqs)
         sensorData = peakMeans157(iTrig,:);
         figure
         fH(iTrig) = ssm_plotOnMesh(sensorData, trigNames{iTrig}, [], data_hdr, '2d');
-        set(gca,'CLim',[0 20])
+        set(gca,'CLim',clims)
+        colorbar
     end
     
     % stim average
     figure
     fH(end+1) = ssm_plotOnMesh(peakStimAve157, 'stim average', [], data_hdr, '2d');
-    set(gca,'CLim',[0 20])
+    set(gca,'CLim',clims)
+    colorbar
 
     % save figs
     if saveFigs

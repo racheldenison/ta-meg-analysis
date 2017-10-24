@@ -1,9 +1,10 @@
 % rd_runMEGPreproc.m
 
 %% setup
-exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R1029_20151222';
-fileBase = 'R1029_TADeDi_12.22.15';
+% exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
+sessionDir = 'R0817_20171019';
+fileBase = 'R0817_TACont_10.19.17';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc', dataDir);
@@ -56,7 +57,8 @@ badChannels = []; % in matlab 1-indexing
 %% run preproc for each run
 for iRun = 1:nRuns
     run = runs(iRun);
-    runFile = sprintf('%s/%s_run%02d.sqd', preprocDir, fileBase, run);
+%     runFile = sprintf('%s/%s_run%02d.sqd', preprocDir, fileBase, run);
+    runFile = sprintf('%s/%s', preprocDir, runFiles(iRun).name);
     preprocFileName = rd_MEGPreproc(runFile, figDir, badChannels);
 end
 
