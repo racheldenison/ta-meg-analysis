@@ -22,6 +22,11 @@ targetCond = [t1Cond t2Cond];
 response = behav.responseData_all(:,responseIdx);
 correct = behav.responseData_all(:,correctIdx);
 
+%% cue type (T1, T2)
+cuedTarget = zeros(nTrials,1);
+cuedTarget(cueCond==2 | cueCond==3) = 1; % '1-1','1-2' cue T1
+cuedTarget(cueCond==4 | cueCond==5) = 2; % '2-1','2-2' cue T2
+
 %% cue type (valid, invalid)
 cueValidity = zeros(nTrials,1);
 cueValidity(cueCond==2 | cueCond==5) = 1; % '1-1','2-2' valid
@@ -83,6 +88,7 @@ discrimCI(w,:) = NaN;
 acc(w,:) = NaN;
 
 %% store
+behav.cuedTarget = cuedTarget;
 behav.cueValidity = cueValidity;
 behav.responseTarget = responseTarget;
 behav.targetOrientation = targetOrientation;

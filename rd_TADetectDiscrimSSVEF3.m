@@ -1,10 +1,10 @@
-function rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection, respTargetSelection)
+function rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection, respTargetSelection, exptType)
 
 % single trial analysis
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
-    exptType = 'TAContrast';
+    exptType = 'TANoise';
     switch exptType
         case 'TADetectDiscrim'
             exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
@@ -22,6 +22,18 @@ if nargin==0 || ~exist('exptDir','var')
             exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
             sessionDir = 'R0817_20171019';
             fileBase = 'R0817_TACont_10.19.17';
+            analStr = 'ebi'; % '', 'ebi', etc.
+            ssvefFreq = 20;
+            nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
+            iqrThresh = []; % 10, or [] for nTopChannels
+            weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
+            trialSelection = 'all'; % 'all','validCorrect', etc
+            respTargetSelection = ''; % '','T1Resp','T2Resp'
+            
+        case 'TANoise'
+            exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+            sessionDir = 'R0817_20171212';
+            fileBase = 'R0817_TANoise_12.12.17';
             analStr = 'ebi'; % '', 'ebi', etc.
             ssvefFreq = 20;
             nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
@@ -80,7 +92,7 @@ saveFigs = 0;
 plotFigs = 1;
 
 excludeTrialsFt = 1;
-excludeSaturatedEpochs = 1;
+excludeSaturatedEpochs = 0;
 
 load(channelsFileName);
 switch channelSelection
@@ -172,7 +184,7 @@ switch exptType
         targetCondNames = {'target type T1','target type T2'};
         t1Conds = {[1 2], 0}; % present, absent
         t2Conds = {[1 2], 0}; % present, absent
-    case 'TAContrast'
+    case {'TAContrast','TANoise'}
         targetCondNames = {'target pedestal T1','target pedestal T2'};
         t1Conds = {1, 2}; % pedestal decrement, pedestal increment
         t2Conds = {1, 2}; % pedestal decrement, pedestal increment
@@ -433,6 +445,8 @@ switch exptType
         names = {'target present','target absent'};
     case 'TAContrast'
         names = {'target decrement','target increment'};
+    case 'TANoise'
+        names = {'vertical','horizontal'};
 end
 colors = get(gca,'ColorOrder');
 fH = [];
@@ -496,23 +510,28 @@ wBaselineWindow = NaN;
 % only frequency of interest
 wAmps0 = [];
 wITPC0 = [];
+wSpec0 = [];
 foi = ssvefFreq;
 for iTrig = 1:nTrigs
     for iCh = 1:numel(channels)
         data = squeeze(trigMean(:,iCh,:,iTrig))'; % trials by samples
         [spectrum,freqoi,timeoi] = ft_specest_wavelet(data, t/1000, 'freqoi', foi, 'width', width);
+        spec = squeeze(spectrum);
         specAmp = abs(squeeze(spectrum));
         itpc = squeeze(abs(nanmean(exp(1i*angle(spectrum)),1))); % mean across trials
         
         if all(size(specAmp)>1) % if two-dimensional
             wAmp = specAmp;
+            spec = spec;
         else
             wAmp = specAmp';
+            spec = spec';
         end
         %     wAmpNorm = wAmp./nanmean(nanmean(wAmp(:,wBaselineWindowIdx)))-1;
         %     wAmps0(:,:,iTrig) = wAmpNorm';
         wAmps0(:,iCh,:,iTrig) = wAmp';
         wITPC0(:,iCh,iTrig) = itpc;
+        wSpec0(:,:,iTrig,iCh) = spec';
     end
 end
 wAmps = squeeze(rd_wmean(wAmps0,chw,2)); % mean across channels
@@ -520,14 +539,19 @@ wITPC = squeeze(rd_wmean(wITPC0,chw,2));
 
 % attT1T2 combined
 att1 = []; att2 = [];
+att1Spec = []; att2Spec = [];
 conds1 = plotOrder(1:(nTrigs-1)/2);
 conds2 = plotOrder((nTrigs-1)/2+1:nTrigs-1);
 for i=1:4
     att1 = cat(2, att1, wAmps(:,:,conds1(i)));
     att2 = cat(2, att2, wAmps(:,:,conds2(i)));
+    att1Spec = cat(2, att1Spec, wSpec0(:,:,conds1(i),:)); 
+    att2Spec = cat(2, att2Spec, wSpec0(:,:,conds2(i),:)); 
 end
 wAmpsAtt(:,:,1) = att1;
 wAmpsAtt(:,:,2) = att2;
+wSpecAtt(:,:,1,:) = att1Spec; % time x trials x att cond x channels
+wSpecAtt(:,:,2,:) = att2Spec;
 attNames = {'attT1','attT2'};
 
 % PA combined
@@ -535,6 +559,11 @@ wAmpsPA(:,:,1) = [wAmps(:,:,1) wAmps(:,:,2)];
 wAmpsPA(:,:,2) = [wAmps(:,:,3) wAmps(:,:,4)];
 wAmpsPA(:,:,3) = [wAmps(:,:,5) wAmps(:,:,6)];
 wAmpsPA(:,:,4) = [wAmps(:,:,7) wAmps(:,:,8)];
+
+wSpecPA(:,:,1,:) = cat(2, wSpec0(:,:,1,:), wSpec0(:,:,2,:));
+wSpecPA(:,:,2,:) = cat(2, wSpec0(:,:,3,:), wSpec0(:,:,4,:));
+wSpecPA(:,:,3,:) = cat(2, wSpec0(:,:,5,:), wSpec0(:,:,6,:));
+wSpecPA(:,:,4,:) = cat(2, wSpec0(:,:,7,:), wSpec0(:,:,8,:));
 
 switch exptType
     case 'TADetectDiscrim'
@@ -545,28 +574,67 @@ switch exptType
         PANames = {'T1d-T2d','T1i-T2d','T1d-T2i','T1i-T2i'};
         PADiffNames = 'D-I';
         xtickint = 100;
+    case 'TANoise'
+        PANames = {'T1v-T2v','T1h-T2v','T1v-T2h','T1h-T2h'};
+        PADiffNames = 'V-H';
+        xtickint = 100;
 end
 
 % All combined
 wAmpsAll = [wAmpsAtt(:,:,1) wAmpsAtt(:,:,2)];
+wSpecAll = squeeze(cat(2, wSpecAtt(:,:,1,:), wSpecAtt(:,:,2,:)));
 
-% ITPC - note, we're taking the means across conditions rather than
+% ITPC
+% Method 1: we're taking the means across conditions rather than
 % recomputing the itpc for all trials in a given attention condition. can
 % reconsider this choice.
 % attT1T2 combined
-conds1 = plotOrder(1:(nTrigs-1)/2);
-conds2 = plotOrder((nTrigs-1)/2+1:nTrigs-1);
-wITPCAtt(:,1) = nanmean(wITPC(:,conds1),2);
-wITPCAtt(:,2) = nanmean(wITPC(:,conds2),2);
+% conds1 = plotOrder(1:(nTrigs-1)/2);
+% conds2 = plotOrder((nTrigs-1)/2+1:nTrigs-1);
+% wITPCAtt(:,1) = nanmean(wITPC(:,conds1),2);
+% wITPCAtt(:,2) = nanmean(wITPC(:,conds2),2);
+% 
+% % PA combined
+% wITPCPA(:,1) = nanmean(wITPC(:,[1 2]),2);
+% wITPCPA(:,2) = nanmean(wITPC(:,[3 4]),2);
+% wITPCPA(:,3) = nanmean(wITPC(:,[5 6]),2);
+% wITPCPA(:,4) = nanmean(wITPC(:,[7 8]),2); 
+% 
+% % All combined
+% wITPCAll = nanmean(wITPC,2);
+
+% Method 2: compute itpc from all trials in condition
+% attT1T2 combined
+for iAtt = 1:numel(attNames)
+    for iCh = 1:numel(channels)
+        spectrum = wSpecAtt(:,:,iAtt,iCh)';
+        itpc = squeeze(abs(nanmean(exp(1i*angle(spectrum)),1))); % mean across trials
+        
+        wITPCAtt0(:,iCh,iAtt) = itpc;
+    end
+end
+wITPCAtt = squeeze(rd_wmean(wITPCAtt0,chw,2)); % mean across channels
 
 % PA combined
-wITPCPA(:,1) = nanmean(wITPC(:,[1 2]),2);
-wITPCPA(:,2) = nanmean(wITPC(:,[3 4]),2);
-wITPCPA(:,3) = nanmean(wITPC(:,[5 6]),2);
-wITPCPA(:,4) = nanmean(wITPC(:,[7 8]),2); 
+for iPA = 1:numel(PANames)
+    for iCh = 1:numel(channels)
+        spectrum = wSpecPA(:,:,iPA,iCh)';
+        itpc = squeeze(abs(nanmean(exp(1i*angle(spectrum)),1))); % mean across trials
+        
+        wITPCPA0(:,iCh,iPA) = itpc;
+    end
+end
+wITPCPA = squeeze(rd_wmean(wITPCPA0,chw,2));
 
 % All combined
-wITPCAll = nanmean(wITPC,2);
+for iCh = 1:numel(channels)
+    spectrum = wSpecAll(:,:,iCh)';
+    itpc = squeeze(abs(nanmean(exp(1i*angle(spectrum)),1))); % mean across trials
+    
+    wITPCAll0(:,iCh) = itpc;
+end
+wITPCAll = squeeze(rd_wmean(wITPCAll0,chw,2));
+
 
 % store results
 A.attNames = attNames;
@@ -730,6 +798,8 @@ switch exptType
         PAAUNames = {'P-att','P-unatt','A-att','A-unatt'};
     case 'TAContrast'
         PAAUNames = {'D-att','D-unatt','I-att','I-unatt'};
+    case 'TANoise'
+        PAAUNames = {'V-att','V-unatt','H-att','H-unatt'};
 end
 
 if plotFigs
@@ -924,11 +994,25 @@ end
 xlabel('time (ms)')
 ylabel('wavelet itpc')
 title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+
+% present/absent
+fH(5) = figure;
+set(gcf,'Position',tsFigPos)
+p1 = plot(t, wITPCAll);
+set(p1, 'Color', 'k', 'LineWidth', 2)
+legend('all trials')
+% ylim([-1 2.5])
+for iEv = 1:numel(eventTimes)
+    vline(eventTimes(iEv),'k');
+end
+xlabel('time (ms)')
+ylabel('wavelet itpc')
+title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
 end
 
 if saveFigs
     figPrefix = ['plot_ch' sprintf('%d_', channels) wstr2 sprintf('%dHz', ssvefFreq)];
-    rd_saveAllFigs(fH, {'itpc','itpcAtt','itpcByCond','itpcPA'}, figPrefix, figDir)
+    rd_saveAllFigs(fH, {'itpc','itpcAtt','itpcByCond','itpcPA','itpcAll'}, figPrefix, figDir)
 end
 
 

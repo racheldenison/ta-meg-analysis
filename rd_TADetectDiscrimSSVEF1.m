@@ -2,7 +2,7 @@ function rd_TADetectDiscrimSSVEF1(sessionDir)
 % rd_TADetectDiscrimSSVEF1.m
 
 %% Setup
-exptType = 'TAContrast'; % 'TADetectDiscrim','TAContrast';
+exptType = 'TANoise'; % 'TADetectDiscrim','TAContrast','TANoise';
 
 switch exptType
     case 'TADetectDiscrim'
@@ -11,8 +11,11 @@ switch exptType
     case 'TAContrast'
         exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
         exptShortName = 'TACont';
+    case 'TANoise'
+        exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+        exptShortName = 'TANoise';       
 end
-sessionDir = 'R0817_20171019';
+sessionDir = 'R0817_20171213';
 fileBase = sessionDirToFileBase(sessionDir, exptShortName);
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
 excludeTrialsFt = 1;
@@ -61,9 +64,7 @@ switch exptType
         tstop = 3600; % ms
         
         eventTimes = [0 500 1500 2100 3100];
-        
-        trigNames = {'attT1-T1p-T2p','attT2-T1p-T2p','attT1-T1a-T2p','attT2-T1a-T2p',...
-            'attT1-T1p-T2a','attT2-T1p-T2a','attT1-T1a-T2a','attT2-T1a-T2a','blank'};
+
         % for checking triggers:
         % tn = {'1-1','1-2','2-1','2-2','abs','pres','blank','cue'};
         
@@ -74,15 +75,12 @@ switch exptType
         ssvefFreqs = [30 40];
         clims = [0 20];
 
-    case 'TAContrast'
+    case {'TAContrast', 'TANoise'}
         trigChan = 166:167; % blank and pre-cue
         tstart = -1500; % ms
         tstop = 5700; % ms
 
         eventTimes = [-1500 0 1000 1300 2300];
-        
-        trigNames = {'attT1-T1d-T2d','attT2-T1d-T2d','attT1-T1i-T2d','attT2-T1i-T2d',...
-            'attT1-T1d-T2i','attT2-T1d-T2i','attT1-T1i-T2i','attT2-T1i-T2i','blank'};
         
         targetCondNames = {'target pedestal T1','target pedestal T2'};
         t1Conds = {1, 2}; % pedestal decrement, pedestal increment
@@ -94,6 +92,20 @@ switch exptType
     otherwise
         error('exptType not found')
 end
+
+switch exptType
+    case 'TADetectDiscrim'
+        trigNames = {'attT1-T1p-T2p','attT2-T1p-T2p','attT1-T1a-T2p','attT2-T1a-T2p',...
+            'attT1-T1p-T2a','attT2-T1p-T2a','attT1-T1a-T2a','attT2-T1a-T2a','blank'};
+    case 'TAContrast'
+        trigNames = {'attT1-T1d-T2d','attT2-T1d-T2d','attT1-T1i-T2d','attT2-T1i-T2d',...
+            'attT1-T1d-T2i','attT2-T1d-T2i','attT1-T1i-T2i','attT2-T1i-T2i','blank'};        
+    case 'TANoise'
+        trigNames = {'attT1-T1v-T2v','attT2-T1v-T2v','attT1-T1h-T2v','attT2-T1h-T2v',...
+            'attT1-T1v-T2h','attT2-T1v-T2h','attT1-T1h-T2h','attT2-T1h-T2h','blank'};           
+    otherwise
+        error('exptType not found')
+end      
 
 t = tstart:tstop;
 Fs = 1000;
@@ -207,6 +219,9 @@ for iCue = 1:numel(cueConds)
             
             w = sum([wCue wT1 wT2],2)==3;
             condData(:,:,:,iCue,iT1,iT2) = trigData(:,:,w);
+            % if unequal numbers of trials per condition
+%             condData{iCue,iT1,iT2} = trigData(:,:,w);
+%             condDataMean(:,:,iCue,iT1,iT2) = nanmean(trigData(:,:,w),3);
         end
     end
 end

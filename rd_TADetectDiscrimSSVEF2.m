@@ -2,7 +2,7 @@ function rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, analStr, ssvefF
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
-    exptType = 'TAContrast';
+    exptType = 'TANoise';
     switch exptType
         case 'TADetectDiscrim'
             exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
@@ -19,6 +19,17 @@ if nargin==0 || ~exist('exptDir','var')
             exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
             sessionDir = 'R0817_20171019';
             fileBase = 'R0817_TACont_10.19.17';
+            analStr = 'ebi'; % '', 'ebi', etc.
+            ssvefFreq = 20;
+            nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
+            iqrThresh = []; % 10, or [] for nTopChannels
+            weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
+            trialSelection = 'all'; % 'all','validCorrect', etc
+            
+        case 'TANoise'
+            exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+            sessionDir = 'R0817_20171213';
+            fileBase = 'R0817_TANoise_12.13.17';
             analStr = 'ebi'; % '', 'ebi', etc.
             ssvefFreq = 20;
             nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
@@ -75,7 +86,7 @@ saveAnalysis = 1;
 saveFigs = 1;
 
 excludeTrialsFt = 1;
-excludeSaturatedEpochs = 1; % typically 0 for TADetectDiscrim, 1 for TAContrast
+excludeSaturatedEpochs = 1; % typically 0 for TADetectDiscrim, 1 for TAContrast and TANoise
 
 load(channelsFileName);
 switch channelSelection
@@ -167,7 +178,7 @@ switch exptType
         targetCondNames = {'target type T1','target type T2'};
         t1Conds = {[1 2], 0}; % present, absent
         t2Conds = {[1 2], 0}; % present, absent
-    case 'TAContrast'
+    case {'TAContrast','TANoise'}
         targetCondNames = {'target pedestal T1','target pedestal T2'};
         t1Conds = {1, 2}; % pedestal decrement, pedestal increment
         t2Conds = {1, 2}; % pedestal decrement, pedestal increment
@@ -237,6 +248,9 @@ for iCue = 1:numel(cueConds)
             fprintf('Number of trials %d %d %d: %d\n', iCue, iT1, iT2, nnz(w & wSelect))
             
             condData(:,:,:,iCue,iT1,iT2) = trigDataSelected(:,:,w);
+            % if unequal numbers of trials per condition
+%             condData{iCue,iT1,iT2} = trigData(:,:,w);
+%             condDataMean(:,:,iCue,iT1,iT2) = nanmean(trigData(:,:,w),3);
         end
     end
 end
@@ -396,6 +410,8 @@ switch exptType
         names = {'target present','target absent'};
     case 'TAContrast'
         names = {'target decrement','target increment'};
+    case 'TANoise'
+        names = {'vertical','horizontal'};
 end
 fH = [];
 fH(1) = figure;
@@ -493,6 +509,10 @@ switch exptType
     case 'TAContrast'
         PANames = {'T1d-T2d','T1i-T2d','T1d-T2i','T1i-T2i'};
         PADiffNames = 'D-I';
+        xtickint = 100;
+    case 'TANoise'
+        PANames = {'T1v-T2v','T1h-T2v','T1v-T2h','T1h-T2h'};
+        PADiffNames = 'V-H';
         xtickint = 100;
 end
 

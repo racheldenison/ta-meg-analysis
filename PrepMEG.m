@@ -5,10 +5,11 @@
 
 
 %% load & read dataset 
-exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
+exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+% exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0817_20171019';
-filename = 'R0817_TACont_10.19.17_ebi';
+sessionDir = 'R0817_20171213';
+filename = 'R0817_TANoise_12.13.17_ebi';
 
 dataDir = sprintf('%s/%s/', exptDir, sessionDir);
 prepDir = sprintf('%s/prep/', dataDir);

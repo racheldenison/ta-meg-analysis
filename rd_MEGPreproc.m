@@ -101,6 +101,7 @@ if removeBadChannels
     
     % dead or saturating channels for all or portions of the time series
     deadChannels = checkForDeadChannels(filename)+1;
+%     deadChannels = [];
 
 %     % channels saturating on 10% or more of trials
 %     [~, ~, ~, trigData, ~] =  rd_getData(filename, trialTriggerChannels, megChannels, tstart, tstop);

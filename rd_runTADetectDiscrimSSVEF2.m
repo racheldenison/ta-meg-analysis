@@ -6,16 +6,17 @@
 exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 analStr = 'ebi'; % '', 'ebi', etc.
 ssvefFreqs = 30; %[30 40];
+exptType = 'TADetectDiscrim';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % channel selection: choose nTopChs, iqrThreshs, or wholeBrain
 nTopChs = 5; % 1, 5, [1 5], etc.
 iqrThreshs = [];
-wholeBrain = 1;
+wholeBrain = 0;
 weightChannels = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 'all','correct','incorrect','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
-trialSelections = {'correct','incorrect'}; 
-respTargetSelection = 'T2Resp';
+trialSelections = {'all'}; 
+respTargetSelection = ''; %'T2Resp';
 
 subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -57,8 +58,9 @@ for iTS = 1:numel(trialSelections)
                     if ~isempty(nTopChs)
                         for nTopChannels = nTopChs
                             rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, ...
-                                analStr, ssvefFreq, nTopChannels, [], weightChannels, trialSelection, respTargetSelection);
-                            close all;
+                                analStr, ssvefFreq, nTopChannels, [], weightChannels, ...
+                                trialSelection, respTargetSelection, exptType);
+%                             close all;
                         end
                     elseif ~isempty(iqrThreshs)
                         for iqrThresh = iqrThreshs

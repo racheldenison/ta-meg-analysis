@@ -4,13 +4,35 @@ function rd_TADetectDiscrimSSVEF5(exptDir, sessionDir, fileBase, analStr, ssvefF
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
-    exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-    sessionDir = 'R0817_20150504';
-    fileBase = 'R0817_TADeDi_5.4.15';
-    analStr = 'ebi'; % '', 'ebi', etc.
-    ssvefFreq = 30;
-    trialSelection = 'all'; % 'all','validCorrect'
-    respTargetSelection = ''; % '','T1Resp','T2Resp'
+    exptType = 'TAContrast';
+    switch exptType
+        case 'TADetectDiscrim'
+            exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+            sessionDir = 'R0817_20150504';
+            fileBase = 'R0817_TADeDi_5.4.15';
+            analStr = 'ebi'; % '', 'ebi', etc.
+            ssvefFreq = 30;
+            nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
+            iqrThresh = []; % 10, or [] for nTopChannels
+            weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
+            trialSelection = 'all'; % 'all','validCorrect', etc
+            respTargetSelection = ''; % '','T1Resp','T2Resp'
+            
+        case 'TAContrast'
+            exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
+            sessionDir = 'R0817_20171019';
+            fileBase = 'R0817_TACont_10.19.17';
+            analStr = 'ebi'; % '', 'ebi', etc.
+            ssvefFreq = 20;
+            nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
+            iqrThresh = []; % 10, or [] for nTopChannels
+            weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
+            trialSelection = 'all'; % 'all','validCorrect', etc
+            respTargetSelection = ''; % '','T1Resp','T2Resp'
+            
+        otherwise
+            error('exptType not recognized')
+    end
 end
 
 channelSelectionStr = 'wholebrain';
@@ -39,12 +61,12 @@ load(savename)
 behav = behavior(behav);
 
 %% Settings after loading the data
-saveAnalysis = 1;
-saveFigs = 1;
+saveAnalysis = 0;
+saveFigs = 0;
 plotFigs = 1;
 
 excludeTrialsFt = 1;
-excludeSaturatedEpochs = 0;
+excludeSaturatedEpochs = 1;
 
 channels = 1:157;
 
@@ -120,10 +142,26 @@ if ~exist(figDir,'dir') && saveFigs
 end
 
 %% Organize trials into conditions
+switch exptType
+    case 'TADetectDiscrim'
+        targetCondNames = {'target type T1','target type T2'};
+        t1Conds = {[1 2], 0}; % present, absent
+        t2Conds = {[1 2], 0}; % present, absent
+    case 'TAContrast'
+        targetCondNames = {'target pedestal T1','target pedestal T2'};
+        t1Conds = {1, 2}; % pedestal decrement, pedestal increment
+        t2Conds = {1, 2}; % pedestal decrement, pedestal increment
+    otherwise
+        error('exptType not recognized')
+end
+
 cueCondIdx = strcmp(behav.responseData_labels, 'cue condition');
-t1CondIdx = strcmp(behav.responseData_labels, 'target type T1');
-t2CondIdx = strcmp(behav.responseData_labels, 'target type T2');
+t1CondIdx = strcmp(behav.responseData_labels, targetCondNames{1});
+t2CondIdx = strcmp(behav.responseData_labels, targetCondNames{2});
 nTrials = size(behav.responseData_all,1);
+
+blankCond = 1;
+cueConds = {[2 3], [4 5]}; % cue T1, cue T2
 
 switch respTargetSelection
     case 'T1Resp'
@@ -166,11 +204,6 @@ wSelect = wSelect & rSelect;
 
 trigDataSelected = trigData; % make a copy so we use it for condData but not blankData
 trigDataSelected(:,:,wSelect~=1)=NaN;
-
-blankCond = 1;
-cueConds = {[2 3], [4 5]}; % cue T1, cue T2
-t1Conds = {[1 2], 0}; % present, absent
-t2Conds = {[1 2], 0}; % present, absent
 
 condData = [];
 for iCue = 1:numel(cueConds)
@@ -226,6 +259,8 @@ A.trigMeanMean = trigMeanMean;
 
 %% Wavelet
 switch ssvefFreq
+    case 20
+        width = 8;
     case 30
         width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth
     case 40
@@ -328,11 +363,24 @@ A.wAU = wAU;
 A.wAmpsAll = wAmpsAll;
 
 %% Plot wavelet topo
-paauNames = {'P-att','P-unatt','A-att','A-unatt'};
+switch exptType
+    case 'TADetectDiscrim'
+        names = {'target present','target absent'};
+        paauNames = {'P-att','P-unatt','A-att','A-unatt'};
+        paNames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
+        paDiffNames = 'P-A';
+        xtickint = 50;
+    case 'TAContrast'
+        names = {'target decrement','target increment'};
+        paauNames = {'D-att','D-unatt','I-att','I-unatt'};
+        paNames = {'T1d-T2d','T1i-T2d','T1d-T2i','T1i-T2i'};
+        paDiffNames = 'D-I';
+        xtickint = 100;
+end
+
 auNames = {'att','unatt'};
-paNames = {'P','A'};
-clims = [0 300];
-diffClims = [-100 100];
+clims = [0 800];
+diffClims = [-200 200];
 twindow = twin(1):twin(end);
 nBins = 6;
 binSize = round(numel(twindow)/nBins);
@@ -422,7 +470,7 @@ for iT = 1:2
     for iBin = 1:nBins
         subplot(3,nBins,iBin + nBins*2)
         tidx = (1:binSize+1) + (iBin-1)*binSize;
-        str = sprintf('wPAT, P-A, t=[%d %d]',twindow(tidx(1)), twindow(tidx(end)));
+        str = sprintf('wPAT, %s, t=[%d %d]',paDiffNames, twindow(tidx(1)), twindow(tidx(end)));
         vals = mean((wPAT(tidx,:,1,iT) - wPAT(tidx,:,2,iT)),1);
         ssm_plotOnMesh(vals,str,[], data_hdr, '2d');
         set(gca,'CLim',diffClims)
@@ -587,7 +635,7 @@ A.itpcAU = itpcAU;
 
 % figures
 ytick = 10:10:numel(foi);
-xtick = 51:50:numel(toi);
+xtick = 51:xtickint:numel(toi);
 clims = [-0.15 0.15]; 
 diffClims = [-0.1 0.1];
 hack = plotOrder;
@@ -635,7 +683,6 @@ rd_supertitle2('amplitude, all channels mean');
 
 fH(3) = figure;
 set(gcf,'Position',tf9FigPos)
-paNames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
 for iPA = 1:size(tfSingleAmpsPA,4)
     subplot(2,4,iPA)
     imagesc(squeeze(nanmean(tfSingleAmpsPA(:,:,:,iPA),1)),clims)
@@ -651,19 +698,19 @@ imagesc(squeeze(nanmean(t1SinglePADiff,1)),diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
-title('T1 P-A')
+title(sprintf('T1 %s', paDiffNames))
 subplot(2,4,6)
 imagesc(squeeze(nanmean(t2SinglePADiff,1)),diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
-title('T2 P-A')
+title(sprintf('T2 %s', paDiffNames))
 subplot(2,4,7)
 imagesc(squeeze(nanmean((t2SinglePADiff - t1SinglePADiff),1)),diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
-title('T2 vs. T1 P-A')
+title(sprintf('T1 vs. T2 %s', paDiffNames))
 rd_supertitle2('amplitude, all channels mean');
 colormap(cmap)
 
@@ -673,14 +720,14 @@ set(gcf,'Position',tf9SquareFigPos)
 % T1/T2 x pres/abs
 subplot(3,3,1)
 imagesc(squeeze(nanmean((stfPAAUT(:,:,:,1,1)-stfPAAUT(:,:,:,2,1)),1))) % T1-pres-att vs. unatt
-ylabel('present')
+ylabel(names{1})
 title('T1')
 subplot(3,3,2)
 imagesc(squeeze(nanmean((stfPAAUT(:,:,:,1,2)-stfPAAUT(:,:,:,2,2)),1))) % T2-pres-att vs. unatt
 title('T2')
 subplot(3,3,4)
 imagesc(squeeze(nanmean((stfPAAUT(:,:,:,3,1)-stfPAAUT(:,:,:,4,1)),1))) % T1-abs-att vs. unatt
-ylabel('absent')
+ylabel(names{2})
 subplot(3,3,5)
 imagesc(squeeze(nanmean((stfPAAUT(:,:,:,3,2)-stfPAAUT(:,:,:,4,2)),1))) % T2-abs-att vs. unatt
 % ave(T1,T2)
@@ -692,7 +739,7 @@ imagesc(squeeze(nanmean((stfPAAU(:,:,:,3)-stfPAAU(:,:,:,4)),1))) % abs-att vs. a
 % ave(P,A)
 subplot(3,3,7)
 imagesc(squeeze(nanmean((stfAUT(:,:,:,1,1)-stfAUT(:,:,:,2,1)),1))) % T1-att vs. T1-unatt 
-ylabel('ave(P,A)')
+ylabel(sprintf('ave(%s,\n%s)',names{1},names{2}))
 subplot(3,3,8)
 imagesc(squeeze(nanmean((stfAUT(:,:,:,1,2)-stfAUT(:,:,:,2,2)),1))) % T2-att vs. T2-unatt 
 % ave(all)
@@ -755,7 +802,8 @@ for iAx = 1:numel(aH)
     set(gca,'clim',diffClims)
 end
 colormap(cmap)
-rd_supertitle2('amplitude, present vs. absent')
+rd_supertitle2(sprintf('amplitude, %s vs. %s',names{1},names{2}))
+
 
 if saveFigs
     figPrefix = 'im_wholebrain';
@@ -786,14 +834,14 @@ set(gcf,'Position',tf9SquareFigPos)
 % T1/T2 x pres/abs
 subplot(3,3,1)
 imagesc(squeeze(nanmean((itpcPAAUT(:,:,:,1,1)-itpcPAAUT(:,:,:,2,1)),1))) % T1-pres-att vs. unatt
-ylabel('present')
+ylabel(names{1})
 title('T1')
 subplot(3,3,2)
 imagesc(squeeze(nanmean((itpcPAAUT(:,:,:,1,2)-itpcPAAUT(:,:,:,2,2)),1))) % T2-pres-att vs. unatt
 title('T2')
 subplot(3,3,4)
 imagesc(squeeze(nanmean((itpcPAAUT(:,:,:,3,1)-itpcPAAUT(:,:,:,4,1)),1))) % T1-abs-att vs. unatt
-ylabel('absent')
+ylabel(names{2})
 subplot(3,3,5)
 imagesc(squeeze(nanmean((itpcPAAUT(:,:,:,3,2)-itpcPAAUT(:,:,:,4,2)),1))) % T2-abs-att vs. unatt
 % ave(T1,T2)
@@ -805,7 +853,7 @@ imagesc(squeeze(nanmean((itpcPAAU(:,:,:,3)-itpcPAAU(:,:,:,4)),1))) % abs-att vs.
 % ave(P,A)
 subplot(3,3,7)
 imagesc(squeeze(nanmean((itpcAUT(:,:,:,1,1)-itpcAUT(:,:,:,2,1)),1))) % T1-att vs. T1-unatt 
-ylabel('ave(P,A)')
+ylabel(sprintf('ave(%s,\n%s)',names{1},names{2}))
 subplot(3,3,8)
 imagesc(squeeze(nanmean((itpcAUT(:,:,:,1,2)-itpcAUT(:,:,:,2,2)),1))) % T2-att vs. T2-unatt 
 % ave(all)

@@ -2,15 +2,23 @@
 
 %% setup
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
-sessionDir = 'R0817_20171019';
-fileBase = 'R0817_TACont_10.19.17';
+exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+sessionDir = 'R0817_20171213';
+fileBase = 'R0817_TANoise_12.13.17';
+
+renameFiles = false;
+runsToRename = 1:12;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc', dataDir);
 figDir = sprintf('%s/%s/%s', preprocDir, 'figures');
 
-inspectData = 0;
+inspectData = false;
+
+%% rename files if needed
+if renameFiles
+    renameRunFiles(sessionDir, runsToRename) 
+end
 
 %% make the preproc dir if it doesn't exist
 if ~exist(preprocDir,'dir')
