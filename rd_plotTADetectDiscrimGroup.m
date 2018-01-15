@@ -2,13 +2,13 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 % Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'ts-single'; % ts w h tf stf w-single stf-single ts-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
+    measure = 'w-single'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
-    selectionStr = 'wholebrain_allTrials'; %'topChannels5'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+    selectionStr = 'topChannels5_allTrials'; %'topChannels5'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
 end
 if ~exist('normalizeOption','var') || isempty(normalizeOption)
-    normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
+    normalizeOption = 'stim'; % 'none','commonBaseline','amp','stim'
 end
 
 % Setup
@@ -185,16 +185,20 @@ for iSubject = 1:nSubjects
             groupData.paDiff(:,:,:,iSubject) = A.stfPADiff;
         case 'w-single'
             groupData.amps(:,:,iSubject) = squeeze(nanmean(A.wAmps,2));
-            groupData.ampsAtt(:,:,iSubject) = squeeze(nanmean(A.wAmpsAtt,2)); % transponse if plotting with amps function
-            groupData.ampsPA(:,:,iSubject) = squeeze(nanmean(A.wAmpsPA,2)); % transpose if plotting with amps function
+            groupData.ampsAtt(:,:,iSubject) = squeeze(nanmean(A.wAmpsAtt,2))'; % transponse if plotting with amps function
+            groupData.ampsPA(:,:,iSubject) = squeeze(nanmean(A.wAmpsPA,2))'; % transpose if plotting with amps function
             % comment out if plotting with amps function
-            groupData.ampsAll(:,iSubject) = squeeze(nanmean(A.wAmpsAll,2));
-            groupData.PAAUT(:,:,:,iSubject) = squeeze(nanmean(A.wPAAUT,2));
-            groupData.PAT(:,:,:,iSubject) = squeeze(nanmean(A.wPAT,2));
-            groupData.AUT(:,:,:,iSubject) = squeeze(nanmean(A.wAUT,2));
-            groupData.PAAU(:,:,iSubject) = squeeze(nanmean(A.wPAAU,2));
-            groupData.PA(:,:,iSubject) = squeeze(nanmean(A.wPA,2));
-            groupData.AU(:,:,iSubject) = squeeze(nanmean(A.wAU,2));
+%             groupData.ampsAll(:,iSubject) = squeeze(nanmean(A.wAmpsAll,2));
+%             groupData.PAAUT(:,:,:,iSubject) = squeeze(nanmean(A.wPAAUT,2));
+%             groupData.PAT(:,:,:,iSubject) = squeeze(nanmean(A.wPAT,2));
+%             groupData.AUT(:,:,:,iSubject) = squeeze(nanmean(A.wAUT,2));
+%             groupData.PAAU(:,:,iSubject) = squeeze(nanmean(A.wPAAU,2));
+%             groupData.PA(:,:,iSubject) = squeeze(nanmean(A.wPA,2));
+%             groupData.AU(:,:,iSubject) = squeeze(nanmean(A.wAU,2));
+        case 'itpc-single'
+            groupData.amps(:,:,iSubject) = A.wITPC;
+            groupData.ampsAtt(:,:,iSubject) = A.wITPCAtt';
+            groupData.ampsPA(:,:,iSubject) = A.wITPCPA';
         case 'stf-single'
             groupData.amps(:,:,:,iSubject) = A.stfAmps;
             groupData.ampsAtt(:,:,:,iSubject) = A.stfAmpsAtt;
@@ -399,7 +403,7 @@ switch measure
         rd_plotTADetectDiscrimGroupTS(A, measure, groupMean, ...
             saveFigs, figDir, figStr)
 %     case {'w','h','w-single'}
-    case {'w','h'}
+    case {'w','h','itpc-single','w-single'}
         rd_plotTADetectDiscrimGroupAmps2(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr)
@@ -410,7 +414,7 @@ switch measure
             rd_plotTADetectDiscrimGroupTimeFreqSingle(A, measure, ...
                 groupMean, saveFigs, figDir, figStr)
         end
-    case 'w-single'
+    case 'w-single----'
         rd_plotTADetectDiscrimGroupAmpsSingle(A, measure, subjects, ...
             groupData, groupMean, groupSte, ...
             saveFigs, figDir, figStr)

@@ -28,8 +28,8 @@ if nargin==0 || ~exist('exptDir','var')
             
         case 'TANoise'
             exptDir = '/Local/Users/denison/Data/TANoise/MEG';
-            sessionDir = 'R0817_20171213';
-            fileBase = 'R0817_TANoise_12.13.17';
+            sessionDir = 'R0898_20180112';
+            fileBase = 'R0898_TANoise_1.12.18';
             analStr = 'ebi'; % '', 'ebi', etc.
             ssvefFreq = 20;
             nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh

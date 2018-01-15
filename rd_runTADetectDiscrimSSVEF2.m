@@ -60,7 +60,7 @@ for iTS = 1:numel(trialSelections)
                             rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, ...
                                 analStr, ssvefFreq, nTopChannels, [], weightChannels, ...
                                 trialSelection, respTargetSelection, exptType);
-%                             close all;
+                            close all;
                         end
                     elseif ~isempty(iqrThreshs)
                         for iqrThresh = iqrThreshs

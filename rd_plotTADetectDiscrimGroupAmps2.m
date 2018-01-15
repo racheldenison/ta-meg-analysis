@@ -43,6 +43,15 @@ trigColorsPA4 = [.52 .37 .75; .31 .74 .40; .27 .51 .84; 1.0 .57 .22];
 set(0,'defaultLineLineWidth',1)
 
 switch measure
+    case 'itpc-single'
+        label = 'itpc';
+        labelShort = 'itpc';
+    otherwise
+        label = 'amplitude';
+        labelShort = 'amp';
+end
+        
+switch measure
     case 'w'
         switch A.normalizeOption
             case 'none'
@@ -73,6 +82,7 @@ switch measure
                 diffYLims = [-.8 .8];
                 diffYLimsGroup = [-.3 .3];
         end
+    case 'itpc-single'
     otherwise
         error('measure not recognized')
 end
@@ -164,7 +174,7 @@ for iF = 1:nFields
         end
         if iSubject==1
             xlabel('time (ms)')
-            ylabel('amplitude')
+            ylabel(label)
         end
         title(und2space(subjects{iSubject}))
     end
@@ -192,7 +202,7 @@ for iSubject = 1:nSubjects
     end
     if iSubject==1
         xlabel('time (ms)')
-        ylabel('amplitude difference (T2-T1)')
+        ylabel(sprintf('%s difference (T2-T1)', label))
     end
     title(und2space(subjects{iSubject}))
 end
@@ -236,7 +246,7 @@ for iF = 1:nFields
     end
     xlim(xlims)
     xlabel('time (ms)')
-    ylabel('amplitude')
+    ylabel(label)
     title(figTitle)
 end
 
@@ -263,7 +273,7 @@ for iCond = 1:numel(conds)
     end
     xlim(xlims)
     xlabel('time (ms)')
-    ylabel('amplitude')
+    ylabel(label)
     title(paNames{iCond})
 end
 
@@ -291,7 +301,7 @@ for iEv = 1:numel(eventTimes)
 end
 xlim(xlims)
 xlabel('time (ms)')
-ylabel('amplitude')
+ylabel(label)
 title(figTitle)
 
 fH(2) = figure;
@@ -305,7 +315,7 @@ for iEv = 1:numel(eventTimes)
 end
 xlim(xlims)
 xlabel('time (ms)')
-ylabel('amplitude difference (T2-T1)')
+ylabel(sprintf('%s difference (T2-T1)', label))
 title(figTitle)
 
 fH(3) = figure;
@@ -319,7 +329,7 @@ for iEv = 1:numel(eventTimes)
 end
 xlim(xlims)
 xlabel('time (ms)')
-ylabel('|amplitude difference (T2-T1)|')
+ylabel(sprintf('|%s difference (T2-T1)|', label))
 title(figTitle)
 
 if saveFigs
@@ -403,7 +413,7 @@ for iT = 1:2
     end
     vline(0,'k');
     xlabel('time (ms)')
-    ylabel('wavelet amp')
+    ylabel(sprintf('wavelet %s',labelShort))
     title(sprintf('T%d',iT))
     
     colors = [trigBlue; trigRed];
@@ -421,7 +431,7 @@ for iT = 1:2
     end
     vline(0,'k');
     xlabel('time (ms)')
-    ylabel('wavelet amp')
+    ylabel(sprintf('wavelet %s',labelShort))
     title(sprintf('T%d',iT))
     
     colors = trigColorsPA4([1 4],:);
@@ -439,7 +449,7 @@ for iT = 1:2
     end
     vline(0,'k');
     xlabel('time (ms)')
-    ylabel('wavelet amp')
+    ylabel(sprintf('wavelet %s',labelShort))
     title(sprintf('T%d',iT))
 end
 rd_supertitle2(figTitle)
@@ -460,7 +470,7 @@ for iPAAU = 1:4
 end
 vline(0,'k');
 xlabel('time (ms)')
-ylabel('wavelet amp')
+ylabel(sprintf('wavelet %s',labelShort))
 title('T1 & T2')
 
 colors = [trigBlue; trigRed];
@@ -476,7 +486,7 @@ for iAU = 1:2
 end
 vline(0,'k');
 xlabel('time (ms)')
-ylabel('wavelet amp')
+ylabel(sprintf('wavelet %s',labelShort))
 title('T1 & T2')
 
 colors = trigColorsPA4([1 4],:);
@@ -492,7 +502,7 @@ for iPA = 1:2
 end
 vline(0,'k');
 xlabel('time (ms)')
-ylabel('wavelet amp')
+ylabel(sprintf('wavelet %s',labelShort))
 title('T1 & T2')
 
 rd_supertitle2(figTitle)
@@ -506,7 +516,7 @@ for iEv = 1:numel(eventTimes)
 end
 legend('all trials')
 xlabel('time (ms)')
-ylabel('wavelet amp')
+ylabel(sprintf('wavelet %s',labelShort))
 title(figTitle)
 
 %% save

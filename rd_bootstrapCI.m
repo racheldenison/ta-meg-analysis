@@ -1,6 +1,6 @@
-function [ci, emp, err] = rd_bootstrapCI(y, fun)
+function [ci, emp, err, m] = rd_bootstrapCI(y, fun)
 %
-% function [ci, emp, err] = rd_bootstrapCI(y, [fun])
+% function [ci, emp, err, m] = rd_bootstrapCI(y, [fun])
 %
 % Inputs:
 % y is the data. should be oriented so that the mean / other statistic can
@@ -12,6 +12,7 @@ function [ci, emp, err] = rd_bootstrapCI(y, fun)
 % ci is the 95% confidence interval
 % emp is the empirical (true) mean / other statistic of the data
 % err is distances to upper and lower error bars
+% m is all of the bootstrapped means / other statistics
 
 if nargin==1
     fun = @nanmean;
