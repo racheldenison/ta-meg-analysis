@@ -4,7 +4,7 @@ function rd_TADetectDiscrimSSVEF5(exptDir, sessionDir, fileBase, analStr, ssvefF
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
-    exptType = 'TAContrast';
+    exptType = 'TANoise';
     switch exptType
         case 'TADetectDiscrim'
             exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
@@ -12,9 +12,6 @@ if nargin==0 || ~exist('exptDir','var')
             fileBase = 'R0817_TADeDi_5.4.15';
             analStr = 'ebi'; % '', 'ebi', etc.
             ssvefFreq = 30;
-            nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
-            iqrThresh = []; % 10, or [] for nTopChannels
-            weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
             trialSelection = 'all'; % 'all','validCorrect', etc
             respTargetSelection = ''; % '','T1Resp','T2Resp'
             
@@ -24,9 +21,15 @@ if nargin==0 || ~exist('exptDir','var')
             fileBase = 'R0817_TACont_10.19.17';
             analStr = 'ebi'; % '', 'ebi', etc.
             ssvefFreq = 20;
-            nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
-            iqrThresh = []; % 10, or [] for nTopChannels
-            weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
+            trialSelection = 'all'; % 'all','validCorrect', etc
+            respTargetSelection = ''; % '','T1Resp','T2Resp'
+            
+        case 'TANoise'
+            exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+            sessionDir = 'R0817_20171212';
+            fileBase = 'R0817_TANoise_12.12.17';
+            analStr = 'ebi'; % '', 'ebi', etc.
+            ssvefFreq = 20;
             trialSelection = 'all'; % 'all','validCorrect', etc
             respTargetSelection = ''; % '','T1Resp','T2Resp'
             
@@ -147,7 +150,7 @@ switch exptType
         targetCondNames = {'target type T1','target type T2'};
         t1Conds = {[1 2], 0}; % present, absent
         t2Conds = {[1 2], 0}; % present, absent
-    case 'TAContrast'
+    case {'TAContrast','TANoise'}
         targetCondNames = {'target pedestal T1','target pedestal T2'};
         t1Conds = {1, 2}; % pedestal decrement, pedestal increment
         t2Conds = {1, 2}; % pedestal decrement, pedestal increment
@@ -259,7 +262,11 @@ A.trigMeanMean = trigMeanMean;
 
 %% Wavelet
 switch ssvefFreq
-    case 20
+    case 11
+        width = 4;
+    case 15
+        width = 6;
+    case {20, 25}
         width = 8;
     case 30
         width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth
