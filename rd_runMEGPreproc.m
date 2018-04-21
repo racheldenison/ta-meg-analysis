@@ -1,15 +1,24 @@
 % rd_runMEGPreproc.m
 
 %% setup
-exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R1029_20151222';
-fileBase = 'R1029_TADeDi_12.22.15';
+% exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+sessionDir = 'R0898_20180112';
+fileBase = 'R0898_TANoise_1.12.18';
+
+renameFiles = false;
+runsToRename = 1:12;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc', dataDir);
 figDir = sprintf('%s/%s/%s', preprocDir, 'figures');
 
-inspectData = 0;
+inspectData = false;
+
+%% rename files if needed
+if renameFiles
+    renameRunFiles(sessionDir, runsToRename) 
+end
 
 %% make the preproc dir if it doesn't exist
 if ~exist(preprocDir,'dir')
@@ -56,7 +65,8 @@ badChannels = []; % in matlab 1-indexing
 %% run preproc for each run
 for iRun = 1:nRuns
     run = runs(iRun);
-    runFile = sprintf('%s/%s_run%02d.sqd', preprocDir, fileBase, run);
+%     runFile = sprintf('%s/%s_run%02d.sqd', preprocDir, fileBase, run);
+    runFile = sprintf('%s/%s', preprocDir, runFiles(iRun).name);
     preprocFileName = rd_MEGPreproc(runFile, figDir, badChannels);
 end
 

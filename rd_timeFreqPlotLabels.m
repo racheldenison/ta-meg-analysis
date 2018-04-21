@@ -11,5 +11,5 @@ set(gca,'YTick',ytick)
 set(gca,'YTickLabel',foi(ytick))
 hold on
 for iEv = 1:numel(eventTimes)
-    vline(find(toi==eventTimes(iEv)/1000),'k');
+    vline(find(abs(toi-eventTimes(iEv)/1000)<1e-4),'k');
 end

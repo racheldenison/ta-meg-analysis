@@ -1,10 +1,14 @@
-function fileBase = sessionDirToFileBase(sessionDir)
+function fileBase = sessionDirToFileBase(sessionDir, experimentShortName)
 
 % function fileBase = sessionDirToFileBase(sessionDir)
 %
 % example:
 % sessionDir = 'R0817_20150504';
 % fileBase = 'R0817_TADeDi_5.4.15';
+
+if nargin<2
+    experimentShortName = 'TADeDi';
+end
 
 s = strsplit(sessionDir,'_');
 
@@ -22,4 +26,4 @@ if day(1)=='0'
     day = day(2);
 end
 
-fileBase = sprintf('%s_TADeDi_%s.%s.%s', rnum, month, day, year);
+fileBase = sprintf('%s_%s_%s.%s.%s', rnum, experimentShortName, month, day, year);

@@ -11,14 +11,15 @@ subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 subsToInclude = [1:3 5 7:16];
 nSubjects = numel(subsToInclude);
 
+channelStr = 'topChannels10'; % 'topChannels10', 'wholebrain' 
 trialSelection = 'incorrect'; %'all','correct','incorrect';
-respTargetSelection = 'T1Resp'; %'','T1Resp','T2Resp'
+respTargetSelection = 'T2Resp'; %'','T1Resp','T2Resp'
 
 %% get data
 dva = []; L2 = [];
 for iSubject = 1:nSubjects
     subject = subjects{subsToInclude(iSubject)};
-    filename = sprintf('/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG/%s/mat/analysis_singleTrials_*_ebi_ft_wholebrain_%sTrials%s_dva.mat', subject, trialSelection, respTargetSelection);
+    filename = sprintf('/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG/%s/mat/analysis_singleTrials_*_ebi_ft_%s_%sTrials%s_dva.mat', subject, channelStr, trialSelection, respTargetSelection);
     file = dir(filename);
     load(sprintf('/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG/%s/mat/%s', subject, file.name));
     
@@ -62,10 +63,11 @@ end
 
 %% compare correct and incorrect
 figure
+subplot(2,1,1)
 hold on
 plot(t, [mean(dvaCorrect,2) mean(dvaIncorrect,2)])
 shadedErrorBar(t, mean(dvaCorrect,2), normSte(dvaCorrect), 'b', 1)
-shadedErrorBar(t, mean(dvaIncorrect,2), normSte(dvaIncorrect), 'g', 1)
+shadedErrorBar(t, mean(dvaIncorrect,2), normSte(dvaIncorrect), 'r', 1)
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
@@ -74,11 +76,11 @@ ylabel('dva')
 legend('correct','incorrect')
 title(respTargetSelection)
 
-figure
+subplot(2,1,2)
 hold on
 plot(t, [mean(L2Correct,2) mean(L2Incorrect,2)])
 shadedErrorBar(t, mean(L2Correct,2), normSte(L2Correct), 'b', 1)
-shadedErrorBar(t, mean(L2Incorrect,2), normSte(L2Incorrect), 'g', 1)
+shadedErrorBar(t, mean(L2Incorrect,2), normSte(L2Incorrect), 'r', 1)
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
@@ -93,7 +95,7 @@ dvaDiff = dvaIncorrect-dvaCorrect;
 
 switch respTargetSelection
     case 'T1Resp'
-        w = t>=1600 & t<=1600;
+        w = t>=1550 & t<=1750;
     case 'T2Resp'
         w = t>=2000 & t<=2250;
     otherwise

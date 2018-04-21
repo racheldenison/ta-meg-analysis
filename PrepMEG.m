@@ -1,13 +1,15 @@
 %% add fieldtrip to your path
 
 % addpath /Users/liusirui/Documents/MATLAB/fieldtrip-20150506
-ft_defaults
+% ft_defaults
 
 
 %% load & read dataset 
-exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R1029_20151222';
-filename = 'R1029_TADeDi_12.22.15_ebi';
+exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+% exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
+% exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+sessionDir = 'R0898_20180112';
+filename = 'R0898_TANoise_1.12.18_ebi';
 
 dataDir = sprintf('%s/%s/', exptDir, sessionDir);
 prepDir = sprintf('%s/prep/', dataDir);
@@ -25,9 +27,9 @@ hdr = ft_read_header(sqdfile);
 
 cfg                     = [];
 cfg.dataset             = sqdfile;
-cfg.trialdef.prestim    = 0.5; % sec
-cfg.trialdef.poststim   = 3.1;
-cfg.trialdef.trig       = [161:164,167];
+cfg.trialdef.prestim    = 0; %0.5; % sec
+cfg.trialdef.poststim   = 2.3; %3.1;
+cfg.trialdef.trig       = [168,167]; %[161:164,167];
 threshold = 2.5;
 [trl,Events]            = mytrialfun_all(cfg,threshold,[]);
 
@@ -141,9 +143,12 @@ cleanPrepData.trial_info = [C,trigger_info(ia,6)];
 
 save([prepDir,filename,'_prepCleanData.mat'],'cleanPrepData', '-v7.3')
 
-%% save trials_rejected separately
+%% save trials_rejected and channels_rejected separately
 trials_rejected = cleanPrepData.trials_rejected(:,1);
 save([prepDir '/trials_rejected.mat'], 'trials_rejected')
+
+channels_rejected = cleanPrepData.channels_rejected;
+save([prepDir '/channels_rejected.mat'], 'channels_rejected')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%  data broswer viewing continuous raw data: 
