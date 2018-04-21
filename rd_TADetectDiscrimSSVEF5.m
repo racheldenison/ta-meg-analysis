@@ -4,13 +4,38 @@ function rd_TADetectDiscrimSSVEF5(exptDir, sessionDir, fileBase, analStr, ssvefF
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
-    exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-    sessionDir = 'R0817_20150504';
-    fileBase = 'R0817_TADeDi_5.4.15';
-    analStr = 'ebi'; % '', 'ebi', etc.
-    ssvefFreq = 30;
-    trialSelection = 'all'; % 'all','validCorrect'
-    respTargetSelection = ''; % '','T1Resp','T2Resp'
+    exptType = 'TANoise';
+    switch exptType
+        case 'TADetectDiscrim'
+            exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+            sessionDir = 'R0817_20150504';
+            fileBase = 'R0817_TADeDi_5.4.15';
+            analStr = 'ebi'; % '', 'ebi', etc.
+            ssvefFreq = 30;
+            trialSelection = 'all'; % 'all','validCorrect', etc
+            respTargetSelection = ''; % '','T1Resp','T2Resp'
+            
+        case 'TAContrast'
+            exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
+            sessionDir = 'R0817_20171019';
+            fileBase = 'R0817_TACont_10.19.17';
+            analStr = 'ebi'; % '', 'ebi', etc.
+            ssvefFreq = 20;
+            trialSelection = 'all'; % 'all','validCorrect', etc
+            respTargetSelection = ''; % '','T1Resp','T2Resp'
+            
+        case 'TANoise'
+            exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+            sessionDir = 'R0817_20171212';
+            fileBase = 'R0817_TANoise_12.12.17';
+            analStr = 'ebi'; % '', 'ebi', etc.
+            ssvefFreq = 20;
+            trialSelection = 'all'; % 'all','validCorrect', etc
+            respTargetSelection = ''; % '','T1Resp','T2Resp'
+            
+        otherwise
+            error('exptType not recognized')
+    end
 end
 
 channelSelectionStr = 'wholebrain';
@@ -44,7 +69,7 @@ saveFigs = 1;
 plotFigs = 1;
 
 excludeTrialsFt = 1;
-excludeSaturatedEpochs = 0;
+excludeSaturatedEpochs = 1;
 
 channels = 1:157;
 
@@ -120,10 +145,26 @@ if ~exist(figDir,'dir') && saveFigs
 end
 
 %% Organize trials into conditions
+switch exptType
+    case 'TADetectDiscrim'
+        targetCondNames = {'target type T1','target type T2'};
+        t1Conds = {[1 2], 0}; % present, absent
+        t2Conds = {[1 2], 0}; % present, absent
+    case {'TAContrast','TANoise'}
+        targetCondNames = {'target pedestal T1','target pedestal T2'};
+        t1Conds = {1, 2}; % pedestal decrement, pedestal increment
+        t2Conds = {1, 2}; % pedestal decrement, pedestal increment
+    otherwise
+        error('exptType not recognized')
+end
+
 cueCondIdx = strcmp(behav.responseData_labels, 'cue condition');
-t1CondIdx = strcmp(behav.responseData_labels, 'target type T1');
-t2CondIdx = strcmp(behav.responseData_labels, 'target type T2');
+t1CondIdx = strcmp(behav.responseData_labels, targetCondNames{1});
+t2CondIdx = strcmp(behav.responseData_labels, targetCondNames{2});
 nTrials = size(behav.responseData_all,1);
+
+blankCond = 1;
+cueConds = {[2 3], [4 5]}; % cue T1, cue T2
 
 switch respTargetSelection
     case 'T1Resp'
@@ -166,11 +207,6 @@ wSelect = wSelect & rSelect;
 
 trigDataSelected = trigData; % make a copy so we use it for condData but not blankData
 trigDataSelected(:,:,wSelect~=1)=NaN;
-
-blankCond = 1;
-cueConds = {[2 3], [4 5]}; % cue T1, cue T2
-t1Conds = {[1 2], 0}; % present, absent
-t2Conds = {[1 2], 0}; % present, absent
 
 condData = [];
 for iCue = 1:numel(cueConds)
@@ -226,6 +262,12 @@ A.trigMeanMean = trigMeanMean;
 
 %% Wavelet
 switch ssvefFreq
+    case 11
+        width = 4;
+    case 15
+        width = 6;
+    case {20, 25}
+        width = 8;
     case 30
         width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth
     case 40
