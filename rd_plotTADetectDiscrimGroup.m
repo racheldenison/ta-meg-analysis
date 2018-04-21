@@ -51,12 +51,12 @@ switch exptType
             'R0898_20180112','R0898_20180116',...
             'R1021_20180208','R1021_20180212',...
             'R1103_20180213','R1103_20180215',...
-            'R0959_20180219','R0959_20180306'}; % N=6 x 2 sessions TANoise
+            'R0959_20180219','R0959_20180306'}; % N=7 x 2 sessions TANoise
     otherwise
         error('exptType not recognized')
 end
 
-% subjects = subjects([1 2 3 4 7 8 11 12 13 14])
+subjects = subjects([1:4 7:14]);
 % subjects = subjects([1 2 4 5 7 8 10 12 14 16]);
 
 % subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
