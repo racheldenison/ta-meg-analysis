@@ -32,8 +32,8 @@ if nargin==0 || ~exist('exptDir','var')
             
         case 'TANoise'
             exptDir = '/Local/Users/denison/Data/TANoise/MEG';
-            sessionDir = 'R0898_20180112';
-            fileBase = 'R0898_TANoise_1.12.18';
+            sessionDir = 'R0817_20171212';
+            fileBase = 'R0817_TANoise_12.12.17';
             analStr = 'ebi'; % '', 'ebi', etc.
             ssvefFreq = 20;
             nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
@@ -87,8 +87,8 @@ load(savename)
 behav = behavior(behav);
 
 %% Settings after loading the data
-saveAnalysis = 1;
-saveFigs = 1;
+saveAnalysis = 0;
+saveFigs = 0;
 plotFigs = 1;
 
 excludeTrialsFt = 1;
@@ -494,7 +494,11 @@ end
 
 %% Wavelet
 switch ssvefFreq
-    case 20
+    case 11
+        width = 4;
+    case 15
+        width = 6;
+    case {20, 25}
         width = 8;
     case 30
         width = 12; % 12 for 30 Hz, 16 for 40 Hz gives 127 ms duration, 5 Hz bandwidth

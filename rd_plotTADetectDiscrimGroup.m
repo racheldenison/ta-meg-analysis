@@ -1,32 +1,63 @@
 function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measure, selectionStr, normalizeOption)
 
-% Args
+%% Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'w-single'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
+    measure = 'stf'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
-    selectionStr = 'topChannels5_allTrials'; %'topChannels5'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
+    selectionStr = 'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
 end
 if ~exist('normalizeOption','var') || isempty(normalizeOption)
-    normalizeOption = 'stim'; % 'none','commonBaseline','amp','stim'
+    normalizeOption = 'none'; % 'none','commonBaseline','amp','stim'
 end
 
-% Setup
-exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+%% Setup
+exptType = 'TANoise'; % 'TADetectDiscrim','TANoise';
+
+switch exptType
+    case 'TADetectDiscrim'
+        exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+        ssvefFreq = 30;
+        t = -500:3600;
+        tidx = 1:numel(t);
+    case 'TANoise'
+        exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+        ssvefFreq = 20;
+        t = -1500:5700;
+        tidx = 1:6701;
+        tftidx = 1:671;
+    otherwise
+        error('exptType not recognized')
+end
 analStr = 'ebi_ft'; % '', 'ebi', etc.
-ssvefFreq = 30;
 ssvefStr = sprintf('%dHz',ssvefFreq);
 % ssvefStr = 'FOI';
 
 plotFigs = 1;
 saveFigs = 0;
 
-subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
-    'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
-    'R0898_20150828', 'R0436_20150904', 'R1018_20151118', ...
-    'R1019_20151118','R1021_20151120','R1026_20151211', ...
-    'R0852_20151211','R1027_20151216','R1028_20151216',...
-    'R1029_20151222'}; % N=16
+switch exptType
+    case 'TADetectDiscrim'
+        subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
+            'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
+            'R0898_20150828', 'R0436_20150904', 'R1018_20151118', ...
+            'R1019_20151118','R1021_20151120','R1026_20151211', ...
+            'R0852_20151211','R1027_20151216','R1028_20151216',...
+            'R1029_20151222'}; % N=16 TADetectDiscrim
+    case 'TANoise'
+        subjects = {'R0817_20171212','R0817_20171213',...
+            'R1187_20180105','R1187_20180108',...
+            'R0983_20180111','R0983_20180112',...
+            'R0898_20180112','R0898_20180116',...
+            'R1021_20180208','R1021_20180212',...
+            'R1103_20180213','R1103_20180215',...
+            'R0959_20180219','R0959_20180306'}; % N=6 x 2 sessions TANoise
+    otherwise
+        error('exptType not recognized')
+end
+
+% subjects = subjects([1 2 3 4 7 8 11 12 13 14])
+% subjects = subjects([1 2 4 5 7 8 10 12 14 16]);
 
 % subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...
 %     'R0861_20150813', 'R0504_20150805', 'R0983_20150813', ...
@@ -127,11 +158,6 @@ normStr = sprintf('_norm%s',[upper(normalizeOption(1)) normalizeOption(2:end)]);
 figDir = sprintf('%s/Group/figures/%s', exptDir, analStr);
 figStr = sprintf('gN%d%s_%s_%s%s', nSubjects, aggStr, ssvefStr, selectionStr, normStr);
 
-tstart = -500; % ms
-tstop = 3600; % ms
-t = tstart:tstop;
-eventTimes = [0 500 1500 2100 3100];
-
 %% Get data
 for iSubject = 1:nSubjects
     subject = subjects{iSubject};
@@ -145,7 +171,7 @@ for iSubject = 1:nSubjects
     if isempty(aggStr)
         removeFile = [];
         for i = 1:numel(analysisFile)
-            if strfind(analysisFile.name,'singleTrials')
+            if strfind(analysisFile(i).name,'singleTrials')
                 removeFile = i;
             end
         end
@@ -166,9 +192,9 @@ for iSubject = 1:nSubjects
             groupData.targetPADiff(:,:,iSubject) = A.targetPADiff;
             groupData.targetPADiffAmps(:,:,iSubject) = A.targetPADiffAmps;
         case 'w'
-            groupData.amps(:,:,iSubject) = A.wAmps;
-            groupData.ampsAtt(:,:,iSubject) = A.wAmpsAtt;
-            groupData.ampsPA(:,:,iSubject) = A.wAmpsPA;
+            groupData.amps(:,:,iSubject) = A.wAmps(tidx,:);
+            groupData.ampsAtt(:,:,iSubject) = A.wAmpsAtt(:,tidx);
+            groupData.ampsPA(:,:,iSubject) = A.wAmpsPA(:,tidx);
         case 'h'
             groupData.amps(:,:,iSubject) = A.hAmps;
             groupData.ampsAtt(:,:,iSubject) = A.hAmpsAtt;
@@ -179,14 +205,14 @@ for iSubject = 1:nSubjects
             groupData.ampsPA(:,:,:,iSubject) = A.tfAmpsPA;
             groupData.paDiff(:,:,:,iSubject) = A.tfPADiff;
         case 'stf'
-            groupData.amps(:,:,:,iSubject) = A.stfAmps;
-            groupData.ampsAtt(:,:,:,iSubject) = A.stfAmpsAtt;
-            groupData.ampsPA(:,:,:,iSubject) = A.stfAmpsPA;
-            groupData.paDiff(:,:,:,iSubject) = A.stfPADiff;
+            groupData.amps(:,:,:,iSubject) = A.stfAmps(:,tftidx,:);
+            groupData.ampsAtt(:,:,:,iSubject) = A.stfAmpsAtt(:,tftidx,:);
+            groupData.ampsPA(:,:,:,iSubject) = A.stfAmpsPA(:,tftidx,:);
+            groupData.paDiff(:,:,:,iSubject) = A.stfPADiff(:,tftidx,:);
         case 'w-single'
-            groupData.amps(:,:,iSubject) = squeeze(nanmean(A.wAmps,2));
-            groupData.ampsAtt(:,:,iSubject) = squeeze(nanmean(A.wAmpsAtt,2))'; % transponse if plotting with amps function
-            groupData.ampsPA(:,:,iSubject) = squeeze(nanmean(A.wAmpsPA,2))'; % transpose if plotting with amps function
+            groupData.amps(:,:,iSubject) = squeeze(nanmean(A.wAmps(tidx,:,:),2));
+            groupData.ampsAtt(:,:,iSubject) = squeeze(nanmean(A.wAmpsAtt(tidx,:,:),2))'; % transponse if plotting with amps function
+            groupData.ampsPA(:,:,iSubject) = squeeze(nanmean(A.wAmpsPA(tidx,:,:),2))'; % transpose if plotting with amps function
             % comment out if plotting with amps function
 %             groupData.ampsAll(:,iSubject) = squeeze(nanmean(A.wAmpsAll,2));
 %             groupData.PAAUT(:,:,:,iSubject) = squeeze(nanmean(A.wPAAUT,2));
@@ -196,9 +222,9 @@ for iSubject = 1:nSubjects
 %             groupData.PA(:,:,iSubject) = squeeze(nanmean(A.wPA,2));
 %             groupData.AU(:,:,iSubject) = squeeze(nanmean(A.wAU,2));
         case 'itpc-single'
-            groupData.amps(:,:,iSubject) = A.wITPC;
-            groupData.ampsAtt(:,:,iSubject) = A.wITPCAtt';
-            groupData.ampsPA(:,:,iSubject) = A.wITPCPA';
+            groupData.amps(:,:,iSubject) = A.wITPC(tidx,:);
+            groupData.ampsAtt(:,:,iSubject) = A.wITPCAtt(tidx,:)';
+            groupData.ampsPA(:,:,iSubject) = A.wITPCPA(tidx,:)';
         case 'stf-single'
             groupData.amps(:,:,:,iSubject) = A.stfAmps;
             groupData.ampsAtt(:,:,:,iSubject) = A.stfAmpsAtt;
@@ -395,6 +421,9 @@ end
 % plot(t,h)
 % plot(t,-log10(p))
 % plot(t, ones(size(t))*(-log10(.05)))
+
+%% Adjust t if neeeded
+A.t = A.t(tidx);
 
 %% Plot figs
 if plotFigs
