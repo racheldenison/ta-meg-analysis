@@ -5,10 +5,13 @@ exptType = 'TANoise';
 exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % sessionDirs = {'R0817_20171212','R0817_20171213'};
 % sessionDirs = {'R1187_20180105','R1187_20180108'};
-sessionDirs = {'R0983_20180111','R0983_20180112'};
-trialsOption = 'trialAve'; % 'singleTrials','trialAve'
-wIdx = 1:6701;
-tfIdx = 1:671;
+% sessionDirs = {'R0983_20180111','R0983_20180112'};
+% sessionDirs = {'R0898_20180112','R0898_20180116'};
+% sessionDirs = {'R1021_20180208','R1021_20180212'};
+% sessionDirs = {'R1103_20180213','R1103_20180215'};
+sessionDirs = {'R0959_20180219','R0959_20180306'};
+trialsOption = 'singleTrials'; % 'singleTrials','trialAve'
+alphaFreqIdx = 9:12;
 
 analStr = 'ebi'; % '', 'ebi', etc.
 ssvefFreq = 20;
@@ -58,6 +61,9 @@ t = A(2).t;
 eventTimes = A(1).eventTimes;
 attNames = A(1).attNames;
 
+wIdx = 1:numel(t);
+tfIdx = 1:ceil(numel(t)/10);
+
 %% Plotting setup
 plotOrder = [1 5 3 7 2 6 4 8 9];
 extendedMap = flipud(lbmap(nTrigs-1+4,'RedBlue'));
@@ -65,6 +71,7 @@ selectedMap = extendedMap([1:(nTrigs-1)/2 (end-(nTrigs-1)/2)+1:end],:);
 trigColors = [selectedMap; 0 0 0];
 trigBlue = mean(selectedMap(1:(nTrigs-1)/2,:));
 trigRed = mean(selectedMap((end-(nTrigs-1)/2)+1:end,:));
+trigColorsPA4 = [.52 .37 .75; .31 .74 .40; .27 .51 .84; 1.0 .57 .22];
 
 tsFigPos = [0 500 1250 375];
 % ts2FigPos = [0 500 1100 600];
@@ -77,10 +84,13 @@ set(0,'defaultLineLineWidth',1)
 
 switch exptType
     case 'TADetectDiscrim'
+        PANames = {'T1p-T2p','T1a-T2p','T1p-T2a','T1a-T2a'};
         xtickint = 50;
     case 'TAContrast'
+        PANames = {'T1d-T2d','T1i-T2d','T1d-T2i','T1i-T2i'};
         xtickint = 100;
     case 'TANoise'
+        PANames = {'T1v-T2v','T1h-T2v','T1v-T2h','T1h-T2h'};
         xtickint = 100;
 end
 
@@ -113,6 +123,23 @@ switch trialsOption
         ylabel('wavelet amp')
         % title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
         
+        % present/absent
+        fH(2) = figure;
+        set(gcf,'Position',tsFigPos)
+        hold on
+        for iTrig = 1:(nTrigs-1)/2
+            p1 = plot(t, nanmean(wAmps(:,iTrig*2-1:iTrig*2),2));
+            set(p1, 'Color', trigColorsPA4(iTrig,:), 'LineWidth', 1.5)
+        end
+        % ylim([-1 2.5])
+        for iEv = 1:numel(eventTimes)
+            vline(eventTimes(iEv),'k');
+        end
+        legend(PANames)
+        xlabel('time (ms)')
+        ylabel('wavelet amp')
+%         title([sprintf('%d Hz, channel', ssvefFreq) sprintf(' %d', channels) wstrt])
+        
         %% time freq single
         vals = [];
         for iA = 1:nA
@@ -124,14 +151,14 @@ switch trialsOption
         maxvaldiff = max(abs(tfSingleAmpsAttDiff(:)));
         
         % figures
-        toi = A(1).stfToi;
+        toi = A(2).stfToi;
         foi = A(2).stfFoi;
         ytick = 10:10:numel(foi);
         xtick = 51:xtickint:numel(toi);
         clims = [0 maxval];
         diffClims = [-maxvaldiff maxvaldiff];
         
-        fH(2) = figure;
+        fH(3) = figure;
         set(gcf,'Position',tf3FigPos)
         attNames = {'attT1','attT2'};
         for iAtt = 1:size(tfSingleAmpsAtt,3)
@@ -152,11 +179,22 @@ switch trialsOption
         % rd_supertitle(['channel' sprintf(' %d', channels) wstrt]);
         rd_raiseAxis(gca);
         
+        %% alpha
+        alphaAtt = squeeze(nanmean(tfSingleAmpsAtt(alphaFreqIdx,:,:),1));
+        figure
+        plot(toi,alphaAtt)
+        for iEv = 1:numel(eventTimes)
+            vline(eventTimes(iEv)/1000,'k');
+        end
+        xlabel('time (s)')
+        ylabel('alpha amplitude')
+        
     case 'singleTrials'
         %% wAmps single
         wAmpsAtt = cat(2, A(1).wAmpsAtt(wIdx,:,:), A(2).wAmpsAtt(wIdx,:,:));
+        wAmpsPA = cat(2, A(1).wAmpsPA(wIdx,:,:), A(2).wAmpsPA(wIdx,:,:));
         
-        fH(3) = figure;
+        fH(1) = figure;
         set(gcf,'Position',tsFigPos)
         hold on
         plot(t, nanmean(wAmpsAtt(:,:,1),2),'color',trigBlue,'LineWidth',4)
@@ -166,6 +204,24 @@ switch trialsOption
         shadedErrorBar(t, emp, err, {'color',trigBlue,'LineWidth',4}, 1)
         [~, emp, err] = rd_bootstrapCI(wAmpsAtt(:,:,2)');
         shadedErrorBar(t, emp, err, {'color',trigRed,'LineWidth',4}, 1)
+        for iEv = 1:numel(eventTimes)
+            vline(eventTimes(iEv),'k');
+        end
+        xlabel('time (ms)')
+        ylabel('single trial wavelet amp')
+        
+        fH(2) = figure;
+        set(gcf,'Position',tsFigPos)
+        hold on
+        for iPA = 1:4
+            p1 = plot(t, nanmean(wAmpsPA(:,:,iPA),2));
+            set(p1, 'Color', trigColorsPA4(iPA,:), 'LineWidth', 2)
+        end
+        legend(PANames)
+        for iPA = 1:4
+            [~, emp, err] = rd_bootstrapCI(wAmpsPA(:,:,iPA)');
+            shadedErrorBar(t, emp, err, {'color',trigColorsPA4(iPA,:),'LineWidth',4}, 1)
+        end
         for iEv = 1:numel(eventTimes)
             vline(eventTimes(iEv),'k');
         end
@@ -228,19 +284,36 @@ switch trialsOption
         itpcFun = @(spectrum) squeeze(abs(nanmean(exp(1i*angle(spectrum)),1))); % mean across trials
         nBoot = 100;
         
+        % choose measure
+        m = 'wSpecPA'; % 'wSpecAtt', 'wSpecPA'
+        switch m
+            case 'wSpecAtt'
+                condNames = attNames; 
+                condColors = [trigBlue; trigRed]; 
+            case 'wSpecPA'
+                condNames = PANames; 
+                condColors = trigColorsPA4;
+            otherwise
+                error('m not recognized')
+        end
+
         % combine spectra for all trials
+        wITPCCond0 = [];
+        wITPCCondResamp0 = [];
+        wITPCCondErr = [];
+        
         fprintf('\nbootstrap itpc\n')
         for iA = 1:nA
-            vals = A(iA).wSpecAtt(wIdx,:,:,:);
+            vals = A(iA).(m)(wIdx,:,:,:);
             % generate sample indices, same for all conditions
             [~, bootIdx] = bootstrp(nBoot, @(x) [], vals(:,:,1,1)');
             % recompute itpc from all trials in condition
             fprintf('\nsession %d\n', iA)
-            for iAtt = 1:numel(attNames)
-                fprintf('%s\n', attNames{iAtt})
+            for iCond = 1:numel(condNames)
+                fprintf('%s\n', condNames{iCond})
                 for iCh = 1:nTopChannels
                     fprintf('ch %d\n', iCh)
-                    spectrum = vals(:,:,iAtt,iCh)';
+                    spectrum = vals(:,:,iCond,iCh)';
                     emp = itpcFun(spectrum);
                     
                     itpcResamp = [];
@@ -248,34 +321,36 @@ switch trialsOption
                         itpcResamp(:,iBoot) = itpcFun(spectrum(bootIdx(:,iBoot),:));
                     end
                     
-                    wITPCAtt0(:,iCh,iAtt,iA) = emp;
-                    wITPCAttResamp0(:,:,iCh,iAtt,iA) = itpcResamp;
+                    wITPCCond0(:,iCh,iCond,iA) = emp;
+                    wITPCCondResamp0(:,:,iCh,iCond,iA) = itpcResamp;
                 end
             end
         end
         
         % mean across channels and sessions
         chIdx = 1:nTopChannels;
-        wITPCAtt = squeeze(nanmean(nanmean(wITPCAtt0(:,chIdx,:,:),2),4)); 
-        wITPCAttResamp = squeeze(nanmean(nanmean(wITPCAttResamp0(:,:,chIdx,:,:),3),5));
+        wITPCCond = squeeze(nanmean(nanmean(wITPCCond0(:,chIdx,:,:),2),4)); 
+        wITPCCondResamp = squeeze(nanmean(nanmean(wITPCCondResamp0(:,:,chIdx,:,:),3),5));
         
         % ci and error bars
-        wITPCAttCI = prctile(wITPCAttResamp, [2.5 97.5], 2);
-        for iAtt = 1:numel(attNames)
-            wITPCAttErr(:,1,iAtt) = wITPCAttCI(:,1,iAtt)-wITPCAtt(:,iAtt);
-            wITPCAttErr(:,2,iAtt) = wITPCAtt(:,iAtt)-wITPCAttCI(:,2,iAtt);
+        wITPCCondCI = prctile(wITPCCondResamp, [2.5 97.5], 2);
+        for iCond = 1:numel(condNames)
+            wITPCCondErr(:,1,iCond) = wITPCCondCI(:,1,iCond)-wITPCCond(:,iCond);
+            wITPCCondErr(:,2,iCond) = wITPCCond(:,iCond)-wITPCCondCI(:,2,iCond);
         end
         
 
         fH(4) = figure;
         set(gcf,'Position',tsFigPos)
         hold on
-        plot(t, wITPCAtt(:,1),'color',trigBlue,'LineWidth',4)
-        plot(t, wITPCAtt(:,2),'color',trigRed,'LineWidth',4)
-        legend(attNames)
-        shadedErrorBar(t, wITPCAtt(:,1), wITPCAttErr(:,:,1), {'color',trigBlue,'LineWidth',4}, 1)
-        shadedErrorBar(t, wITPCAtt(:,2), wITPCAttErr(:,:,2), {'color',trigRed,'LineWidth',4}, 1)
-        legend(attNames)
+        for iCond = 1:numel(condNames)
+            plot(t, wITPCCond(:,iCond),'color',condColors(iCond,:),'LineWidth',4)
+        end
+        legend(condNames)
+        for iCond = 1:numel(condNames)
+            shadedErrorBar(t, wITPCCond(:,iCond), wITPCCondErr(:,:,iCond), ...
+                {'color',condColors(iCond,:),'LineWidth',4}, 1)
+        end
         for iEv = 1:numel(eventTimes)
             vline(eventTimes(iEv),'k');
         end

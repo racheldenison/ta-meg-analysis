@@ -3,8 +3,8 @@
 %% setup
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 exptDir = '/Local/Users/denison/Data/TANoise/MEG';
-sessionDir = 'R0898_20180112';
-fileBase = 'R0898_TANoise_1.12.18';
+sessionDir = 'R0959_20180306';
+fileBase = 'R0959_TANoise_3.6.18';
 
 renameFiles = false;
 runsToRename = 1:12;

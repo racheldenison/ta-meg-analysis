@@ -83,6 +83,9 @@ switch measure
                 diffYLimsGroup = [-.3 .3];
         end
     case 'itpc-single'
+        ylims = [0 1];
+        diffYLims = [-.2 .2];
+        diffYLimsGroup = [-.1 .1];
     otherwise
         error('measure not recognized')
 end
