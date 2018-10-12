@@ -2,7 +2,7 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 %% Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'stf'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
+    measure = 'ts-single'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
     selectionStr = 'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
@@ -12,11 +12,12 @@ if ~exist('normalizeOption','var') || isempty(normalizeOption)
 end
 
 %% Setup
-exptType = 'TANoise'; % 'TADetectDiscrim','TANoise';
+exptType = 'TADetectDiscrim'; % 'TADetectDiscrim','TANoise';
 
 switch exptType
     case 'TADetectDiscrim'
-        exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+        exptDir = '/Local/Users/denison/Data/TADetectDiscrim/MEG';
+%         exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
         ssvefFreq = 30;
         t = -500:3600;
         tidx = 1:numel(t);
@@ -56,7 +57,7 @@ switch exptType
         error('exptType not recognized')
 end
 
-subjects = subjects([1:4 7:14]);
+% subjects = subjects([1:4 7:14]);
 % subjects = subjects([1 2 4 5 7 8 10 12 14 16]);
 
 % subjects = {'R0817_20150504', 'R0973_20150727', 'R0974_20150728', ...

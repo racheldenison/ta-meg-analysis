@@ -11,7 +11,7 @@ if nargin<9
     end
 end
 
-doStats = 0;
+doStats = 1;
 
 figTitle = und2space(figStr);
 
@@ -69,6 +69,8 @@ groupDataB.adt = squeeze(mean(groupDataB.auDiff,2));
 
 %% stats on paauTS
 if doStats
+    tw = twindow.paauTS;
+    
     vals = [];
     vals(:,1:4,:) = groupDataB.paauTS(:,:,1,:);
     vals(:,5:8,:) = groupDataB.paauTS(:,:,2,:);
@@ -84,14 +86,42 @@ if doStats
     
     figure
     subplot(4,1,1:3)
-    plot(twindow,fvals)
+    plot(tw,fvals)
     ylabel('F value')
     legend(rowNames)
     subplot(4,1,4)
-    plot(twindow,pvals<.05)
+    plot(tw,pvals<.05)
     ylim([0 2])
     xlabel('time (ms)')
     ylabel('p < .05')
+    
+    % T1 and T2 separately
+    condNames = {'P_att','P_unatt','A_att','A_unatt'};
+    factorNames = {'PA','AU'};
+    nLevels = [2 2];
+    
+    fvals = []; pvals = [];
+    for iT = 1:2
+        vals = squeeze(groupDataB.paauTS(:,:,iT,:));
+        for it = 1:size(vals,1)
+            data = squeeze(vals(it,:,:))'; % subjects x conds
+            [fvals(it,:,iT), pvals(it,:,iT), rowNames] = rd_rmANOVA(data, condNames, factorNames, nLevels);
+        end
+    end
+    
+    for iT = 1:2
+        figure
+        subplot(4,1,1:3)
+        plot(tw,fvals(:,:,iT))
+        ylabel('F value')
+        legend(rowNames)
+        title(sprintf('T%d',iT))
+        subplot(4,1,4)
+        plot(tw,pvals(:,:,iT)<.05)
+        ylim([0 2])
+        xlabel('time (ms)')
+        ylabel('p < .05')
+    end
 end
 
 %% plot paauT, paDiff, au
@@ -159,11 +189,29 @@ for iT = 1:2
 end
 legend('att','unatt')
 
-% adt
+% auDiff
+ylims = [-30 60];
+valsMean = mean(groupDataB.auDiff,3);
+valsSte = std(groupDataB.auDiff,0,3)/sqrt(numel(subjects));
 fH(4) = figure;
+for iT = 1:2
+    subplot(2,1,iT)
+    hold on
+    plot(tw([1 end]),[0 0],'--k')
+    plot(tw, valsMean(:,iT))
+    shadedErrorBar(tw, valsMean(:,iT), valsSte(:,iT), {'color','k','LineWidth',2}, 1)
+    ylim(ylims)
+    vline(0,'k');
+    xlabel('time (ms)')
+    ylabel('amplitude difference (att-unatt)')
+    title(sprintf('T%d',iT))
+end
+
+% adt
+fH(5) = figure;
 hold on
 plot(tw,mean(groupDataB.adt,2),'k')
-shadedErrorBar(tw,mean(groupDataB.adt,2),std(groupDataB.adt,0,2)/4)
+shadedErrorBar(tw,mean(groupDataB.adt,2),std(groupDataB.adt,0,2)/sqrt(numel(subjects)))
 plot(twin,[0 0],'k')
 plot(tw,hh*2,'k')
 vline(0,'k');
@@ -173,7 +221,7 @@ title('T1 & T2')
 
 %% number of trials
 nConds = size(groupData.nTrialsPerCond,1);
-fH(5) = figure;
+fH(6) = figure;
 hold on
 plot(1:nConds, groupData.nTrialsPerCond,'o')
 plot(1:nConds, mean(groupData.nTrialsPerCond,2), '.k')
@@ -190,7 +238,7 @@ title(und2space(selectionStr))
 %% save
 if saveFigs
     figPrefix = sprintf('%s_plot', figStr);
-    figNames = {'tsbPAAU','tsbPADiffAU','tsbAU','tsbAUDiffT1T2Comb','nTrials'};
+    figNames = {'tsbPAAU','tsbPADiffAU','tsbAU','tsbAUDiff','tsbAUDiffT1T2Comb','nTrials'};
     rd_saveAllFigs(fH, figNames, figPrefix, figDir);
 end
 
