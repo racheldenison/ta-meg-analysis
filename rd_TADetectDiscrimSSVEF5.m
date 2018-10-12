@@ -38,6 +38,8 @@ if nargin==0 || ~exist('exptDir','var')
     end
 end
 
+doTimeFreqSingle = 1;
+
 channelSelectionStr = 'wholebrain';
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -64,8 +66,8 @@ load(savename)
 behav = behavior(behav);
 
 %% Settings after loading the data
-saveAnalysis = 0;
-saveFigs = 0;
+saveAnalysis = 1;
+saveFigs = 1;
 plotFigs = 1;
 
 excludeTrialsFt = 1;
@@ -319,9 +321,11 @@ A.waveletOption = waveletOption;
 A.wAmps = wAmps;
 
 %% PAAU
-twin = [-600 600];
+twin = [-300 300];
 t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
 t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
+
+wPAAUT = []; wPAT = []; wAUT = []; wPAAU = []; wPA = []; wAU = []; 
 
 % calculate pres/abs x att/unattend for each target, groupData
 wPAAUT(:,:,1,1) = mean(wAmps(t1Tidx,:,[1 5]),3); % present/attended
@@ -382,6 +386,12 @@ switch exptType
         paauNames = {'D-att','D-unatt','I-att','I-unatt'};
         paNames = {'T1d-T2d','T1i-T2d','T1d-T2i','T1i-T2i'};
         paDiffNames = 'D-I';
+        xtickint = 100;
+    case 'TANoise'
+        names = {'vertical','horizontal'};
+        paauNames = {'V-att','V-unatt','H-att','H-unatt'};
+        paNames = {'T1v-T2v','T1h-T2v','T1v-T2h','T1h-T2h'};
+        paDiffNames = 'V-H';
         xtickint = 100;
 end
 
@@ -493,6 +503,7 @@ if saveFigs
 end
 
 %% Time-frequency - single trials
+if doTimeFreqSingle
 taper          = 'hanning';
 foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
@@ -541,7 +552,7 @@ t1SinglePADiff = mean(tfSingleAmpsPA(:,:,:,[1 3]),4)-mean(tfSingleAmpsPA(:,:,:,[
 t2SinglePADiff = mean(tfSingleAmpsPA(:,:,:,[1 2]),4)-mean(tfSingleAmpsPA(:,:,:,[3 4]),4);
 
 % windows around targets
-twin = [-600 600];
+twin = [-300 300];
 t1Tidx = find(isneq(timeoi*1000,eventTimes(3)+twin(1))):find(isneq(timeoi*1000,eventTimes(3)+twin(2)));
 t2Tidx = find(isneq(timeoi*1000,eventTimes(4)+twin(1))):find(isneq(timeoi*1000,eventTimes(4)+twin(2)));
 
@@ -920,6 +931,8 @@ rd_supertitle2('itpc, A-U')
 if saveFigs
     figPrefix = 'immap_wholebrain';
     rd_saveAllFigs(fH, {'timeFreqSingleAUDiff','itpcAUDiff'}, figPrefix, figDir)
+end
+
 end
 
 end

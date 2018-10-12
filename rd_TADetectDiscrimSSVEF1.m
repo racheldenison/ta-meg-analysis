@@ -15,7 +15,7 @@ switch exptType
         exptDir = '/Local/Users/denison/Data/TANoise/MEG';
         exptShortName = 'TANoise';       
 end
-sessionDir = 'R0959_20180306';
+sessionDir = 'R0817_20180419';
 fileBase = sessionDirToFileBase(sessionDir, exptShortName);
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
 excludeTrialsFt = 1;

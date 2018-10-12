@@ -356,6 +356,44 @@ switch trialsOption
         end
         xlabel('time (ms)')
         ylabel('wavelet itpc')    
+        
+        %% itpc time-frequency spectrum
+        % Method 1: average sessions without recomputing ITPC
+        vals = [];
+        for iA = 1:nA
+            vals(:,:,:,iA) = A(iA).stfITPCAtt;
+        end
+        tfSingleITPCAtt = nanmean(vals, 4);
+        
+        
+        clims = [0 .5]; % [0 70]
+        diffClims = [-0.2 0.2];
+        cmap = parula;
+        toi = A(1).stfToi;
+        foi = A(1).stfFoi;
+        xtick = 51:xtickint:numel(toi);
+        ytick = 10:10:numel(foi);
+
+        fH(5) = figure;
+        set(gcf,'Position',tf3FigPos)
+        attNames = {'attT1','attT2'};
+        for iAtt = 1:size(tfSingleITPCAtt,3)
+            subplot(1,3,iAtt)
+            imagesc(tfSingleITPCAtt(:,:,iAtt),clims)
+            title(attNames{iAtt})
+        end
+        subplot(1,3,3)
+        imagesc(tfSingleITPCAtt(:,:,2)-tfSingleITPCAtt(:,:,1),diffClims)
+        title('attT2 - attT1')
+        aH = findall(gcf,'type','axes');
+        for iAx = 1:numel(aH)
+            axes(aH(iAx));
+            rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+            xlabel('time (s)')
+            ylabel('frequency (Hz)')
+        end
+        colormap(cmap)
+%         rd_supertitle2(['channel' sprintf(' %d', channels) wstrt]);
 end
 
 

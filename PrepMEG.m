@@ -8,8 +8,8 @@
 exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0959_20180306';
-filename = 'R0959_TANoise_3.6.18_ebi';
+sessionDir = 'R0817_20180419';
+filename = 'R0817_TANoise_4.19.18_noprobe_ebi';
 
 dataDir = sprintf('%s/%s/', exptDir, sessionDir);
 prepDir = sprintf('%s/prep/', dataDir);

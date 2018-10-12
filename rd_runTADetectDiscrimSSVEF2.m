@@ -54,7 +54,7 @@ switch exptType
     otherwise
         error('exptType not recognized')
 end
-% subjects = subjects(8:end);
+% subjects = subjects(1);
 nSubjects = numel(subjects);
 
 %% run analysis
