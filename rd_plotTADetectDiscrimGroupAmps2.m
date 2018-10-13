@@ -141,6 +141,39 @@ if shuffle
     plot(t,ci) % condition label flip
 end
 
+%% F test
+doStats = 1;
+if doStats
+    for iCond = 1:8
+        condNames{iCond} = strrep(trigNames{iCond},'-','_');
+    end
+    factorNames = {'T2PA','T1PA','AttT1T2'};
+    nLevels = [2 2 2];
+    
+    fvals = []; pvals = [];
+    vals = groupData.amps(:,1:8,:);
+    for it = 1:size(vals,1)
+        data = squeeze(vals(it,:,:))'; % subjects x conds
+        if ~any(isnan(data(:)))
+            [fvals(it,:), pvals(it,:), rowNames] = rd_rmANOVA(data, condNames, factorNames, nLevels);
+        else
+            fvals(it,:) = zeros(1,7);
+            pvals(it,:) = zeros(1,7);
+        end
+    end
+    
+    figure
+    subplot(4,1,1:3)
+    plot(t,fvals)
+    ylabel('F value')
+    legend(rowNames)
+    subplot(4,1,4)
+    plot(t,pvals<.05)
+    ylim([0 2])
+    xlabel('time (ms)')
+    ylabel('p < .05')
+end
+
 %% indiv subjects ts
 fH = [];
 for iF = 1:nFields
@@ -394,6 +427,64 @@ for iF = 1:nFields
     sdim = numel(size(vals)); % subject dimension
     groupMean.(fieldName) = mean(vals, sdim);
     groupSte.(fieldName) = std(vals, 0, sdim)./sqrt(nSubjects);
+end
+
+%% stats on PAAU
+if doStats
+    tw = twindow;
+    
+    vals = [];
+    vals(:,1:4,:) = groupData.PAAUT(:,:,1,:);
+    vals(:,5:8,:) = groupData.PAAUT(:,:,2,:);
+    condNames = {'T1_P_att','T1_P_unatt','T1_A_att','T1_A_unatt',...
+        'T2_P_att','T2_P_unatt','T2_A_att','T2_A_unatt'};
+    factorNames = {'T','PA','AU'};
+    nLevels = [2 2 2];
+    
+    fvals = []; pvals = [];
+    for it = 1:size(vals,1)
+        data = squeeze(vals(it,:,:))'; % subjects x conds
+        [fvals(it,:), pvals(it,:), rowNames] = rd_rmANOVA(data, condNames, factorNames, nLevels);
+    end
+    
+    figure
+    subplot(4,1,1:3)
+    plot(tw,fvals)
+    ylabel('F value')
+    legend(rowNames)
+    subplot(4,1,4)
+    plot(tw,pvals<.05)
+    ylim([0 2])
+    xlabel('time (ms)')
+    ylabel('p < .05')
+    
+    % T1 and T2 separately
+    condNames = {'P_att','P_unatt','A_att','A_unatt'};
+    factorNames = {'PA','AU'};
+    nLevels = [2 2];
+    
+    fvals = []; pvals = [];
+    for iT = 1:2
+        vals = squeeze(groupData.PAAUT(:,:,iT,:));
+        for it = 1:size(vals,1)
+            data = squeeze(vals(it,:,:))'; % subjects x conds
+            [fvals(it,:,iT), pvals(it,:,iT), rowNames] = rd_rmANOVA(data, condNames, factorNames, nLevels);
+        end
+    end
+    
+    for iT = 1:2
+        figure
+        subplot(4,1,1:3)
+        plot(tw,fvals(:,:,iT))
+        ylabel('F value')
+        legend(rowNames)
+        title(sprintf('T%d',iT))
+        subplot(4,1,4)
+        plot(tw,pvals(:,:,iT)<.05)
+        ylim([0 2])
+        xlabel('time (ms)')
+        ylabel('p < .05')
+    end
 end
 
 %% separate T1 and T2
