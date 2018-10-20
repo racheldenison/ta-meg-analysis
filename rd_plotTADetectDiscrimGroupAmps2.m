@@ -116,7 +116,7 @@ valsDiffAbsSte = squeeze(std(abs(valsDiff),0,3)./sqrt(nSubjects));
 
 %% permutation test: any difference between att T1 and att T2?
 % shuffle condition labels to generate null distribution of attDiff
-shuffle = 1;
+shuffle = 0;
 if shuffle
     nShuffles = 1000;
     vals = groupData.ampsAtt;
@@ -142,7 +142,7 @@ if shuffle
 end
 
 %% F test
-doStats = 1;
+doStats = 0;
 if doStats
     for iCond = 1:8
         condNames{iCond} = strrep(trigNames{iCond},'-','_');

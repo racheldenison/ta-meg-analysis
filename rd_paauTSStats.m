@@ -1,7 +1,8 @@
 % rd_paauTSStats.m
 
 %% load data
-load('/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG/Group/mat/paauTS_stats_workspace_20160924.mat')
+% load('/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG/Group/mat/paauTS_stats_workspace_20160924.mat')
+load('/Local/Users/denison/Data/TADetectDiscrim/MEG/Group/mat/paauTS_stats_workspace_20160924.mat')
 
 %% setup
 twin = A.targetWindow;
@@ -17,6 +18,7 @@ nShuffles = 5000;
 
 %% generate null distribution for full ANOVA F values
 % vals is time x conds x subjects
+tic
 for iShuffle = 1:nShuffles
     fprintf('shuffle %d \t%s\n', iShuffle, datestr(now))
     % shuffle subject means independently
@@ -30,6 +32,7 @@ for iShuffle = 1:nShuffles
         [fvalsNull(it,:,iShuffle), pvalsNull(it,:,iShuffle)] = rd_rmANOVA(data, condNames, factorNames, nLevels);
     end
 end
+toc
 
 %% generate null distribution for main effect differences
 % empirical

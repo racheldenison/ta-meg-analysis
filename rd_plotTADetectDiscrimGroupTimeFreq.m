@@ -20,7 +20,7 @@ tf9FigPos = [0 250 1280 580];
 tf3FigPos = [200 475 1000 275];
 
 switch measure
-    case 'stf'
+    case {'tf','stf'}
         cmap = colormap;
     case 'stf-single'
         cmap = flipud(lbmap(64,'RedBlue'));

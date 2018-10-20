@@ -11,7 +11,7 @@ if nargin<9
     end
 end
 
-doStats = 1;
+doStats = 0;
 
 figTitle = und2space(figStr);
 

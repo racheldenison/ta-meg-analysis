@@ -2,7 +2,7 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 %% Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'w-single'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
+    measure = 'itpc-single'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
     selectionStr = 'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
@@ -21,6 +21,7 @@ switch exptType
         ssvefFreq = 30;
         t = -500:3600;
         tidx = 1:numel(t);
+        tftidx = 1:411;
     case 'TANoise'
         exptDir = '/Local/Users/denison/Data/TANoise/MEG';
         ssvefFreq = 20;
@@ -36,6 +37,8 @@ ssvefStr = sprintf('%dHz',ssvefFreq);
 
 plotFigs = 1;
 saveFigs = 0;
+saveGroupData = 1;
+writeTextFile = 1;
 
 switch exptType
     case 'TADetectDiscrim'
@@ -158,6 +161,9 @@ normStr = sprintf('_norm%s',[upper(normalizeOption(1)) normalizeOption(2:end)]);
 
 figDir = sprintf('%s/Group/figures/%s', exptDir, analStr);
 figStr = sprintf('gN%d%s_%s_%s%s', nSubjects, aggStr, ssvefStr, selectionStr, normStr);
+
+groupDataDir = sprintf('%s/Group/mat/%s', exptDir, analStr);
+groupDataFile = sprintf('%s/%s_%s.mat', groupDataDir, figStr, measure);
 
 %% Get data
 for iSubject = 1:nSubjects
@@ -425,6 +431,38 @@ end
 
 %% Adjust t if neeeded
 A.t = A.t(tidx);
+
+%% Store some info
+if saveGroupData
+    info.exptType = exptType;
+    info.subjects = subjects;
+    info.measure = measure;
+    info.normalizeOption = normalizeOption;
+    info.selectionStr = selectionStr;
+    info.analStr = analStr;
+    info.nChannels = numel(A.channels);
+    info.ssvefFreq = ssvefFreq;
+    info.t = A.t;
+    info.Fs = A.Fs;
+    info.eventTimes = A.eventTimes;
+    info.stfFoi = A.stfFoi;
+    info.stfToi = A.stfToi;
+    info.trigNames = A.trigNames;
+    
+    switch measure
+        case {'ts','ts-single'}
+            data = groupData.tsAmps;
+        otherwise
+            data = groupData.amps;
+    end
+    
+    save(groupDataFile, 'info', 'data')
+end
+
+%% Save text file for R
+if writeTextFile
+    rd_writeTAMEGDataFile(groupDataFile);
+end
 
 %% Plot figs
 if plotFigs
