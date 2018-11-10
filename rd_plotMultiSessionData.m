@@ -1,4 +1,4 @@
-function peaks = rd_plotMultiSessionData(sessionDirs)
+function [wITPCCond, peaks] = rd_plotMultiSessionData(sessionDirs)
 % rd_plotMultiSessionData.m
 
 %% Setup
@@ -286,7 +286,7 @@ switch trialsOption
         nBoot = 2;
         
         % choose measure
-        m = 'wSpecAll'; % 'wSpecAtt', 'wSpecPA', 'wSpecAll'
+        m = 'wSpecAtt'; % 'wSpecAtt', 'wSpecPA', 'wSpecAll'
         switch m
             case 'wSpecAtt'
                 condNames = attNames; 
@@ -369,51 +369,58 @@ switch trialsOption
         
         
         %% find peaks in itpc
-        vals = wITPCCond;
-        thresh = 3;
-        nPk = 5;
-        
-        % positive peaks
-        [pks,locs,~,p] = findpeaks(vals);
-%         idx = find(p>std(p)*thresh);
-%         idx = find(p>diff(prctile(p,[10 90]))*thresh);
-        [~, idx] = sort(p,1,'descend');
-        idx = sort(idx(1:nPk));
-        peaksPos = t(locs(idx));
-        peaksPosVals = pks(idx);
-        
-        % negative peaks
-        [pks,locs,~,p] = findpeaks(-vals);
-%         idx = find(p>std(p)*thresh);
-        [~, idx] = sort(p,1,'descend');
-        idx = sort(idx(1:nPk));
-        peaksNeg = t(locs(idx));
-        peaksNegVals = -pks(idx);
-        
-%         figure
-%         plot(t(locs), p, '.') % visualize peak prominence
-
-        figure(fH(4)) % add to fig 4
-        hold on
-        plot(peaksPos, peaksPosVals, '.g', 'MarkerSize', 30)
-        plot(peaksNeg, peaksNegVals, '.b', 'MarkerSize', 30)
-        
-        % store results of peaks analysis
-        peaks.measure = m;
-        peaks.t = t;
-        peaks.vals = vals;
-        peaks.nPk = nPk;
-        peaks.peaksPos = peaksPos;
-        peaks.peaksPosVals = peaksPosVals;
-        peaks.peaksNeg = peaksNeg;
-        peaks.peaksNegVals = peaksNegVals;
-        
+        if strcmp(m,'wSpecAll')
+            vals = wITPCCond;
+            thresh = 3;
+            nPk = 5;
+            
+            % positive peaks
+            [pks,locs,~,p] = findpeaks(vals);
+            %         idx = find(p>std(p)*thresh);
+            %         idx = find(p>diff(prctile(p,[10 90]))*thresh);
+            [~, idx] = sort(p,1,'descend');
+            idx = sort(idx(1:nPk));
+            peaksPos = t(locs(idx));
+            peaksPosVals = pks(idx);
+            
+            % negative peaks
+            [pks,locs,~,p] = findpeaks(-vals);
+            %         idx = find(p>std(p)*thresh);
+            [~, idx] = sort(p,1,'descend');
+            idx = sort(idx(1:nPk));
+            peaksNeg = t(locs(idx));
+            peaksNegVals = -pks(idx);
+            
+            %         figure
+            %         plot(t(locs), p, '.') % visualize peak prominence
+            
+            figure(fH(4)) % add to fig 4
+            hold on
+            plot(peaksPos, peaksPosVals, '.g', 'MarkerSize', 30)
+            plot(peaksNeg, peaksNegVals, '.b', 'MarkerSize', 30)
+            
+            % store results of peaks analysis
+            peaks.measure = m;
+            peaks.t = t;
+            peaks.vals = vals;
+            peaks.nPk = nPk;
+            peaks.peaksPos = peaksPos;
+            peaks.peaksPosVals = peaksPosVals;
+            peaks.peaksNeg = peaksNeg;
+            peaks.peaksNegVals = peaksNegVals;
+        else
+            peaks = [];
+        end
         
         %% itpc time-frequency spectrum
         % Method 1: average sessions without recomputing ITPC
         vals = [];
         for iA = 1:nA
-            vals(:,:,:,iA) = A(iA).stfITPCAtt;
+            try % this is terrible, come back
+                vals(:,:,:,iA) = A(iA).stfITPCAtt;
+            catch
+                vals(:,:,:,iA) = NaN;
+            end
         end
         tfSingleITPCAtt = nanmean(vals, 4);
         
