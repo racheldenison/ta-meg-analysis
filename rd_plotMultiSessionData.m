@@ -1,3 +1,4 @@
+function [wITPCCond, peaks] = rd_plotMultiSessionData(sessionDirs)
 % rd_plotMultiSessionData.m
 
 %% Setup
@@ -9,7 +10,7 @@ exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % sessionDirs = {'R0898_20180112','R0898_20180116'};
 % sessionDirs = {'R1021_20180208','R1021_20180212'};
 % sessionDirs = {'R1103_20180213','R1103_20180215'};
-sessionDirs = {'R0959_20180219','R0959_20180306'};
+% sessionDirs = {'R0959_20180219','R0959_20180306'};
 trialsOption = 'singleTrials'; % 'singleTrials','trialAve'
 alphaFreqIdx = 9:12;
 
@@ -282,10 +283,10 @@ switch trialsOption
         % Method 3: recompute separately for each session
         % define itpc function
         itpcFun = @(spectrum) squeeze(abs(nanmean(exp(1i*angle(spectrum)),1))); % mean across trials
-        nBoot = 100;
+        nBoot = 2;
         
         % choose measure
-        m = 'wSpecPA'; % 'wSpecAtt', 'wSpecPA'
+        m = 'wSpecAtt'; % 'wSpecAtt', 'wSpecPA', 'wSpecAll'
         switch m
             case 'wSpecAtt'
                 condNames = attNames; 
@@ -293,6 +294,9 @@ switch trialsOption
             case 'wSpecPA'
                 condNames = PANames; 
                 condColors = trigColorsPA4;
+            case 'wSpecAll'
+                condNames = {'all trials'};
+                condColors = [0 0 0];
             otherwise
                 error('m not recognized')
         end
@@ -313,7 +317,11 @@ switch trialsOption
                 fprintf('%s\n', condNames{iCond})
                 for iCh = 1:nTopChannels
                     fprintf('ch %d\n', iCh)
-                    spectrum = vals(:,:,iCond,iCh)';
+                    if strcmp(m,'wSpecAll')
+                        spectrum = vals(:,:,iCh)';
+                    else
+                        spectrum = vals(:,:,iCond,iCh)';
+                    end
                     emp = itpcFun(spectrum);
                     
                     itpcResamp = [];
@@ -347,15 +355,104 @@ switch trialsOption
             plot(t, wITPCCond(:,iCond),'color',condColors(iCond,:),'LineWidth',4)
         end
         legend(condNames)
-        for iCond = 1:numel(condNames)
-            shadedErrorBar(t, wITPCCond(:,iCond), wITPCCondErr(:,:,iCond), ...
-                {'color',condColors(iCond,:),'LineWidth',4}, 1)
+        if nBoot > 2
+            for iCond = 1:numel(condNames)
+                shadedErrorBar(t, wITPCCond(:,iCond), wITPCCondErr(:,:,iCond), ...
+                    {'color',condColors(iCond,:),'LineWidth',4}, 1)
+            end
         end
         for iEv = 1:numel(eventTimes)
             vline(eventTimes(iEv),'k');
         end
         xlabel('time (ms)')
         ylabel('wavelet itpc')    
+        
+        
+        %% find peaks in itpc
+        if strcmp(m,'wSpecAll')
+            vals = wITPCCond;
+            thresh = 3;
+            nPk = 5;
+            
+            % positive peaks
+            [pks,locs,~,p] = findpeaks(vals);
+            %         idx = find(p>std(p)*thresh);
+            %         idx = find(p>diff(prctile(p,[10 90]))*thresh);
+            [~, idx] = sort(p,1,'descend');
+            idx = sort(idx(1:nPk));
+            peaksPos = t(locs(idx));
+            peaksPosVals = pks(idx);
+            
+            % negative peaks
+            [pks,locs,~,p] = findpeaks(-vals);
+            %         idx = find(p>std(p)*thresh);
+            [~, idx] = sort(p,1,'descend');
+            idx = sort(idx(1:nPk));
+            peaksNeg = t(locs(idx));
+            peaksNegVals = -pks(idx);
+            
+            %         figure
+            %         plot(t(locs), p, '.') % visualize peak prominence
+            
+            figure(fH(4)) % add to fig 4
+            hold on
+            plot(peaksPos, peaksPosVals, '.g', 'MarkerSize', 30)
+            plot(peaksNeg, peaksNegVals, '.b', 'MarkerSize', 30)
+            
+            % store results of peaks analysis
+            peaks.measure = m;
+            peaks.t = t;
+            peaks.vals = vals;
+            peaks.nPk = nPk;
+            peaks.peaksPos = peaksPos;
+            peaks.peaksPosVals = peaksPosVals;
+            peaks.peaksNeg = peaksNeg;
+            peaks.peaksNegVals = peaksNegVals;
+        else
+            peaks = [];
+        end
+        
+        %% itpc time-frequency spectrum
+        % Method 1: average sessions without recomputing ITPC
+        vals = [];
+        for iA = 1:nA
+            try % this is terrible, come back
+                vals(:,:,:,iA) = A(iA).stfITPCAtt;
+            catch
+                vals(:,:,:,iA) = NaN;
+            end
+        end
+        tfSingleITPCAtt = nanmean(vals, 4);
+        
+        
+        clims = [0 .5]; % [0 70]
+        diffClims = [-0.2 0.2];
+        cmap = parula;
+        toi = A(1).stfToi;
+        foi = A(1).stfFoi;
+        xtick = 51:xtickint:numel(toi);
+        ytick = 10:10:numel(foi);
+
+        fH(5) = figure;
+        set(gcf,'Position',tf3FigPos)
+        attNames = {'attT1','attT2'};
+        for iAtt = 1:size(tfSingleITPCAtt,3)
+            subplot(1,3,iAtt)
+            imagesc(tfSingleITPCAtt(:,:,iAtt),clims)
+            title(attNames{iAtt})
+        end
+        subplot(1,3,3)
+        imagesc(tfSingleITPCAtt(:,:,2)-tfSingleITPCAtt(:,:,1),diffClims)
+        title('attT2 - attT1')
+        aH = findall(gcf,'type','axes');
+        for iAx = 1:numel(aH)
+            axes(aH(iAx));
+            rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+            xlabel('time (s)')
+            ylabel('frequency (Hz)')
+        end
+        colormap(cmap)
+%         rd_supertitle2(['channel' sprintf(' %d', channels) wstrt]);
 end
 
 

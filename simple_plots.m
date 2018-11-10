@@ -9,6 +9,7 @@ trigMean = A.trigMean;
 nTrigs = numel(A.trigNames);
 channels = A.channels;
 chw = A.chw;
+Fs = A.Fs;
 
 stfFoi = A.stfFoi;
 stfToi = A.stfToi;
@@ -45,6 +46,7 @@ end
 figure('Position',[200 50 1000 250])
 plot(t,mean(yMean,2))
 xlim([0 2300])
+ylim([-300 300])
 for iEv = 1:numel(eventTimes)
     vline(eventTimes(iEv),'k');
 end
@@ -62,6 +64,26 @@ for i = 1:numel(A.PANames)
     end
     title(A.PANames{i})
 end
+
+%% fft of mean time series
+ym = mean(yMean,2);
+
+% only go from cue to post-cue
+% tidx1 = find(t==eventTimes(2));
+% tidx2 = find(t==eventTimes(5))-1;
+tidx1 = find(t==1000);
+tidx2 = find(t==1500)-1;
+nfft = numel(tidx1:tidx2);
+Y = fft(ym(tidx1:tidx2),nfft)/nfft; % Scale by number of samples
+f = Fs/2*linspace(0,1,nfft/2+1); % Fs/2 is the maximum frequency that can be measured
+amps = 2*abs(Y(1:nfft/2+1)); % Multiply by 2 since only half the energy is in the positive half of the spectrum?
+
+figure('Position',[700 150 520 220])
+plot(f, amps)
+xlim([0 50])
+ylim([0 60])
+xlabel('frequency (Hz)')
+ylabel('amplitude')
 
 %% Wavelet and ITPC
 ssvefFreq = 20;

@@ -1,13 +1,14 @@
-function rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection, respTargetSelection, exptType)
+function rd_TADetectDiscrimSSVEF3(exptDir0, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection, respTargetSelection, exptType)
 
 % single trial analysis
 
 %% Setup
-if nargin==0 || ~exist('exptDir','var')
+if nargin==0 || ~exist('exptDir0','var')
     exptType = 'TANoise';
     switch exptType
         case 'TADetectDiscrim'
-            exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+%             exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+            exptDir0 = '/Local/Users/denison/Data/TADetectDiscrim/MEG';
             sessionDir = 'R0817_20150504';
             fileBase = 'R0817_TADeDi_5.4.15';
             analStr = 'ebi'; % '', 'ebi', etc.
@@ -19,7 +20,7 @@ if nargin==0 || ~exist('exptDir','var')
             respTargetSelection = ''; % '','T1Resp','T2Resp'
             
         case 'TAContrast'
-            exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
+            exptDir0 = '/Local/Users/denison/Data/TAContrast/MEG';
             sessionDir = 'R0817_20171019';
             fileBase = 'R0817_TACont_10.19.17';
             analStr = 'ebi'; % '', 'ebi', etc.
@@ -31,9 +32,9 @@ if nargin==0 || ~exist('exptDir','var')
             respTargetSelection = ''; % '','T1Resp','T2Resp'
             
         case 'TANoise'
-            exptDir = '/Local/Users/denison/Data/TANoise/MEG';
-            sessionDir = 'R0817_20171212';
-            fileBase = 'R0817_TANoise_12.12.17';
+            exptDir0 = '/Local/Users/denison/Data/TANoise/MEG';
+            sessionDir = 'R0817_20180419';
+            fileBase = 'R0817_TANoise_4.19.18';
             analStr = 'ebi'; % '', 'ebi', etc.
             ssvefFreq = 20;
             nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
@@ -49,7 +50,7 @@ end
 
 topChannels = 1:nTopChannels;
 
-dataDir = sprintf('%s/%s', exptDir, sessionDir);
+dataDir = sprintf('%s/%s', exptDir0, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
 
 if ~isempty(nTopChannels) && ~isempty(iqrThresh)
@@ -83,16 +84,20 @@ end
 %% Get the data
 load(savename)
 
+%% Update dirs
+figDir = sprintf('%s/%s/figures/%s', exptDir0, sessionDir, analStr);
+matDir = sprintf('%s/%s/mat', exptDir0, sessionDir);
+
 %% Update behav
 behav = behavior(behav);
 
 %% Settings after loading the data
-saveAnalysis = 0;
-saveFigs = 0;
+saveAnalysis = 1;
+saveFigs = 1;
 plotFigs = 1;
 
 excludeTrialsFt = 1;
-excludeSaturatedEpochs = 1;
+excludeSaturatedEpochs = 0;
 
 load(channelsFileName);
 switch channelSelection

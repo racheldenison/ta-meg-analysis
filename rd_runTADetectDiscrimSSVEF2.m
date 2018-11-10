@@ -3,12 +3,13 @@
 % works with SSVEF2, 3, 5, 6, dva (just change number in function call)
 
 %% setup
-exptType = 'TANoise';
+exptType = 'TADetectDiscrim';
 switch exptType
     case 'TADetectDiscrim'
-        exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+%         exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
+        exptDir = '/Local/Users/denison/Data/TADetectDiscrim/MEG';
         analStr = 'ebi'; % '', 'ebi', etc.
-        ssvefFreqs = 30; %[30 40];
+        ssvefFreqs = 40; %[30 40];
         
     case 'TAContrast'
         exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
@@ -28,7 +29,7 @@ end
 % channel selection: choose nTopChs, iqrThreshs, or wholeBrain
 nTopChs = 5; % 1, 5, [1 5], etc.
 iqrThreshs = [];
-wholeBrain = 1;
+wholeBrain = 0;
 weightChannels = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 'all','correct','incorrect','validCorrect','detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect'
@@ -54,7 +55,7 @@ switch exptType
     otherwise
         error('exptType not recognized')
 end
-% subjects = subjects(8:end);
+% subjects = subjects(7:16);
 nSubjects = numel(subjects);
 
 %% run analysis
