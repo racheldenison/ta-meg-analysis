@@ -6,3 +6,4 @@ eyedata/
 figures/
 .DS_Store
 ._*
+*.mat
