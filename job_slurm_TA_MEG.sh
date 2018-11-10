@@ -13,4 +13,4 @@ module purge
 module load r/intel/3.4.2
  
 cd ~/code/TA_MEG
-R --no-save -q -f meg_timeseriesPermutationTests_hpc.R
+R --no-save -q -f meg_timeseriesPermutationTests_paaut_hpc.R

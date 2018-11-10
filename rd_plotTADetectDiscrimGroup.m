@@ -12,7 +12,7 @@ if ~exist('normalizeOption','var') || isempty(normalizeOption)
 end
 
 %% Setup
-exptType = 'TADetectDiscrim'; % 'TADetectDiscrim','TANoise';
+exptType = 'TANoise'; % 'TADetectDiscrim','TANoise';
 
 switch exptType
     case 'TADetectDiscrim'
@@ -37,8 +37,10 @@ ssvefStr = sprintf('%dHz',ssvefFreq);
 
 plotFigs = 1;
 saveFigs = 0;
-saveGroupData = 1;
-writeTextFile = 1;
+saveGroupData = 0;
+writeTextFile = 0;
+saveGroupDataPAAUT = 0; % need to plotFigs to get PAAUT
+writeTextFilePAAUT = 0;
 
 switch exptType
     case 'TADetectDiscrim'
@@ -164,6 +166,7 @@ figStr = sprintf('gN%d%s_%s_%s%s', nSubjects, aggStr, ssvefStr, selectionStr, no
 
 groupDataDir = sprintf('%s/Group/mat/%s', exptDir, analStr);
 groupDataFile = sprintf('%s/%s_%s.mat', groupDataDir, figStr, measure);
+groupDataFilePAAUT = sprintf('%s/%s_%s_PAAUT.mat', groupDataDir, figStr, measure);
 
 %% Get data
 for iSubject = 1:nSubjects
@@ -193,11 +196,38 @@ for iSubject = 1:nSubjects
     
     switch measure
         case 'ts'
-            groupData.tsAmps(:,:,:,iSubject) = A.trigMean;
-            groupData.fAmps(:,:,:,iSubject) = A.amps;
-            groupData.targetPA(:,:,:,iSubject) = A.targetPA;
-            groupData.targetPADiff(:,:,iSubject) = A.targetPADiff;
-            groupData.targetPADiffAmps(:,:,iSubject) = A.targetPADiffAmps;
+            % comment out if plotting with amps function
+%             groupData.tsAmps(:,:,:,iSubject) = A.trigMean;
+%             groupData.fAmps(:,:,:,iSubject) = A.amps;
+%             groupData.targetPA(:,:,:,iSubject) = A.targetPA;
+%             groupData.targetPADiff(:,:,iSubject) = A.targetPADiff;
+%             groupData.targetPADiffAmps(:,:,iSubject) = A.targetPADiffAmps;
+            
+            % comment out if plotting with ts function
+            % calculate quantities for amps plotting function, top channel only
+            vals = squeeze(A.trigMean(:,1,:));
+            
+            detrend = true;
+            if detrend
+                opol = 15;
+                valsDetrended = [];
+                for iTrig = 1:numel(A.trigNames)
+                    [p,~,mu] = polyfit(A.t,vals(:,iTrig)',opol);
+                    fy = polyval(p,A.t',[],mu);
+                    valsDetrended(:,iTrig) = vals(:,iTrig) - fy;
+                end
+                vals = valsDetrended;
+            end
+            
+            groupData.amps(:,:,iSubject) = vals(tidx,:);
+            
+            groupData.ampsAtt(1,:,iSubject) = mean(vals(tidx,[1 3 5 7]),2); % attT1
+            groupData.ampsAtt(2,:,iSubject) = mean(vals(tidx,[2 4 6 8]),2); % attT2
+            
+            groupData.ampsPA(1,:,iSubject) = mean(vals(tidx,[1 2]),2); % pp
+            groupData.ampsPA(2,:,iSubject) = mean(vals(tidx,[5 6]),2); % pa
+            groupData.ampsPA(3,:,iSubject) = mean(vals(tidx,[3 4]),2); % ap
+            groupData.ampsPA(4,:,iSubject) = mean(vals(tidx,[7 8]),2); % aa
         case 'w'
             groupData.amps(:,:,iSubject) = A.wAmps(tidx,:);
             groupData.ampsAtt(:,:,iSubject) = A.wAmpsAtt(:,tidx);
@@ -246,8 +276,27 @@ for iSubject = 1:nSubjects
         case 'ts-single'
             groupData.tsAmps(:,:,:,iSubject) = squeeze(nanmean(A.trigMean,3));
             groupData.fAmps(:,:,:,iSubject) = squeeze(nanmean(A.amps,3));
-            groupData.tsAmpsS(:,:,:,iSubject) = A.trigMeanMean;
-            groupData.paauTS(:,:,:,:,iSubject) = A.paauT;
+            groupData.tsAmpsS(:,:,:,iSubject) = A.trigMeanMean; % average across channels
+            groupData.paauTS(:,:,:,:,iSubject) = A.paauT; % average across channels
+            
+            % Recalculate paauT for just the top channel
+            t1Tidx = A.t>=A.eventTimes(3) + A.targetWindow(1) & A.t<=A.eventTimes(3) + A.targetWindow(2);
+            t2Tidx = A.t>=A.eventTimes(4) + A.targetWindow(1) & A.t<=A.eventTimes(4) + A.targetWindow(2);
+            
+            % calculate pres/abs x att/unattend for each target
+            paauT1 = [];
+            paauT1(:,:,1,1) = [squeeze(A.trigMean(t1Tidx,1,:,1)) squeeze(A.trigMean(t1Tidx,1,:,5))]; % present/attended
+            paauT1(:,:,2,1) = [squeeze(A.trigMean(t1Tidx,1,:,2)) squeeze(A.trigMean(t1Tidx,1,:,6))]; % present/unattended
+            paauT1(:,:,3,1) = [squeeze(A.trigMean(t1Tidx,1,:,3)) squeeze(A.trigMean(t1Tidx,1,:,7))] ; % absent/attended
+            paauT1(:,:,4,1) = [squeeze(A.trigMean(t1Tidx,1,:,4)) squeeze(A.trigMean(t1Tidx,1,:,8))]; % absent/unattended
+            
+            paauT1(:,:,1,2) = [squeeze(A.trigMean(t2Tidx,1,:,2)) squeeze(A.trigMean(t2Tidx,1,:,4))];
+            paauT1(:,:,2,2) = [squeeze(A.trigMean(t2Tidx,1,:,1)) squeeze(A.trigMean(t2Tidx,1,:,3))];
+            paauT1(:,:,3,2) = [squeeze(A.trigMean(t2Tidx,1,:,6)) squeeze(A.trigMean(t2Tidx,1,:,8))];
+            paauT1(:,:,4,2) = [squeeze(A.trigMean(t2Tidx,1,:,5)) squeeze(A.trigMean(t2Tidx,1,:,7))];
+            
+            groupData.paauTS1(:,:,:,:,iSubject) = paauT1; % top channel
+
             % number of trials
             excludedTrials = squeeze(all(isnan(A.trigMeanMean),1));
             groupData.nTrialsPerCond(:,iSubject) = sum(1-excludedTrials);
@@ -429,25 +478,70 @@ end
 % plot(t,-log10(p))
 % plot(t, ones(size(t))*(-log10(.05)))
 
-%% Adjust t if neeeded
+%% Adjust A if neeeded
 A.t = A.t(tidx);
+A.exptType = exptType;
 
-%% Store some info
+%% Plot figs
+if plotFigs
+    switch measure
+        case 'ts----'
+            rd_plotTADetectDiscrimGroupTS(A, measure, groupMean, ...
+                saveFigs, figDir, figStr)
+        case {'w','h','itpc-single','w-single','ts'}
+            [groupData, A] = rd_plotTADetectDiscrimGroupAmps2(A, measure, subjects, ...
+                groupData, groupMean, groupSte, ...
+                saveFigs, figDir, figStr);
+        case {'tf','stf','stf-single'}
+            rd_plotTADetectDiscrimGroupTimeFreq(A, measure, ...
+                groupMean, saveFigs, figDir, figStr)
+            if strcmp(measure, 'stf-single') % extra plots
+                rd_plotTADetectDiscrimGroupTimeFreqSingle(A, measure, ...
+                    groupMean, saveFigs, figDir, figStr)
+            end
+        case 'w-single----'
+            rd_plotTADetectDiscrimGroupAmpsSingle(A, measure, subjects, ...
+                groupData, groupMean, groupSte, ...
+                saveFigs, figDir, figStr)
+        case 'ts-single'
+            groupDataB = rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, ...
+                groupData, groupMean, groupSte, ...
+                saveFigs, figDir, figStr, selectionStr);
+        case 'w-single-wb'
+            rd_plotTADetectDiscrimGroupAmpsWholebrain(A, measure, subjects, ...
+                groupData, groupMean, groupSte, ...
+                saveFigs, figDir, figStr)
+        case {'stf-single-wb','itpc-single-wb'}
+            rd_plotTADetectDiscrimGroupTimeFreqWholebrain(A, measure, subjects, ...
+                groupData, groupMean, groupSte, groupTStat, ...
+                saveFigs, figDir, figStr)
+        case 'pre-single-wb'
+            rd_plotTADetectDiscrimGroupPreWholebrain(A, measure, subjects, ...
+                groupData, groupMean, groupSte, groupTStat, ...
+                saveFigs, figDir, figStr)
+        otherwise
+            error('measure not recognized')
+    end
+end
+
+%% Store some common info
+info.exptType = exptType;
+info.subjects = subjects;
+info.measure = measure;
+info.normalizeOption = normalizeOption;
+info.selectionStr = selectionStr;
+info.analStr = analStr;
+info.nChannels = numel(A.channels);
+info.ssvefFreq = ssvefFreq;
+info.Fs = A.Fs;
+    
+%% Save group data mat file
 if saveGroupData
-    info.exptType = exptType;
-    info.subjects = subjects;
-    info.measure = measure;
-    info.normalizeOption = normalizeOption;
-    info.selectionStr = selectionStr;
-    info.analStr = analStr;
-    info.nChannels = numel(A.channels);
-    info.ssvefFreq = ssvefFreq;
     info.t = A.t;
-    info.Fs = A.Fs;
+    info.condNames = A.trigNames;
     info.eventTimes = A.eventTimes;
     info.stfFoi = A.stfFoi;
     info.stfToi = A.stfToi;
-    info.trigNames = A.trigNames;
     
     switch measure
         case {'ts','ts-single'}
@@ -459,51 +553,45 @@ if saveGroupData
     save(groupDataFile, 'info', 'data')
 end
 
+if saveGroupDataPAAUT
+    info.condNames = {'T1-P-att','T1-P-unatt','T1-A-att','T1-A-unatt',...
+                'T2-P-att','T2-P-unatt','T2-A-att','T2-A-unatt'};
+    
+    switch measure
+        case 'ts'
+            error('case ts not handled yet')
+        case 'ts-single'
+            info.t = A.targetWindow(1):A.targetWindow(2);
+            info.eventTimes = 0;
+            
+            data = [];
+            data(:,1:4,:) = groupDataB.paauTS(:,:,1,:);
+            data(:,5:8,:) = groupDataB.paauTS(:,:,2,:);
+        case 'stf-single'
+            info.t = round(A.stftwinvals*1000);
+            info.eventTimes = 0;
+            info.stfFoi = A.stfFoi;
+            
+            data = [];
+            data(:,:,1:4,:) = groupData.PAAUT(:,:,:,1,:);
+            data(:,:,5:8,:) = groupData.PAAUT(:,:,:,2,:);
+        otherwise
+            info.t = A.twin(1):A.twin(2);
+            info.eventTimes = 0;
+            
+            data = [];
+            data(:,1:4,:) = groupData.PAAUT(:,:,1,:);
+            data(:,5:8,:) = groupData.PAAUT(:,:,2,:);
+    end
+    
+    save(groupDataFilePAAUT, 'info', 'data')    
+end
+
 %% Save text file for R
 if writeTextFile
     rd_writeTAMEGDataFile(groupDataFile);
 end
 
-%% Plot figs
-if plotFigs
-switch measure
-    case 'ts'
-        rd_plotTADetectDiscrimGroupTS(A, measure, groupMean, ...
-            saveFigs, figDir, figStr)
-%     case {'w','h','w-single'}
-    case {'w','h','itpc-single','w-single'}
-        rd_plotTADetectDiscrimGroupAmps2(A, measure, subjects, ...
-            groupData, groupMean, groupSte, ...
-            saveFigs, figDir, figStr)
-    case {'tf','stf','stf-single'}
-        rd_plotTADetectDiscrimGroupTimeFreq(A, measure, ...
-            groupMean, saveFigs, figDir, figStr)
-        if strcmp(measure, 'stf-single') % extra plots
-            rd_plotTADetectDiscrimGroupTimeFreqSingle(A, measure, ...
-                groupMean, saveFigs, figDir, figStr)
-        end
-    case 'w-single----'
-        rd_plotTADetectDiscrimGroupAmpsSingle(A, measure, subjects, ...
-            groupData, groupMean, groupSte, ...
-            saveFigs, figDir, figStr)
-    case 'ts-single'
-        rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, ...
-            groupData, groupMean, groupSte, ...
-            saveFigs, figDir, figStr, selectionStr)
-    case 'w-single-wb'
-        rd_plotTADetectDiscrimGroupAmpsWholebrain(A, measure, subjects, ...
-            groupData, groupMean, groupSte, ...
-            saveFigs, figDir, figStr)
-    case {'stf-single-wb','itpc-single-wb'}
-        rd_plotTADetectDiscrimGroupTimeFreqWholebrain(A, measure, subjects, ...
-            groupData, groupMean, groupSte, groupTStat, ...
-            saveFigs, figDir, figStr)
-    case 'pre-single-wb'
-        rd_plotTADetectDiscrimGroupPreWholebrain(A, measure, subjects, ...
-            groupData, groupMean, groupSte, groupTStat, ...
-            saveFigs, figDir, figStr)
-    otherwise
-        error('measure not recognized')
+if writeTextFilePAAUT
+    rd_writeTAMEGDataFile(groupDataFilePAAUT);
 end
-end
-

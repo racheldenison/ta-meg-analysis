@@ -4,7 +4,7 @@ function rd_writeTAMEGDataFile(dataFileName)
 
 % print all the file names
 % dataDir = '/Local/Users/denison/Data/TADetectDiscrim/MEG/Group/mat/ebi_ft'
-% dir(sprintf('%s/gN16*.txt', dataDir))
+% dir(sprintf('%s/gN16*PAAUT*.txt', dataDir))
 
 %% Load data
 D = load(dataFileName);
@@ -14,23 +14,41 @@ data = D.data;
 subjects = info.subjects;
 measure = info.measure;
 eventTimes = info.eventTimes;
-trigNames = info.trigNames;
+try
+    condNames = info.condNames;
+catch
+    condNames = info.trigNames;
+end
 
 nSubjects = numel(subjects);
 
-%% Setup
-condIdx = 1:8; % do not include blank, so we have 2x2x2
-twin = eventTimes([2 5]); % [500 3100];
+if eventTimes==0
+    paaut = true;
+else
+    paaut = false;
+end
 
-trigStr = '';
+%% Setup
+if paaut
+    twin = [info.t(1) info.t(end)];
+else
+    twin = eventTimes([2 5]); % [500 3100];
+end
+
+condIdx = 1:8; % do not include blank, so we have 2x2x2
+condStr = '';
 for iCond = condIdx
-    trigStr = sprintf('%s %s', trigStr, trigNames{iCond});
+    condStr = sprintf('%s %s', condStr, condNames{iCond});
 end
 
 %% Determine time points
 switch measure
     case {'tf','stf','stf-single'}
-        t = round(info.stfToi*1000);
+        if paaut
+            t = info.t;
+        else
+            t = round(info.stfToi*1000);
+        end
     otherwise
         t = info.t;
 end
@@ -41,7 +59,9 @@ nT = numel(tidx);
 extraStr = '';
 switch measure
     case {'ts','ts-single'}
-        data = squeeze(data(:,1,:,:)); % top channel only
+        if ~paaut
+            data = squeeze(data(:,1,:,:)); % top channel only
+        end
     case {'tf','stf','stf-single'}
         f = info.stfFoi;
         fwin = [8 12]; % select alpha range
@@ -54,7 +74,7 @@ end
 textFileName = sprintf('%s_%s%d-%dms.txt', dataFileName(1:end-4), extraStr, twin);
 
 fileID = fopen(textFileName,'w');
-fprintf(fileID, '%s %s %s\n','subject','time', trigStr(2:end));
+fprintf(fileID, '%s %s %s\n','subject','time', condStr(2:end));
 
 for iSubject = 1:nSubjects
     subject = subjects{iSubject};

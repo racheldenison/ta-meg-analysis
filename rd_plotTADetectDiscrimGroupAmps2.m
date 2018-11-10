@@ -1,4 +1,4 @@
-function rd_plotTADetectDiscrimGroupAmps2(A, measure, subjects, groupData, groupMean, groupSte, saveFigs, figDir, figStr)
+function [groupData, A] = rd_plotTADetectDiscrimGroupAmps2(A, measure, subjects, groupData, groupMean, groupSte, saveFigs, figDir, figStr)
 
 %% args
 if nargin<7
@@ -48,7 +48,11 @@ switch measure
         labelShort = 'itpc';
     otherwise
         label = 'amplitude';
-        labelShort = 'amp';
+        if strfind(measure,'w')
+            labelShort = 'wavelet amp';
+        else
+            labelShort = 'amp';
+        end
 end
         
 switch measure
@@ -86,6 +90,10 @@ switch measure
         ylims = [0 1];
         diffYLims = [-.2 .2];
         diffYLimsGroup = [-.1 .1];
+    case 'ts'
+        ylims = [-500 500];
+        diffYLims = [-300 300];
+        diffYLimsGroup = [-150 150];
     otherwise
         error('measure not recognized')
 end
@@ -104,6 +112,18 @@ for iF = 1:nFields
     fieldName = fieldNames{iF};
     figNamesIndiv{iF} = sprintf('%s%s%sIndiv', measure, upper(fieldName(1)), fieldName(2:end));
     figNamesGroup{iF} = sprintf('%s%s%sGroup', measure, upper(fieldName(1)), fieldName(2:end));
+end
+
+switch A.exptType
+    case 'TADetectDiscrim'
+        PAAUNames = {'P-att','P-unatt','A-att','A-unatt'};
+        PresAbsNames = {'present','absent'};
+    case 'TAContrast'
+        PAAUNames = {'D-att','D-unatt','I-att','I-unatt'};
+        PresAbsNames = {'decrement','increment'};
+    case 'TANoise'
+        PAAUNames = {'V-att','V-unatt','H-att','H-unatt'};
+        PresAbsNames = {'vertical','horizontal'};
 end
 
 %% calculate attT2-T1
@@ -380,6 +400,7 @@ end
 %% PAAU
 %% calculate PAAU
 twin = [-600 600];
+A.twin = twin; % store
 t1Tidx = find(t==eventTimes(3)+twin(1)):find(t==eventTimes(3)+twin(2));
 t2Tidx = find(t==eventTimes(4)+twin(1)):find(t==eventTimes(4)+twin(2));
 twindow = twin(1):twin(end);
@@ -500,14 +521,14 @@ for iT = 1:2
         set(p1, 'Color', colors(iPAAU,:), 'LineWidth', 4)
     end
     if iT==2
-        legend('P-att','P-unatt','A-att','A-unatt')
+        legend(PAAUNames)
     end
     for iPAAU = 1:4
         shadedErrorBar(twin(1):twin(end), groupMean.PAAUT(:,iPAAU,iT), groupSte.PAAUT(:,iPAAU,iT), {'color',colors(iPAAU,:),'LineWidth',4}, 1)
     end
     vline(0,'k');
     xlabel('time (ms)')
-    ylabel(sprintf('wavelet %s',labelShort))
+    ylabel(sprintf('%s',labelShort))
     title(sprintf('T%d',iT))
     
     colors = [trigBlue; trigRed];
@@ -525,7 +546,7 @@ for iT = 1:2
     end
     vline(0,'k');
     xlabel('time (ms)')
-    ylabel(sprintf('wavelet %s',labelShort))
+    ylabel(sprintf('%s',labelShort))
     title(sprintf('T%d',iT))
     
     colors = trigColorsPA4([1 4],:);
@@ -536,14 +557,14 @@ for iT = 1:2
         set(p1, 'Color', colors(iPA,:), 'LineWidth', 4)
     end
     if iT==2
-        legend('present','absent')
+        legend(PresAbsNames)
     end
     for iPA = 1:2
         shadedErrorBar(twin(1):twin(end), groupMean.PAT(:,iPA,iT), groupSte.PAT(:,iPA,iT), {'color',colors(iPA,:),'LineWidth',4}, 1)
     end
     vline(0,'k');
     xlabel('time (ms)')
-    ylabel(sprintf('wavelet %s',labelShort))
+    ylabel(sprintf('%s',labelShort))
     title(sprintf('T%d',iT))
 end
 rd_supertitle2(figTitle)
@@ -558,13 +579,13 @@ for iPAAU = 1:4
     p1 = plot(twin(1):twin(end), groupMean.PAAU(:,iPAAU));
     set(p1, 'Color', colors(iPAAU,:), 'LineWidth', 4)
 end
-legend('P-att','P-unatt','A-att','A-unatt')
+legend(PAAUNames)
 for iPAAU = 1:4
     shadedErrorBar(twin(1):twin(end), groupMean.PAAU(:,iPAAU), groupSte.PAAU(:,iPAAU), {'color',colors(iPAAU,:),'LineWidth',4}, 1)
 end
 vline(0,'k');
 xlabel('time (ms)')
-ylabel(sprintf('wavelet %s',labelShort))
+ylabel(sprintf('%s',labelShort))
 title('T1 & T2')
 
 colors = [trigBlue; trigRed];
@@ -580,7 +601,7 @@ for iAU = 1:2
 end
 vline(0,'k');
 xlabel('time (ms)')
-ylabel(sprintf('wavelet %s',labelShort))
+ylabel(sprintf('%s',labelShort))
 title('T1 & T2')
 
 colors = trigColorsPA4([1 4],:);
@@ -590,13 +611,13 @@ for iPA = 1:2
     p1 = plot(twin(1):twin(end), groupMean.PA(:,iPA));
     set(p1, 'Color', colors(iPA,:), 'LineWidth', 4)
 end
-legend('present','absent')
+legend(PresAbsNames)
 for iPA = 1:2
     shadedErrorBar(twin(1):twin(end), groupMean.PA(:,iPA), groupSte.PA(:,iPA), {'color',colors(iPA,:),'LineWidth',4}, 1)
 end
 vline(0,'k');
 xlabel('time (ms)')
-ylabel(sprintf('wavelet %s',labelShort))
+ylabel(sprintf('%s',labelShort))
 title('T1 & T2')
 
 rd_supertitle2(figTitle)
@@ -610,7 +631,7 @@ for iEv = 1:numel(eventTimes)
 end
 legend('all trials')
 xlabel('time (ms)')
-ylabel(sprintf('wavelet %s',labelShort))
+ylabel(sprintf('%s',labelShort))
 title(figTitle)
 
 %% save
@@ -667,7 +688,7 @@ plot(twindow,a2corr,'r')
 plot(twindow([1 end]),[0 0],'k:')
 vline(0,'color','k','LineStyle',':');
 xlabel('time (ms)')
-ylabel('correlation between present att-unatt and absent att-unatt')
+ylabel(sprintf('correlation between %s att-unatt and %s att-unatt', PresAbsNames{1}, PresAbsNames{2}))
 legend('T1','T2')
 
 % figure

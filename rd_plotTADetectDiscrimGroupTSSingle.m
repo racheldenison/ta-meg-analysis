@@ -1,4 +1,4 @@
-function rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, groupData, groupMean, groupSte, saveFigs, figDir, figStr, selectionStr)
+function groupDataB = rd_plotTADetectDiscrimGroupTSSingle(A, measure, subjects, groupData, groupMean, groupSte, saveFigs, figDir, figStr, selectionStr)
 
 %% args
 if nargin<7
