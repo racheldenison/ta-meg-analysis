@@ -2,7 +2,7 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 %% Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'itpc-single'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
+    measure = 'stf-single'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
     selectionStr = 'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
@@ -263,10 +263,10 @@ for iSubject = 1:nSubjects
             groupData.ampsAtt(:,:,iSubject) = A.wITPCAtt(tidx,:)';
             groupData.ampsPA(:,:,iSubject) = A.wITPCPA(tidx,:)';
         case 'stf-single'
-            groupData.amps(:,:,:,iSubject) = A.stfAmps;
-            groupData.ampsAtt(:,:,:,iSubject) = A.stfAmpsAtt;
-            groupData.ampsPA(:,:,:,iSubject) = A.stfAmpsPA;
-            groupData.paDiff(:,:,:,iSubject) = A.stfPADiff;
+            groupData.amps(:,:,:,iSubject) = A.stfAmps(:,tftidx,:);
+            groupData.ampsAtt(:,:,:,iSubject) = A.stfAmpsAtt(:,tftidx,:);
+            groupData.ampsPA(:,:,:,iSubject) = A.stfAmpsPA(:,tftidx,:);
+            groupData.paDiff(:,:,:,iSubject) = A.stfPADiff(:,tftidx,:);
             groupData.PAAUT(:,:,:,:,iSubject) = A.stfPAAUT;
             groupData.PAT(:,:,:,:,iSubject) = A.stfPAT;
             groupData.AUT(:,:,:,:,iSubject) = A.stfAUT;
