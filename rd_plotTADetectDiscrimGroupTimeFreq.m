@@ -68,6 +68,15 @@ switch measure
         error('measure not recognized')
 end
 
+switch A.exptType
+    case 'TADetectDiscrim'
+        PADiffNames = 'P-A';
+    case 'TANoise'
+        PADiffNames = 'V-H';
+    otherwise
+        error('exptType not recognized')
+end
+
 %% fig 1
 fH = [];
 fH(1) = figure;
@@ -131,19 +140,19 @@ imagesc(t1PADiff,diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
-title('T1 P-A')
+title(sprintf('T1 %s', PADiffNames))
 subplot(2,4,6)
 imagesc(t2PADiff,diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
-title('T2 P-A')
+title(sprintf('T2 %s', PADiffNames))
 subplot(2,4,7)
 imagesc(t2PADiff - t1PADiff,diffClims)
 rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
 xlabel('time (s)')
 ylabel('frequency (Hz)')
-title('T2 vs. T1 P-A')
+title(sprintf('T2 vs. T1 %s', PADiffNames))
 colormap(cmap)
 rd_supertitle(figTitle);
 rd_raiseAxis(gca);

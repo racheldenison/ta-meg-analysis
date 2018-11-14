@@ -3,7 +3,7 @@
 % works with SSVEF2, 3, 5, 6, dva (just change number in function call)
 
 %% setup
-exptType = 'TADetectDiscrim';
+exptType = 'TANoise';
 switch exptType
     case 'TADetectDiscrim'
 %         exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
@@ -19,7 +19,7 @@ switch exptType
     case 'TANoise'
         exptDir = '/Local/Users/denison/Data/TANoise/MEG';
         analStr = 'ebi'; % '', 'ebi', etc.
-        ssvefFreqs = 20;
+        ssvefFreqs = 20; %20;
         
     otherwise
         error('exptType not recognized')

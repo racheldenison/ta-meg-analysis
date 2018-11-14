@@ -15,7 +15,7 @@ trialsOption = 'singleTrials'; % 'singleTrials','trialAve'
 alphaFreqIdx = 9:12;
 
 analStr = 'ebi'; % '', 'ebi', etc.
-ssvefFreq = 20;
+ssvefFreq = 20; % 20
 nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
 % iqrThresh = []; % 10, or [] for nTopChannels
 % weightChannels = 0; % weight channels according to average SSVEF amp - only works for top channels
@@ -286,7 +286,7 @@ switch trialsOption
         nBoot = 2;
         
         % choose measure
-        m = 'wSpecAtt'; % 'wSpecAtt', 'wSpecPA', 'wSpecAll'
+        m = 'wSpecAll'; % 'wSpecAtt', 'wSpecPA', 'wSpecAll'
         switch m
             case 'wSpecAtt'
                 condNames = attNames; 

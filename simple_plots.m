@@ -35,12 +35,12 @@ filtTau = samplingInterval/tau;
 chIdx = 1;
 
 for iCond = 1:8
-    y = squeeze(trigMean(:,1,:,iCond));
+    y = squeeze(trigMean(:,chIdx,:,iCond));
     idx = isnan(y(1,:));
     y(:,idx) = [];
     yfilt = filter([1-filtTau filtTau-1],[1 filtTau-1], y);
-%     yMean(:,iCond) = mean(yfilt,2);
-    yMean(:,iCond) = mean(y,2);
+    yMean(:,iCond) = mean(yfilt,2);
+%     yMean(:,iCond) = mean(y,2);
 end
 
 figure('Position',[200 50 1000 250])

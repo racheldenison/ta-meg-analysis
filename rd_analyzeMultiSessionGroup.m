@@ -40,6 +40,10 @@ for iSubject = 1:nSubjects
     itpc(:,:,iSubject) = data(iSubject).itpc(tidx,:);
 end
 
+for iSubject = 1:nSubjects
+    peaks(iSubject) = data(iSubject).peaks;
+end
+
 %% save analysis
 if saveAnalysis
     save(peaksFileName, 'exptDir', 'sessionDirsAll', 'subjects', 'peaks')

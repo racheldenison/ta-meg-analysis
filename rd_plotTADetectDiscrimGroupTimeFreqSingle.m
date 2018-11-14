@@ -36,6 +36,17 @@ switch measure
         error('measure not recognized')
 end
 
+switch A.exptType
+    case 'TADetectDiscrim'
+        PresAbsNames = {'present','absent'};
+        PresAbsNamesShort = {'P','A'};
+    case 'TANoise'
+        PresAbsNames = {'vertical','horizontal'};
+        PresAbsNamesShort = {'V','H'};
+    otherwise
+        error('exptType not recognized')
+end
+
 %% 9 squares, attended-unattended
 fH = [];
 fH(1) = figure;
@@ -43,14 +54,14 @@ set(gcf,'Position',tf9SquareFigPos)
 % T1/T2 x pres/abs
 subplot(3,3,1)
 imagesc(groupMean.PAAUT(:,:,1,1)-groupMean.PAAUT(:,:,2,1)) % T1-pres-att vs. unatt
-ylabel('present')
+ylabel(PresAbsNames{1})
 title('T1')
 subplot(3,3,2)
 imagesc(groupMean.PAAUT(:,:,1,2)-groupMean.PAAUT(:,:,2,2)) % T2-pres-att vs. unatt
 title('T2')
 subplot(3,3,4)
 imagesc(groupMean.PAAUT(:,:,3,1)-groupMean.PAAUT(:,:,4,1)) % T1-abs-att vs. unatt
-ylabel('absent')
+ylabel(PresAbsNames{2})
 subplot(3,3,5)
 imagesc(groupMean.PAAUT(:,:,3,2)-groupMean.PAAUT(:,:,4,2)) % T2-abs-att vs. unatt
 % ave(T1,T2)
@@ -62,7 +73,7 @@ imagesc(groupMean.PAAU(:,:,3)-groupMean.PAAU(:,:,4)) % abs-att vs. abs-unatt
 % ave(P,A)
 subplot(3,3,7)
 imagesc(groupMean.AUT(:,:,1,1)-groupMean.AUT(:,:,2,1)) % T1-att vs. T1-unatt 
-ylabel('ave(P,A)')
+ylabel(sprintf('ave(%s,%s)',PresAbsNamesShort{1},PresAbsNamesShort{2}))
 subplot(3,3,8)
 imagesc(groupMean.AUT(:,:,1,2)-groupMean.AUT(:,:,2,2)) % T2-att vs. T2-unatt 
 % ave(all)
@@ -123,7 +134,7 @@ for iAx = 1:numel(aH)
     set(gca,'clim',diffClims)
 end
 colormap(cmap)
-rd_supertitle2('present vs. absent')
+rd_supertitle2(sprintf('%s vs. %s', PresAbsNames{1},PresAbsNames{2}))
 
 %% 6 squares, present
 fH(3) = figure;
@@ -158,7 +169,7 @@ for iAx = 1:numel(aH)
     set(gca,'clim',clims)
 end
 colormap(cmap)
-rd_supertitle2('target present')
+rd_supertitle2(sprintf('target %s', PresAbsNames{1}))
 
 %% 6 squares, absent
 fH(4) = figure;
@@ -193,7 +204,7 @@ for iAx = 1:numel(aH)
     set(gca,'clim',clims)
 end
 colormap(cmap)
-rd_supertitle2('target absent')
+rd_supertitle2(sprintf('target %s', PresAbsNames{2}))
 
 %% save figs
 if saveFigs

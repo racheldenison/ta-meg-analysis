@@ -1,7 +1,10 @@
 % rd_plotPeaks.m
 
-load ~/Downloads/gN7_itpcAtt.mat
-load ~/Downloads/gN7_peaks.mat
+dataDir = '/Local/Users/denison/Data/TANoise/MEG/Group/mat';
+% dataDir = '~/Downloads';
+
+load(sprintf('%s/gN7_itpcAtt_15Hz.mat', dataDir))
+load(sprintf('%s/gN7_peaks_15Hz.mat', dataDir))
 
 t = t(1:6701);
 
@@ -12,8 +15,9 @@ peakWin = 100;
 
 nSubjects = numel(subjects);
 
-subjectFactors = [1 -1 -1 1 0 1 -1]; % 1 = pos, -1 = neg, 0 = none
+% subjectFactors = [1 -1 -1 1 0 1 -1]; % 1 = pos, -1 = neg, 0 = none
 % subjectFactors = [1 0 0 1 1 1 1];
+subjectFactors = [1 0 0 1 0 1 1]; % 15 Hz
 
 %% define data
 data = itpc;
@@ -78,8 +82,10 @@ for iM = 1:nM
     subplot(nM,1,iM)
     hold on
     for iSubject = 1:nSubjects
-        plot(peaks(iSubject).(m),[iSubject iSubject],'Color',colors(iSubject,:))
-        plot(peaks(iSubject).(m),[iSubject iSubject],'.','MarkerSize',30,'Color',colors(iSubject,:))
+        if ~isempty(peaks(iSubject).(m))
+            plot(peaks(iSubject).(m),[iSubject iSubject],'Color',colors(iSubject,:))
+            plot(peaks(iSubject).(m),[iSubject iSubject],'.','MarkerSize',30,'Color',colors(iSubject,:))
+        end
     end
     xlim(tsWin)
     xlabel('time (ms)')
