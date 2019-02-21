@@ -5,11 +5,12 @@
 
 
 %% load & read dataset 
-exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+exptDir = '/Local/Users/denison/Data/TA2/MEG';
+% exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R0817_20180419';
-filename = 'R0817_TANoise_4.19.18_noprobe_ebi';
+sessionDir = 'R1452_20181119';
+filename = 'R1452_TA2_11.19.18_ebi';
 
 dataDir = sprintf('%s/%s/', exptDir, sessionDir);
 prepDir = sprintf('%s/prep/', dataDir);
@@ -27,9 +28,9 @@ hdr = ft_read_header(sqdfile);
 
 cfg                     = [];
 cfg.dataset             = sqdfile;
-cfg.trialdef.prestim    = 0; %0.5; % sec
-cfg.trialdef.poststim   = 2.3; %3.1;
-cfg.trialdef.trig       = [168,167]; %[161:164,167];
+cfg.trialdef.prestim    = 0.2; %0; %0.5; % sec
+cfg.trialdef.poststim   = 2.3; %2.3; %3.1;
+cfg.trialdef.trig       = [168,167]; %[168,167]; %[161:164,167]; %168 = precue, 167=blank
 threshold = 2.5;
 [trl,Events]            = mytrialfun_all(cfg,threshold,[]);
 

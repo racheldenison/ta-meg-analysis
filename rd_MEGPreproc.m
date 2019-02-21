@@ -10,6 +10,7 @@ function preprocFileName = rd_MEGPreproc(filename, figDir, badChannels)
 megChannels = 0:156;
 refChannels = 157:159;
 triggerChannels = 160:167;
+eyeChannels = 176:177;
 photodiodeChannel = 191;
 
 % badChannels = [];
@@ -54,19 +55,24 @@ t = 0:1/Fs:size(data,1)/Fs-1/Fs;
 % add 1 to adjust for zero-indexing
 refData = data(:,refChannels+1);
 trigData = data(:,triggerChannels+1);
+eyeData = data(:,eyeChannels+1);
 pdData = data(:,photodiodeChannel+1);
 
 %% Look at special channels
 if plotFigs
     figure
-    subplot(3,1,1)
+    subplot(4,1,1)
     plot(t,refData)
     title(['reference channels' num2str(refChannels)])
-    subplot(3,1,2)
+    subplot(4,1,2)
     plot(t,trigData)
     legend(num2str(triggerChannels'))
     title(['trigger channels' num2str(triggerChannels)])
-    subplot(3,1,3)
+    subplot(4,1,3)
+    plot(t,eyeData)
+    title(['eye channels' num2str(eyeChannels)])
+    xlabel('time (s)')
+    subplot(4,1,4)
     plot(t,pdData)
     title(['photodiode channel' num2str(photodiodeChannel)])
     xlabel('time (s)')

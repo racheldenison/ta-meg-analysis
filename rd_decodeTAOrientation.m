@@ -3,6 +3,7 @@
 %% load data
 load('/Local/Users/denison/Data/TANoise/MEG/R1103_20180213/mat/analysis_singleTrials_R1103_TANoise_2.13.18_ebi_ft_topChannels5_allTrials_20Hz.mat')
 
+
 %% setup
 t = A.t;
 trigNames = A.trigNames;
@@ -105,34 +106,80 @@ for iT = 1:2
     
 end
     
-%% classifier
-times = 195:205;
+%% classifier 
+classifierType = 'libsvm';
+
+% times = 195:205;
 % times = 150:10:350;
-% times = 1:size(classData{1,1},1);
+times = 1:size(classData{1,1},1);
 nTime = numel(times);
 
-
-classAcc = [];
-iT = 1; iAtt = 1;
 fprintf('\nClassifying ... start time: %s\n', datestr(now, 13))
-for iTime = 1:nTime
-    time = times(iTime);
-    if mod(iTime,10)==0
-        fprintf('%d, %s\n',iTime, datestr(now, 13))
-    else
-        fprintf('.')
+classAcc = [];
+for iT = 1:2
+    for iAtt = 1:2
+        acc = [];
+        for iTime = 1:nTime
+            time = times(iTime);
+            if mod(iTime,10)==0
+                fprintf('%d, %s\n',iTime, datestr(now, 13))
+            else
+                fprintf('.')
+            end
+            X = squeeze(classData{iAtt,iT}(time,:,:))';
+            Y = classLabels{iAtt,iT};
+            
+            % remove nan
+            idx = isnan(X(:,1));
+            X(idx,:) = [];
+            Y(idx) = [];
+            
+            % scale data
+            Xs = zscore(X);
+            
+            % fit and cross validate classifier
+            switch classifierType
+                case 'matlab'
+                    svm = fitcsvm(Xs,Y);
+                    cv = crossval(svm);
+                    acc(iTime) = 1 - kfoldLoss(cv);
+                    
+                case 'libsvm'
+                    % svm = svmtrain(Y, Xs, '-s 0 -t 0 -c 1');
+                    acc(iTime) = svmtrain(Y, Xs, '-s 0 -t 0 -c 1 -v 5'); % 5-fold
+                otherwise
+                    error('classifierType not found')
+            end
+        end
+        
+        classAcc(:,iAtt,iT) = acc;
     end
-    X = squeeze(classData{iAtt,iT}(time,:,:))';
-    Y = classLabels{iAtt,iT};
-    
-    % remove nan
-    idx = isnan(X(:,1));
-    X(idx,:) = [];
-    Y(idx) = [];
-    
-    % fit and cross validate classifier
-    svm = fitcsvm(X,Y);
-    cv = crossval(svm);
-    classAcc(iTime) = 1 - kfoldLoss(cv);
 end
+
+% plot classification accuracy
+xlims = twin-twin(1);
+figure
+for iT = 1:2
+    subplot(2,1,iT)
+    hold on
+    plot(times, classAcc(:,:,iT),'LineWidth',1)
+    plot(xlims,[50 50],'k')
+    xlim(xlims)
+    xlabel('time (ms)')
+    ylabel('classification accuracy (%)')
+    title(sprintf('T%d',iT))
+    legend('precue T1','precue T2')
+end
+
+figure
+hold on
+plot(squeeze(mean(classAcc,2)))
+plot(xlims,[50 50],'k')
+xlim(xlims)
+xlabel('time (ms)')
+ylabel('classification accuracy (%)')
+legend('T1','T2')
+
+
+
     

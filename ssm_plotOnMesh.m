@@ -1,6 +1,6 @@
-function fH = ssm_plotOnMesh(sensor_data, title_txt, figure_num, data_hdr, plotType, highlightChannels)
+function fH = ssm_plotOnMesh(sensor_data, title_txt, figure_num, data_hdr, plotType, highlightChannels, channelVis)
 %Plot a surface map of the MEG sensor data
-% fH = ssm_plotOnMesh(sensor_data, [title_txt], [figure_num], meg_files, [plotType], [highlightChannels])
+% fH = ssm_plotOnMesh(sensor_data, [title_txt], [figure_num], meg_files, [plotType], [highlightChannels], [channelVis])
 %
 % Inputs
 %   sensor_data: 1x157 vector of sensor data (if longer than 157, then
@@ -19,6 +19,7 @@ function fH = ssm_plotOnMesh(sensor_data, title_txt, figure_num, data_hdr, plotT
 % check inputs
 if ~exist('plotType', 'var') || isempty(plotType), plotType = 'both'; end
 if ~exist('highlightChannels', 'var') || isempty(highlightChannels), highlightChannels = []; end
+if ~exist('channelVis','var') || isempty(channelVis), channelVis = 'off'; end
 
 % check length of sensor data
 if length(sensor_data) > 157, sensor_data = sensor_data(1:157); end
@@ -92,8 +93,9 @@ switch lower(plotType)
         cfg.style='straight';
 %         cfg.style='blank';
 
+        cfg.electrodes = channelVis;
 %         cfg.electrodes ='numbers';
-        cfg.electrodes = 'off';
+%         cfg.electrodes = 'off';
 %         cfg.electrodes  = 'on';
         
         if ~isempty(highlightChannels)

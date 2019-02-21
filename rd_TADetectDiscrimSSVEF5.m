@@ -33,6 +33,15 @@ if nargin==0 || ~exist('exptDir','var')
             trialSelection = 'all'; % 'all','validCorrect', etc
             respTargetSelection = ''; % '','T1Resp','T2Resp'
             
+        case 'TA2'
+            exptDir = '/Local/Users/denison/Data/TA2/MEG';
+            sessionDir = 'R1187_20181119';
+            fileBase = 'R1187_TA2_11.19.18';
+            analStr = 'ebi'; % '', 'ebi', etc.
+            ssvefFreq = 20;
+            trialSelection = 'all'; % 'all','validCorrect', etc
+            respTargetSelection = ''; % '','T1Resp','T2Resp'
+            
         otherwise
             error('exptType not recognized')
     end

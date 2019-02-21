@@ -2,7 +2,7 @@ function rd_TADetectDiscrimSSVEF1(sessionDir)
 % rd_TADetectDiscrimSSVEF1.m
 
 %% Setup
-exptType = 'TANoise'; % 'TADetectDiscrim','TAContrast','TANoise';
+exptType = 'TANoise'; % 'TADetectDiscrim','TAContrast','TANoise','TA2'
 
 switch exptType
     case 'TADetectDiscrim'
@@ -13,9 +13,12 @@ switch exptType
         exptShortName = 'TACont';
     case 'TANoise'
         exptDir = '/Local/Users/denison/Data/TANoise/MEG';
-        exptShortName = 'TANoise';       
+        exptShortName = 'TANoise';  
+    case 'TA2'
+        exptDir = '/Local/Users/denison/Data/TA2/MEG';
+        exptShortName = 'TA2';          
 end
-sessionDir = 'R0817_20180419';
+% sessionDir = 'R0817_20171212';
 fileBase = sessionDirToFileBase(sessionDir, exptShortName);
 analStr = 'ebi'; % '', 'eti', 'ebi', etc.
 excludeTrialsFt = 1;
@@ -89,6 +92,17 @@ switch exptType
         ssvefFreqs = 20;
         clims = [0 70];
 
+    case 'TA2'
+        trigChan = 166:167; % blank and pre-cue
+        tstart = -500; % ms
+        tstop = 2800; % ms
+
+        eventTimes = [0 1000 1300 2300];
+        
+        targetCondNames = {'target pedestal T1','target pedestal T2'};
+        t1Conds = {1, 2}; % vertical, horizontal
+        t2Conds = {1, 2}; % vertical, horizontal
+        
     otherwise
         error('exptType not found')
 end
@@ -102,7 +116,12 @@ switch exptType
             'attT1-T1d-T2i','attT2-T1d-T2i','attT1-T1i-T2i','attT2-T1i-T2i','blank'};        
     case 'TANoise'
         trigNames = {'attT1-T1v-T2v','attT2-T1v-T2v','attT1-T1h-T2v','attT2-T1h-T2v',...
-            'attT1-T1v-T2h','attT2-T1v-T2h','attT1-T1h-T2h','attT2-T1h-T2h','blank'};           
+            'attT1-T1v-T2h','attT2-T1v-T2h','attT1-T1h-T2h','attT2-T1h-T2h','blank'}; 
+    case 'TA2'
+        trigNames = {'attT1-T1v-T2v','attT2-T1v-T2v','neutral-T1v-T2v',...
+            'attT1-T1h-T2v','attT2-T1h-T2v','neutral-T1h-T2v',...
+            'attT1-T1v-T2h','attT2-T1v-T2h','neutral-T1v-T2h',...
+            'attT1-T1h-T2h','attT2-T1h-T2h','neutral-T1h-T2h','blank'}; 
     otherwise
         error('exptType not found')
 end      
@@ -148,7 +167,7 @@ end
 %% Find saturated channels and trials in raw data
 if excludeSaturatedEpochs
     saturatedChannelEpochs = rd_findSaturatedChannelEpochs(trigData);
-    if size(saturatedChannelEpochs, 2)~=41*12 %41*14
+    if size(saturatedChannelEpochs, 2)~=41*12 %41*12 (TANoise) %41*14 %43*12 (TA2)
         fprintf('\nMake sure we are taking the right trials!\n')
         saturatedChannelEpochs = saturatedChannelEpochs(:,42:end);
         fprintf('\nNew size: [%d %d]\n\n', size(saturatedChannelEpochs))
@@ -195,7 +214,11 @@ t1CondIdx = strcmp(behav.responseData_labels, targetCondNames{1});
 t2CondIdx = strcmp(behav.responseData_labels, targetCondNames{2});
 
 blankCond = 1;
-cueConds = {[2 3], [4 5]}; % cue T1, cue T2
+if numel(unique(behav.responseData_all(:,cueCondIdx)))==7
+    cueConds = {[2 3], [4 5], [6 7]}; % cue T1, cue T2, neutral
+else
+    cueConds = {[2 3], [4 5]}; % cue T1, cue T2
+end
 
 condData = [];
 for iCue = 1:numel(cueConds)
@@ -218,10 +241,10 @@ for iCue = 1:numel(cueConds)
             end
             
             w = sum([wCue wT1 wT2],2)==3;
-            condData(:,:,:,iCue,iT1,iT2) = trigData(:,:,w);
+%             condData(:,:,:,iCue,iT1,iT2) = trigData(:,:,w);
             % if unequal numbers of trials per condition
-%             condData{iCue,iT1,iT2} = trigData(:,:,w);
-%             condDataMean(:,:,iCue,iT1,iT2) = nanmean(trigData(:,:,w),3);
+            condData{iCue,iT1,iT2} = trigData(:,:,w);
+            condDataMean(:,:,iCue,iT1,iT2) = nanmean(trigData(:,:,w),3);
         end
     end
 end
@@ -230,13 +253,33 @@ wBlank = behav.responseData_all(:,cueCondIdx) == blankCond;
 blankData = trigData(:,:,wBlank);
 
 % mean across trials
-condDataMean = squeeze(nanmean(condData,3));
+% condDataMean = squeeze(nanmean(condData,3));
 blankDataMean = squeeze(nanmean(blankData,3));
 
 % let trigMean have the conditions 1-9 in the third dimension
 trigMean = condDataMean(:,:,:);
 trigMean(:,:,end+1) = blankDataMean;
 nTrigs = size(trigMean,3);
+
+%% Save condData and trigMean (optional)
+if saveData
+    D.exptType = exptType;
+    D.fileBase = fileBase;
+    D.t = t;
+    D.Fs = Fs;
+    D.eventTimes = eventTimes;
+    D.condDataDims = {'cue','T1','T2'};
+    D.trigNames = trigNames;
+    D.condData = condData;
+    D.trigMean = trigMean;
+    
+    condDataFileName = sprintf('%s/%s_condData.mat', matDir, fileBase);
+    
+    save(condDataFileName, 'D', '-v7.3');    
+end
+
+% return
+% error('did not return!')
 
 %% FFT on mean time series for each trigger type
 % do the fft for each channel
