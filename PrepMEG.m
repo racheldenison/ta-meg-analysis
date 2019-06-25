@@ -16,8 +16,8 @@ exptDir = pathToTA2('MEG');
 % exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R1507_20190621';
-filename = 'R1507_TA2_6.21.19_ebi';
+sessionDir = 'R0817_20190625';
+filename = 'R0817_TA2_6.25.19_ebi';
 
 dataDir = sprintf('%s/%s/', exptDir, sessionDir);
 prepDir = sprintf('%s/prep/', dataDir);

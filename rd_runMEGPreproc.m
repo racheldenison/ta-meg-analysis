@@ -6,8 +6,8 @@
 % exptDir = '/Local/Users/denison/Data/TA2/MEG';
 exptDir = pathToTA2('MEG');
 
-sessionDir = 'R1507_20190621';
-fileBase = 'R1507_TA2_6.21.19';
+sessionDir = 'R0817_20190625';
+fileBase = 'R0817_TA2_6.25.19';
 
 renameFiles = false;
 runsToRename = 1:12;
@@ -87,4 +87,10 @@ outfile = rd_combineSqd(preprocDir, outFileName, analStr)
 
 %% view triggers for the combined file
 rd_checkTriggers(outfile);
+
+%% move original run files back to the session directory
+for iRun = 1:nRuns
+    movefile(sprintf('%s/%s', preprocDir, runFiles(iRun).name), dataDir)
+end
+
 
