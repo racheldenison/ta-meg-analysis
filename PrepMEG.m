@@ -11,7 +11,8 @@ eyeChannels = 177:178;
 photodiodeChannel = 192;
 
 %% load & read dataset 
-exptDir = '/Local/Users/denison/Data/TA2/MEG';
+exptDir = pathToTA2('MEG');
+% exptDir = '/Local/Users/denison/Data/TA2/MEG';
 % exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';

@@ -3,7 +3,9 @@
 %% setup
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 % exptDir = '/Local/Users/denison/Data/TANoise/MEG';
-exptDir = '/Local/Users/denison/Data/TA2/MEG';
+% exptDir = '/Local/Users/denison/Data/TA2/MEG';
+exptDir = pathToTA2('MEG');
+
 sessionDir = 'R1507_20190621';
 fileBase = 'R1507_TA2_6.21.19';
 
