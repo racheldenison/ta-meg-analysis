@@ -4,11 +4,13 @@
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
 % exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 exptDir = '/Local/Users/denison/Data/TA2/MEG';
-sessionDir = 'R1452_20181119';
-fileBase = 'R1452_TA2_11.19.18';
+sessionDir = 'R1507_20190621';
+fileBase = 'R1507_TA2_6.21.19';
 
 renameFiles = false;
 runsToRename = 1:12;
+
+segmentDataFile = false;
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc', dataDir);
@@ -29,15 +31,20 @@ end
 %% segment only if needed
 runFiles = dir(sprintf('%s/%s*.sqd', preprocDir, fileBase));
 if isempty(runFiles)
-    %% segment original sqd into runs
-    dataFile = sprintf('%s/%s.sqd', dataDir, fileBase);
-    
-    % check settings in rd_segmentSqd before running!
-    nRuns = rd_segmentSqd(dataFile);
-    runs = 1:nRuns
+    if segmentDataFile
+        %% segment original sqd into runs
+        dataFile = sprintf('%s/%s.sqd', dataDir, fileBase);
+        
+        % check settings in rd_segmentSqd before running!
+        nRuns = rd_segmentSqd(dataFile);
+        runs = 1:nRuns
+    end
     
     %% move run files into preproc directory
     runFiles = dir(sprintf('%s/*run*.sqd', dataDir));
+    nRuns = numel(runFiles);
+    runs = 1:nRuns
+    
     for iRun = 1:nRuns
         movefile(sprintf('%s/%s', dataDir, runFiles(iRun).name), preprocDir)
     end

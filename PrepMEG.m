@@ -3,14 +3,20 @@
 % addpath /Users/liusirui/Documents/MATLAB/fieldtrip-20150506
 % ft_defaults
 
+% remember, these channel numbers use one indexing
+megChannels = 1:157;
+refChannels = 158:160;
+triggerChannels = 161:168;
+eyeChannels = 177:178;
+photodiodeChannel = 192;
 
 %% load & read dataset 
 exptDir = '/Local/Users/denison/Data/TA2/MEG';
 % exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
-sessionDir = 'R1452_20181119';
-filename = 'R1452_TA2_11.19.18_ebi';
+sessionDir = 'R1507_20190621';
+filename = 'R1507_TA2_6.21.19_ebi';
 
 dataDir = sprintf('%s/%s/', exptDir, sessionDir);
 prepDir = sprintf('%s/prep/', dataDir);

@@ -2,13 +2,13 @@
 
 %% i/o
 exptDir = '/Local/Users/denison/Data/TA2/MEG';
-sessionDir = 'R1187_20181119';
+sessionDir = 'R1507_20190621';
 
 dataFile = dir(sprintf('%s/%s/mat/*condData.mat', exptDir, sessionDir));
 dataFileName = sprintf('%s/%s/mat/%s', exptDir, sessionDir, dataFile.name);
 figDir = sprintf('%s/%s/figures/ebi_ft', exptDir, sessionDir);
 
-saveFigs = 0;
+saveFigs = 1;
 
 %% load data
 load(dataFileName)

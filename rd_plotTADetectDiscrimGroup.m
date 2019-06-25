@@ -2,7 +2,7 @@ function [groupData, groupMean, groupSte, A] = rd_plotTADetectDiscrimGroup(measu
 
 %% Args
 if ~exist('measure','var') || isempty(measure)
-    measure = 'stf-single'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
+    measure = 'ts-single'; % ts w h tf stf w-single stf-single ts-single itpc-single w-single-wb stf-single-wb itpc-single-wb pre-single-wb
 end
 if ~exist('selectionStr','var') || isempty(selectionStr)
     selectionStr = 'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_allTrials'; %'wholebrain_allTrials' %'topChannels5_detectHitTrialsT1Resp'; %'topChannels5_allTrials'; %'topChannels5'; %'topChannels5_detectHitTrials'; %'topChannels10W_allTrials'; %'topChannels5_validCorrectTrials'; %'iqrThresh10_allTrials';
@@ -274,7 +274,35 @@ for iSubject = 1:nSubjects
             groupData.PA(:,:,:,iSubject) = A.stfPA;
             groupData.AU(:,:,:,iSubject) = A.stfAU;
         case 'ts-single'
-            groupData.tsAmps(:,:,:,iSubject) = squeeze(nanmean(A.trigMean,3));
+            % Filter single trials
+            filterData = true;
+            if filterData
+                samplingInterval = 1;
+                tau = 100;
+                filtTau = samplingInterval/tau;
+                
+                data = A.trigMean(tidx,1,:,:); % top channel only
+                dataFilt = [];
+                for iChan = 1:size(data,2)
+                    for iTrial = 1:size(data,3)
+                        for iTrig = 1:size(data,4)
+                            vals = data(:,iChan,iTrial,iTrig);
+                            valsfilt = filter([1-filtTau filtTau-1],[1 filtTau-1], vals);
+                            dataFilt(:,iChan,iTrial,iTrig) = valsfilt;
+                        end
+                    end
+                end
+                A.trigMean = dataFilt;
+                A.trigMeanMean = squeeze(nanmean(dataFilt,2));
+            end
+                
+            % Average across trials
+            if filterData
+                trialAve = reshape(nanmean(A.trigMean,3),[size(data,1) 1 size(data,4)]); % bc only one channel
+            else
+                trialAve = squeeze(nanmean(A.trigMean,3));
+            end
+            groupData.tsAmps(:,:,:,iSubject) = trialAve;
             groupData.fAmps(:,:,:,iSubject) = squeeze(nanmean(A.amps,3));
             groupData.tsAmpsS(:,:,:,iSubject) = A.trigMeanMean; % average across channels
             groupData.paauTS(:,:,:,:,iSubject) = A.paauT; % average across channels

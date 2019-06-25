@@ -2,7 +2,7 @@ function rd_TADetectDiscrimSSVEF1(sessionDir)
 % rd_TADetectDiscrimSSVEF1.m
 
 %% Setup
-exptType = 'TANoise'; % 'TADetectDiscrim','TAContrast','TANoise','TA2'
+exptType = 'TA2'; % 'TADetectDiscrim','TAContrast','TANoise','TA2'
 
 switch exptType
     case 'TADetectDiscrim'
@@ -167,7 +167,7 @@ end
 %% Find saturated channels and trials in raw data
 if excludeSaturatedEpochs
     saturatedChannelEpochs = rd_findSaturatedChannelEpochs(trigData);
-    if size(saturatedChannelEpochs, 2)~=41*12 %41*12 (TANoise) %41*14 %43*12 (TA2)
+    if size(saturatedChannelEpochs, 2)~=43*12 %41*12 (TANoise) %41*14 %43*12 (TA2)
         fprintf('\nMake sure we are taking the right trials!\n')
         saturatedChannelEpochs = saturatedChannelEpochs(:,42:end);
         fprintf('\nNew size: [%d %d]\n\n', size(saturatedChannelEpochs))
