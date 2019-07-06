@@ -1,10 +1,13 @@
 function preprocFileName = rd_MEGPreproc(filename, figDir, badChannels)
 
 %% Setup
-% desk
+% desk Rachel
 % filename = '/Local/Users/denison/Data/TAPilot/MEG/R0817_20140820/R0817_TAPilot_8.20.14.sqd';
 % filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/preproc/R0890_TAPilot_8.06.14_run01.sqd';
 % figDir = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/figures';
+
+% server
+% filename =  '/Volumes/purplab/EXPERIMENTS/1_Current_Experiments/Rachel/TA_MEG/MEG/TA2/MEG/R0817_20190625/R0817_TAPilot_8.20.14.sqd';
 
 % remember, these channel numbers use zero indexing
 megChannels = 0:156;

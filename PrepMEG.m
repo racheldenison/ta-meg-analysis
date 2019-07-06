@@ -26,6 +26,8 @@ prepDir = sprintf('%s/prep/', dataDir);
 % prepDir = [rootDir,'data/TAPilot_meg/prep/'];
 % filename = 'R0817_TaDeDi_5.26.15_ebi_part1';
 sqdfile = [dataDir,filename,'.sqd'];
+
+%%
 dat = ft_read_data(sqdfile);
 hdr = ft_read_header(sqdfile);
 
