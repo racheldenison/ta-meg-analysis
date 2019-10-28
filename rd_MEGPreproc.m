@@ -19,7 +19,6 @@ if nargin < 3
 end
 
 % preproc options
-Fl = 60; % line noise frequency
 environmentalDenoise = 1;
 applyLineNoiseFilter = 0;
 removeBadChannels = 1; 
@@ -27,6 +26,14 @@ TSPCA = 0;
 components = 0; % pca/ica
 interpolate = 1;
 hpfilter = 1;
+
+% parameter settings
+Fl = 60; % line noise frequency
+Fsample = 1000;
+Fhp = 0.2; % high pass frequency
+N = 8250; % filter order
+type = 'firws';
+direc = 'onepass-zerophase';
 
 % trial definition (for pca/ica)
 trialDef.trialFunHandle = @mytrialfun_all;
@@ -90,27 +97,21 @@ if environmentalDenoise
     data = permute(data,[1 3 2]); % convert back
 end
 
+%% High pass filter
+if hpfilter
+    analStr = [analStr 'f'];
+    
+    % data should be channels x time
+    data = ft_preproc_highpassfilter(data', Fsample, Fhp, N, type, direc); 
+    data = data';
+end
+
 %% Line noise filter
 if applyLineNoiseFilter
     analStr = [analStr 'l'];
     
     % data should be channels x time
     data = ft_preproc_dftfilter(data', Fs, Fl);
-    data = data';
-end
-
-%% High pass filter
-if hpfilter
-    analStr = [analStr 'f'];
-    
-    Fsample = 1000;
-    Fhp = 0.2; % high pass frequency
-    N = 8250; % filter order
-    type = 'firws';
-    direc = 'onepass-zerophase';
-    
-    % data should be channels x time
-    data = ft_preproc_highpassfilter(data', Fsample, Fhp, N, type, direc); 
     data = data';
 end
 
