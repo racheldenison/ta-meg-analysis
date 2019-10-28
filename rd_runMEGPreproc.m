@@ -6,8 +6,8 @@
 % exptDir = '/Local/Users/denison/Data/TA2/MEG';
 exptDir = pathToTA2('MEG');
 
-sessionDir = 'R0817_20190625';
-fileBase = 'R0817_TA2_6.25.19';
+sessionDir = 'R1507_20190627';
+fileBase = 'R1507_TA2_6.27.19';
 
 renameFiles = false;
 runsToRename = 1:12;
