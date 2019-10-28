@@ -6,9 +6,6 @@ function preprocFileName = rd_MEGPreproc(filename, figDir, badChannels)
 % filename = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/preproc/R0890_TAPilot_8.06.14_run01.sqd';
 % figDir = '/Local/Users/denison/Data/TAPilot/MEG/R0890_20140806/Runs/figures';
 
-% server
-% filename =  '/Volumes/purplab/EXPERIMENTS/1_Current_Experiments/Rachel/TA_MEG/MEG/TA2/MEG/R0817_20190625/R0817_TAPilot_8.20.14.sqd';
-
 % remember, these channel numbers use zero indexing
 megChannels = 0:156;
 refChannels = 157:159;
@@ -29,6 +26,7 @@ removeBadChannels = 1;
 TSPCA = 0;
 components = 0; % pca/ica
 interpolate = 1;
+hpfilter = 1;
 
 % trial definition (for pca/ica)
 trialDef.trialFunHandle = @mytrialfun_all;
@@ -98,6 +96,21 @@ if applyLineNoiseFilter
     
     % data should be channels x time
     data = ft_preproc_dftfilter(data', Fs, Fl);
+    data = data';
+end
+
+%% High pass filter
+if hpfilter
+    analStr = [analStr 'f'];
+    
+    Fsample = 1000;
+    Fhp = 0.2; % high pass frequency
+    N = 8250; % filter order
+    type = 'firws';
+    direc = 'onepass-zerophase';
+    
+    % data should be channels x time
+    data = ft_preproc_highpassfilter(data', Fsample, Fhp, N, type, direc); 
     data = data';
 end
 
@@ -292,6 +305,4 @@ end
 
 %% return preproc file name
 preprocFileName = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
-
-
 
