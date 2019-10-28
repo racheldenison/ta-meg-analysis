@@ -3,7 +3,8 @@
 % measures = {'ts', 'w', 'h', 'tf', 'stf', 'w-single', 'ts-single', 'stf-single'};
 % measures = {'ts-single'};
 % measures = {'ts', 'w', 'tf', 'stf'};
-measures = {'w-single', 'itpc-single'};
+measures = {'stf'};
+% measures = {'w-single', 'itpc-single'};
 nMeasures = numel(measures);
 
 trialSelections = {'_allTrials'}; % '', '_allTrials'
@@ -11,7 +12,8 @@ trialSelections = {'_allTrials'}; % '', '_allTrials'
 % trialSelections = {'detectHit','detectMiss','detectFA','detectCR','discrimCorrect','discrimIncorrect','validCorrect'}; 
 nTrialSelections = numel(trialSelections);
 
-normalizeOptions = {'none','stim'};
+normalizeOptions = {'none'};
+% normalizeOptions = {'none','stim'};
 nNormOptions = numel(normalizeOptions);
 
 for iM = 1:nMeasures

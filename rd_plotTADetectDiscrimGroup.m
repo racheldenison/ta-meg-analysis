@@ -23,7 +23,8 @@ switch exptType
         tidx = 1:numel(t);
         tftidx = 1:411;
     case 'TANoise'
-        exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+%         exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+        exptDir = pathToTANoise('MEG');
         ssvefFreq = 20;
         t = -1500:5700;
         tidx = 1:6701;
@@ -36,7 +37,7 @@ ssvefStr = sprintf('%dHz',ssvefFreq);
 % ssvefStr = 'FOI';
 
 plotFigs = 1;
-saveFigs = 0;
+saveFigs = 1;
 saveGroupData = 0;
 writeTextFile = 0;
 saveGroupDataPAAUT = 0; % need to plotFigs to get PAAUT
@@ -57,7 +58,10 @@ switch exptType
             'R0898_20180112','R0898_20180116',...
             'R1021_20180208','R1021_20180212',...
             'R1103_20180213','R1103_20180215',...
-            'R0959_20180219','R0959_20180306'}; % N=7 x 2 sessions TANoise
+            'R0959_20180219','R0959_20180306',...
+            'R1373_20190723','R1373_20190725',...
+            'R1452_20190717','R1452_20190718',...
+            'R1507_20190702','R1507_20190705'}; % N=10 x 2 sessions TANoise
     otherwise
         error('exptType not recognized')
 end

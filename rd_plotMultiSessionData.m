@@ -3,7 +3,8 @@ function [wITPCCond, peaks] = rd_plotMultiSessionData(sessionDirs)
 
 %% Setup
 exptType = 'TANoise';
-exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+% exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+exptDir = pathToTANoise('MEG');
 % sessionDirs = {'R0817_20171212','R0817_20171213'};
 % sessionDirs = {'R1187_20180105','R1187_20180108'};
 % sessionDirs = {'R0983_20180111','R0983_20180112'};
@@ -11,6 +12,9 @@ exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % sessionDirs = {'R1021_20180208','R1021_20180212'};
 % sessionDirs = {'R1103_20180213','R1103_20180215'};
 % sessionDirs = {'R0959_20180219','R0959_20180306'};
+% sessionDirs = {'R1373_20190723','R1373_20190725'};
+% sessionDirs = {'R1452_20190717','R1452_20190718'};
+% sessionDirs = {'R1507_20190702','R1507_20190705'};
 trialsOption = 'singleTrials'; % 'singleTrials','trialAve'
 alphaFreqIdx = 9:12;
 
@@ -286,7 +290,7 @@ switch trialsOption
         nBoot = 2;
         
         % choose measure
-        m = 'wSpecAll'; % 'wSpecAtt', 'wSpecPA', 'wSpecAll'
+        m = 'wSpecAtt'; % 'wSpecAtt', 'wSpecPA', 'wSpecAll'
         switch m
             case 'wSpecAtt'
                 condNames = attNames; 

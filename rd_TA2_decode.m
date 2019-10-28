@@ -13,7 +13,7 @@ saveAnalysis = 0;
 
 decodeAll = 1; % decode all trials (1) or by cueing condition (0)
 getWeights = 0;
-syntheticTrials = 1;
+syntheticTrials = 0;
 
 if decodeAll
     analysisFileName = sprintf('%s/%s/mat/classAccT1T2All', exptDir, sessionDir);
@@ -33,7 +33,20 @@ load data/data_hdr.mat
 t = D.t;
 Fs = D.Fs;
 eventTimes = D.eventTimes;
-data = D.condData;
+data0 = D.condData;
+
+if iscell(data0)
+    data = data0;
+else
+    data = [];
+    for iCue = 1:size(data0,4)
+        for iT1 = 1:size(data0,5)
+            for iT2 = 1:size(data0,6)
+                data{iCue,iT1,iT2} = data0(:,:,:,iCue,iT1,iT2);
+            end
+        end
+    end
+end
 
 nT = numel(t);
 sz = size(data);

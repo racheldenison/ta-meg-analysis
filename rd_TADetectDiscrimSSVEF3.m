@@ -4,7 +4,7 @@ function rd_TADetectDiscrimSSVEF3(exptDir0, sessionDir, fileBase, analStr, ssvef
 
 %% Setup
 if nargin==0 || ~exist('exptDir0','var')
-    exptType = 'TA2';
+    exptType = 'TANoise';
     switch exptType
         case 'TADetectDiscrim'
 %             exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
@@ -32,9 +32,10 @@ if nargin==0 || ~exist('exptDir0','var')
             respTargetSelection = ''; % '','T1Resp','T2Resp'
             
         case 'TANoise'
-            exptDir0 = '/Local/Users/denison/Data/TANoise/MEG';
-            sessionDir = 'R0817_20180419';
-            fileBase = 'R0817_TANoise_4.19.18';
+%             exptDir0 = '/Local/Users/denison/Data/TANoise/MEG';
+            exptDir0 = pathToTANoise('MEG');
+            sessionDir = 'R1373_20190723';
+            fileBase = 'R1373_TANoise_7.23.19';
             analStr = 'ebi'; % '', 'ebi', etc.
             ssvefFreq = 20;
             nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
@@ -106,7 +107,7 @@ behav = behavior(behav);
 
 %% Settings after loading the data
 saveAnalysis = 1;
-saveFigs = 0;
+saveFigs = 1;
 plotFigs = 1;
 
 excludeTrialsFt = 1;

@@ -2,7 +2,7 @@ function rd_TADetectDiscrimSSVEF1(sessionDir)
 % rd_TADetectDiscrimSSVEF1.m
 
 %% Setup
-exptType = 'TA2'; % 'TADetectDiscrim','TAContrast','TANoise','TA2'
+exptType = 'TANoise'; % 'TADetectDiscrim','TAContrast','TANoise','TA2'
 
 switch exptType
     case 'TADetectDiscrim'
@@ -12,7 +12,8 @@ switch exptType
         exptDir = '/Local/Users/denison/Data/TAContrast/MEG';
         exptShortName = 'TACont';
     case 'TANoise'
-        exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+%         exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+        exptDir = pathToTANoise('MEG');
         exptShortName = 'TANoise';  
     case 'TA2'
         exptDir = '/Local/Users/denison/Data/TA2/MEG';
@@ -129,8 +130,8 @@ end
 t = tstart:tstop;
 Fs = 1000;
 
-saveData = 0;
-saveFigs = 0;
+saveData = 1;
+saveFigs = 1;
 
 % load data header for plotting topologies
 load data/data_hdr.mat
@@ -167,15 +168,12 @@ end
 %% Find saturated channels and trials in raw data
 if excludeSaturatedEpochs
     saturatedChannelEpochs = rd_findSaturatedChannelEpochs(trigData);
-    if size(saturatedChannelEpochs, 2)~=43*12 %41*12 (TANoise) %41*14 %43*12 (TA2)
+    if size(saturatedChannelEpochs, 2)~=41*12 %41*12 (TANoise) %41*14 %43*12 (TA2)
         fprintf('\nMake sure we are taking the right trials!\n')
         saturatedChannelEpochs = saturatedChannelEpochs(:,42:end);
         fprintf('\nNew size: [%d %d]\n\n', size(saturatedChannelEpochs))
     end
     save(sprintf('%s/saturated_channel_epochs.mat', matDir), 'saturatedChannelEpochs');
-    if saveFigs
-        rd_saveAllFigs(gcf, {'saturatedChannelEpochs'}, 'im', figDir);
-    end
 end
 
 %% Baseline
@@ -206,6 +204,11 @@ end
 %% Fig dir
 if ~exist(figDir,'dir')
     mkdir(figDir)
+end
+
+%% Save saturated epochs fig
+if excludeSaturatedEpochs && saveFigs
+    rd_saveAllFigs(gcf, {'saturatedChannelEpochs'}, 'im', figDir);
 end
 
 %% Organize trials into conditions
@@ -241,10 +244,10 @@ for iCue = 1:numel(cueConds)
             end
             
             w = sum([wCue wT1 wT2],2)==3;
-%             condData(:,:,:,iCue,iT1,iT2) = trigData(:,:,w);
+            condData(:,:,:,iCue,iT1,iT2) = trigData(:,:,w);
             % if unequal numbers of trials per condition
-            condData{iCue,iT1,iT2} = trigData(:,:,w);
-            condDataMean(:,:,iCue,iT1,iT2) = nanmean(trigData(:,:,w),3);
+%             condData{iCue,iT1,iT2} = trigData(:,:,w);
+%             condDataMean(:,:,iCue,iT1,iT2) = nanmean(trigData(:,:,w),3);
         end
     end
 end
@@ -253,7 +256,7 @@ wBlank = behav.responseData_all(:,cueCondIdx) == blankCond;
 blankData = trigData(:,:,wBlank);
 
 % mean across trials
-% condDataMean = squeeze(nanmean(condData,3));
+condDataMean = squeeze(nanmean(condData,3));
 blankDataMean = squeeze(nanmean(blankData,3));
 
 % let trigMean have the conditions 1-9 in the third dimension

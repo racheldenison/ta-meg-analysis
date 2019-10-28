@@ -1,4 +1,4 @@
-function rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection)
+function rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, analStr, ssvefFreq, nTopChannels, iqrThresh, weightChannels, trialSelection, respTargetSelection, exptType)
 
 %% Setup
 if nargin==0 || ~exist('exptDir','var')
@@ -27,9 +27,10 @@ if nargin==0 || ~exist('exptDir','var')
             trialSelection = 'all'; % 'all','validCorrect', etc
             
         case 'TANoise'
-            exptDir = '/Local/Users/denison/Data/TANoise/MEG';
-            sessionDir = 'R0817_20180419';
-            fileBase = 'R0817_TANoise_4.19.18';
+%             exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+            exptDir = pathToTANoise('MEG');
+            sessionDir = 'R1373_20190723';
+            fileBase = 'R1373_TANoise_7.23.19';
             analStr = 'ebi'; % '', 'ebi', etc.
             ssvefFreq = 20;
             nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh

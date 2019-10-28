@@ -1,23 +1,25 @@
 % rd_plotPeaks.m
 
-dataDir = '/Local/Users/denison/Data/TANoise/MEG/Group/mat';
+exptDir = pathToTANoise('MEG');
+dataDir = sprintf('%s/Group/mat', exptDir);
+% dataDir = '/Local/Users/denison/Data/TANoise/MEG/Group/mat';
 % dataDir = '~/Downloads';
 
-load(sprintf('%s/gN7_itpcAtt_15Hz.mat', dataDir))
-load(sprintf('%s/gN7_peaks_15Hz.mat', dataDir))
+load(sprintf('%s/gN10_itpcAtt_20Hz.mat', dataDir))
+load(sprintf('%s/gN10_peaks_20Hz.mat', dataDir))
 
 t = t(1:6701);
 
-tsWin = [1150 1750];
+tsWin = [1100 1750];
 tsidx = find(t==tsWin(1)):find(t==tsWin(2));
 
 peakWin = 100;
 
 nSubjects = numel(subjects);
 
-% subjectFactors = [1 -1 -1 1 0 1 -1]; % 1 = pos, -1 = neg, 0 = none
+subjectFactors = [1 -1 -1 1 0 1 -1 1 -1 -1]; % 1 = pos, -1 = neg, 0 = none
 % subjectFactors = [1 0 0 1 1 1 1];
-subjectFactors = [1 0 0 1 0 1 1]; % 15 Hz
+% subjectFactors = [1 0 0 1 0 1 1]; % 15 Hz
 
 %% define data
 data = itpc;
@@ -26,6 +28,7 @@ data = itpc;
 figure
 hold on
 colors = get(gca,'ColorOrder');
+colors = repmat(colors,2,1);
 plot(t, squeeze(data(:,1,:)),'color',colors(1,:)) % cue T1
 plot(t, squeeze(data(:,2,:)),'color',colors(2,:)) % cue T2
 xlabel('Time (ms)')
@@ -33,8 +36,9 @@ ylabel('ITPC')
 
 figure
 hold on
-colors = get(gca,'ColorOrder');
 plot(t, squeeze(data(:,1,:)),'LineStyle','-') % cue T1
+ax = gca;
+ax.ColorOrderIndex = 1;
 plot(t, squeeze(data(:,2,:)),'LineStyle','--') % cue T2
 xlim([1000 2000])
 xlabel('Time (ms)')
@@ -47,7 +51,7 @@ for iSubject = 1:nSubjects
     plot(t, squeeze(data(:,1,iSubject)),'color',colors(1,:)) % cue T1
     plot(t, squeeze(data(:,2,iSubject)),'color',colors(2,:)) % cue T2
 %     xlim([500 2000])
-    ylim([0 .5])
+    ylim([0 .7])
     if iSubject==nSubjects
         xlabel('Time (ms)')
         ylabel('ITPC')
@@ -83,8 +87,9 @@ for iM = 1:nM
     hold on
     for iSubject = 1:nSubjects
         if ~isempty(peaks(iSubject).(m))
-            plot(peaks(iSubject).(m),[iSubject iSubject],'Color',colors(iSubject,:))
-            plot(peaks(iSubject).(m),[iSubject iSubject],'.','MarkerSize',30,'Color',colors(iSubject,:))
+            y = repmat(iSubject,1,length(peaks(iSubject).(m)));
+            plot(peaks(iSubject).(m),y,'Color',colors(iSubject,:))
+            plot(peaks(iSubject).(m),y,'.','MarkerSize',30,'Color',colors(iSubject,:))
         end
     end
     xlim(tsWin)
@@ -98,9 +103,9 @@ for iSubject = 1:nSubjects
     f = subjectFactors(iSubject);
     switch f
         case 1
-            peaks(iSubject).peaksSelected = peaks(iSubject).peaksPosInWin;
+            peaks(iSubject).peaksSelected = peaks(iSubject).peaksPosInWin(1:2);
         case -1
-            peaks(iSubject).peaksSelected = peaks(iSubject).peaksNegInWin;
+            peaks(iSubject).peaksSelected = peaks(iSubject).peaksNegInWin(1:2);
         case 0
             peaks(iSubject).peaksSelected = [];
         otherwise

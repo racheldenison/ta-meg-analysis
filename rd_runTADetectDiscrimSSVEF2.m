@@ -3,7 +3,7 @@
 % works with SSVEF2, 3, 5, 6, dva (just change number in function call)
 
 %% setup
-exptType = 'TA2';
+exptType = 'TANoise';
 switch exptType
     case 'TADetectDiscrim'
 %         exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
@@ -17,7 +17,8 @@ switch exptType
         ssvefFreqs = 20;
         
     case 'TANoise'
-        exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+%         exptDir = '/Local/Users/denison/Data/TANoise/MEG';
+        exptDir = pathToTANoise('MEG');
         analStr = 'ebi'; % '', 'ebi', etc.
         ssvefFreqs = 20; %20;
         
@@ -54,7 +55,10 @@ switch exptType
             'R0898_20180112','R0898_20180116',...
             'R1021_20180208','R1021_20180212',...
             'R1103_20180213','R1103_20180215',...
-            'R0959_20180219','R0959_20180306'}; % N=7 x 2 sessions TANoise
+            'R0959_20180219','R0959_20180306',...
+        	'R1373_20190723','R1373_20190725',...
+            'R1452_20190717','R1452_20190718',...
+            'R1507_20190702','R1507_20190705'}; % N=10 x 2 sessions TANoise
     case 'TA2'
         subjects = {'R0817_20181120','R0890_20181121','R0959_20181128',...
             'R1103_20181121','R1187_20181119','R1373_20181128',...
@@ -62,7 +66,7 @@ switch exptType
     otherwise
         error('exptType not recognized')
 end
-% subjects = subjects(7:16);
+subjects = subjects(16:20);
 nSubjects = numel(subjects);
 
 %% run quick
@@ -105,7 +109,7 @@ for iTS = 1:numel(trialSelections)
                 else
                     if ~isempty(nTopChs)
                         for nTopChannels = nTopChs
-                            rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, ...
+                            rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
                                 analStr, ssvefFreq, nTopChannels, [], weightChannels, ...
                                 trialSelection, respTargetSelection, exptType);
                             close all;
