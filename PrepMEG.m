@@ -10,7 +10,7 @@ triggerChannels = 161:168;
 eyeChannels = 177:178;
 photodiodeChannel = 192;
 
-%% load & read dataset 
+%% setup paths 
 exptDir = pathToTA2('MEG');
 % exptDir = '/Local/Users/denison/Data/TA2/MEG';
 % exptDir = '/Local/Users/denison/Data/TANoise/MEG';
@@ -27,7 +27,7 @@ prepDir = sprintf('%s/prep/', dataDir);
 % filename = 'R0817_TaDeDi_5.26.15_ebi_part1';
 sqdfile = [dataDir,filename,'.sqd'];
 
-%%
+%% load dataset
 dat = ft_read_data(sqdfile);
 hdr = ft_read_header(sqdfile);
 
