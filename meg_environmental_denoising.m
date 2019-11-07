@@ -52,7 +52,8 @@ for channel = data_channels;
         %%% ON PERIODS %%%
         
         % Full
-        [~,~,R] = regress(ts(:,epoch,channel),[squeeze(ts(:,epoch,environmental_channels)) ones(size(ts,1),1) ]);
+%         [~,~,R] = regress(ts(:,epoch,channel),[squeeze(ts(:,epoch,environmental_channels)) ones(size(ts,1),1) ]);
+        [~,~,R] = regress(ts(:,epoch,channel),squeeze(ts(:,epoch,environmental_channels)));
         ts_denoised(:,epoch,channel) = R;
         
         clear R

@@ -20,12 +20,12 @@ end
 
 % preproc options
 environmentalDenoise = 1;
+hpfilter = 1;
 applyLineNoiseFilter = 0;
 removeBadChannels = 1; 
 TSPCA = 0;
-components = 0; % pca/ica
+components = 1; % pca/ica
 interpolate = 1;
-hpfilter = 1;
 
 % parameter settings
 Fl = 60; % line noise frequency
@@ -37,9 +37,13 @@ direc = 'onepass-zerophase';
 
 % trial definition (for pca/ica)
 trialDef.trialFunHandle = @mytrialfun_all;
-trialDef.prestim = 0;
-trialDef.poststim = 5.5;
-trialDef.trig = 167; % blank blocks
+% trialDef.prestim = 0;
+% trialDef.poststim = 5.5;
+% trialDef.trig = 167; % blank blocks
+trialDef.prestim = 0.2;
+trialDef.poststim = 2.3;
+trialDef.trig = [167, 168]; % 168 = precue, 167=blank
+trialDef.threshold = 2.5;
 trialDef.nTrigsExpected = [];
 
 % % for finding saturating epochs
