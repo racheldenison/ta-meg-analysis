@@ -90,8 +90,8 @@ switch analStr
         analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%sTrials%s_%dHz.mat', matDir, fileBase, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
     otherwise
         savename = sprintf('%s/%s_%s_ssvef_workspace.mat', matDir, fileBase, analStr);
-%         channelsFileName = sprintf('%s/channels_20Hz_%s.mat', matDir, analStr);
-        channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
+        channelsFileName = sprintf('%s/channels_20Hz_%s.mat', matDir, analStr);
+%         channelsFileName = sprintf('%s/channels_%dHz_%s.mat', matDir, ssvefFreq, analStr);
         analysisFileName = sprintf('%s/analysis_singleTrials_%s_%s_%s_%sTrials%s_%dHz.mat', matDir, fileBase, analStr, channelSelectionStr, trialSelection, respTargetSelection, ssvefFreq);
 end
 
@@ -107,7 +107,7 @@ behav = behavior(behav);
 
 %% Settings after loading the data
 saveAnalysis = 1;
-saveFigs = 1;
+saveFigs = 0;
 plotFigs = 1;
 
 excludeTrialsFt = 1;
@@ -513,9 +513,9 @@ end
 
 %% Wavelet
 switch ssvefFreq
-    case 11
+    case {10, 11}
         width = 4;
-    case 15
+    case {14, 15}
         width = 6;
     case {20, 25}
         width = 8;

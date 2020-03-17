@@ -20,7 +20,7 @@ switch exptType
 %         exptDir = '/Local/Users/denison/Data/TANoise/MEG';
         exptDir = pathToTANoise('MEG');
         analStr = 'ebi'; % '', 'ebi', etc.
-        ssvefFreqs = 20; %20;
+        ssvefFreqs = 25; %20;
         
     case 'TA2'
         exptDir = '/Local/Users/denison/Data/TA2/MEG';
@@ -66,7 +66,7 @@ switch exptType
     otherwise
         error('exptType not recognized')
 end
-subjects = subjects(16:20);
+subjects = subjects(18:20);
 nSubjects = numel(subjects);
 
 %% run quick
@@ -109,7 +109,7 @@ for iTS = 1:numel(trialSelections)
                 else
                     if ~isempty(nTopChs)
                         for nTopChannels = nTopChs
-                            rd_TADetectDiscrimSSVEF2(exptDir, sessionDir, fileBase, ...
+                            rd_TADetectDiscrimSSVEF3(exptDir, sessionDir, fileBase, ...
                                 analStr, ssvefFreq, nTopChannels, [], weightChannels, ...
                                 trialSelection, respTargetSelection, exptType);
                             close all;

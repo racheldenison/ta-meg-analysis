@@ -34,6 +34,7 @@ tau = 100;
 filtTau = samplingInterval/tau;
 chIdx = 1;
 
+yAll = [];
 for iCond = 1:8
     y = squeeze(trigMean(:,chIdx,:,iCond));
     idx = isnan(y(1,:));
@@ -41,6 +42,7 @@ for iCond = 1:8
     yfilt = filter([1-filtTau filtTau-1],[1 filtTau-1], y);
     yMean(:,iCond) = mean(yfilt,2);
 %     yMean(:,iCond) = mean(y,2);
+    yAll = [yAll yfilt];
 end
 
 figure('Position',[200 50 1000 250])
@@ -203,7 +205,7 @@ stfAmpsAttPeaks = [];
 for iToi = 1:nToi
     toiIdx = find(abs(stfToi-tois(iToi)/1000)==min(abs(stfToi-tois(iToi)/1000)));
     
-    stfAmpsAttPeaks(:,:,iToi) = squeeze(stfAmpsAtt(:,toiIdx,:));
+    stfAmpsAttPeaks(:,:,iToi) = squeeze(stfAmpsAtt(:,toiIdx(1),:));
 end
     
 ylims = [-.4 .4];

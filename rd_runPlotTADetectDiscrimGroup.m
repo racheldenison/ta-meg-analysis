@@ -1,10 +1,12 @@
 % rd_runPlotTADetectDiscrimGroup.m
 
-% measures = {'ts', 'w', 'h', 'tf', 'stf', 'w-single', 'ts-single', 'stf-single'};
+% measures = {'ts', 'w', 'h', 'tf', 'stf', 'w-single', 'ts-single', 'stf-single','stfITPC-single'};
 % measures = {'ts-single'};
 % measures = {'ts', 'w', 'tf', 'stf'};
-measures = {'stf'};
+% measures = {'stf'};
 % measures = {'w-single', 'itpc-single'};
+% measures = {'itpc-single'};
+measures = {'w-single'};
 nMeasures = numel(measures);
 
 trialSelections = {'_allTrials'}; % '', '_allTrials'

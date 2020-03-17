@@ -20,7 +20,7 @@ tf9FigPos = [0 250 1280 580];
 tf3FigPos = [200 475 1000 275];
 
 switch measure
-    case {'tf','stf'}
+    case {'tf','stf','stfITPC-single'}
         cmap = colormap;
     case 'stf-single'
         cmap = flipud(lbmap(64,'RedBlue'));
@@ -63,6 +63,9 @@ switch measure
         diffClims = [-5 5];
     case 'stf-single'
         clims = [-0.1 0.1];
+        diffClims = [-0.07 0.07];
+    case 'stfITPC-single'
+        clims = [0 0.5];
         diffClims = [-0.07 0.07];
     otherwise
         error('measure not recognized')
@@ -164,6 +167,8 @@ if saveFigs
             figNames = {'timeFreqByCond','timeFreqAtt','timeFreqPA'};
         case {'stf','stf-single'}
             figNames = {'timeFreqSingleByCond','timeFreqSingleAtt','timeFreqSinglePA'};
+        case {'stfITPC-single'}
+            figNames = {'timeFreqITPCSingleByCond','timeFreqITPCSingleAtt','timeFreqITPCSinglePA'};
         otherwise
             error('measure not recognized')
     end

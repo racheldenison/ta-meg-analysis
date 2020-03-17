@@ -32,6 +32,9 @@ switch measure
     case 'stf-single'
         clims = [-0.1 0.1];
         diffClims = [-0.07 0.07];
+    case 'stfITPC-single'
+        clims = [0 0.5];
+        diffClims = [-0.07 0.07];
     otherwise
         error('measure not recognized')
 end
@@ -212,6 +215,8 @@ if saveFigs
     switch measure
         case 'stf-single'
             figNames = {'timeFreqSingleAttVsUnatt','timeFreqSinglePVsA','timeFreqSinglePres','timeFreqSingleAbs'};
+        case 'stfITPC-single'
+            figNames = {'timeFreqITPCSingleAttVsUnatt','timeFreqITPCSinglePVsA','timeFreqITPCSinglePres','timeFreqITPCSingleAbs'};
         otherwise
             error('measure not recognized')
     end
