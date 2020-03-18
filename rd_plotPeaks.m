@@ -19,7 +19,8 @@ nSubjects = numel(subjects);
 
 subjectFactors = [1 -1 -1 1 0 1 -1 1 -1 -1]; % 1 = pos, -1 = neg, 0 = none
 % subjectFactors = [1 0 0 1 1 1 1];
-% subjectFactors = [1 0 0 1 0 1 1]; % 15 Hz
+% subjectFactors = [1 0 0 1 0 1 1 1 1 1]; % 15 Hz
+% subjectFactors = [-1 1 0 1 0 1 1 0 1 1]; % 40 Hz
 
 %% define data
 data = itpc;

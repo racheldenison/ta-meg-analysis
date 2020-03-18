@@ -1,4 +1,4 @@
-function [wITPCCond, peaks] = rd_plotMultiSessionData(sessionDirs)
+function [wITPCCond, peaks] = rd_plotMultiSessionData(sessionDirs, collapseSessions)
 % rd_plotMultiSessionData.m
 
 %% Setup
@@ -26,6 +26,7 @@ nTopChannels = 5; % 1, 5, etc., or [] for iqrThresh
 trialSelection = 'all'; % 'all','validCorrect', etc
 respTargetSelection = ''; % '','T1Resp','T2Resp'
 excludeTrialsFt = 1;
+% collapseSessions = 1;
 
 nSessions = numel(sessionDirs);
 channelSelectionStr = sprintf('topChannels%d', nTopChannels);
@@ -341,7 +342,11 @@ switch trialsOption
         
         % mean across channels and sessions
         chIdx = 1:nTopChannels;
-        wITPCCond = squeeze(nanmean(nanmean(wITPCCond0(:,chIdx,:,:),2),4)); 
+        if collapseSessions
+            wITPCCond = squeeze(nanmean(nanmean(wITPCCond0(:,chIdx,:,:),2),4));
+        else
+            wITPCCond = squeeze(nanmean(wITPCCond0(:,chIdx,:,:),2));
+        end
         wITPCCondResamp = squeeze(nanmean(nanmean(wITPCCondResamp0(:,:,chIdx,:,:),3),5));
         
         % ci and error bars
@@ -351,25 +356,41 @@ switch trialsOption
             wITPCCondErr(:,2,iCond) = wITPCCond(:,iCond)-wITPCCondCI(:,2,iCond);
         end
         
-
-        fH(4) = figure;
-        set(gcf,'Position',tsFigPos)
-        hold on
-        for iCond = 1:numel(condNames)
-            plot(t, wITPCCond(:,iCond),'color',condColors(iCond,:),'LineWidth',4)
-        end
-        legend(condNames)
-        if nBoot > 2
+        if collapseSessions
+            fH(4) = figure;
+            set(gcf,'Position',tsFigPos)
+            hold on
             for iCond = 1:numel(condNames)
-                shadedErrorBar(t, wITPCCond(:,iCond), wITPCCondErr(:,:,iCond), ...
-                    {'color',condColors(iCond,:),'LineWidth',4}, 1)
+                plot(t, wITPCCond(:,iCond),'color',condColors(iCond,:),'LineWidth',4)
             end
+            legend(condNames)
+            if nBoot > 2
+                for iCond = 1:numel(condNames)
+                    shadedErrorBar(t, wITPCCond(:,iCond), wITPCCondErr(:,:,iCond), ...
+                        {'color',condColors(iCond,:),'LineWidth',4}, 1)
+                end
+            end
+            for iEv = 1:numel(eventTimes)
+                vline(eventTimes(iEv),'k');
+            end
+            xlabel('time (ms)')
+            ylabel('wavelet itpc')
+        else
+            fH(4) = figure;
+            set(gcf,'Position',tsFigPos)
+            hold on
+            for iA = 1:nA
+                for iCond = 1:numel(condNames)
+                    plot(t, wITPCCond(:,iCond,iA),'color',condColors(iCond,:),'LineWidth',4)
+                end
+            end
+            legend(condNames)
+            for iEv = 1:numel(eventTimes)
+                vline(eventTimes(iEv),'k');
+            end
+            xlabel('time (ms)')
+            ylabel('wavelet itpc')
         end
-        for iEv = 1:numel(eventTimes)
-            vline(eventTimes(iEv),'k');
-        end
-        xlabel('time (ms)')
-        ylabel('wavelet itpc')    
         
         
         %% find peaks in itpc

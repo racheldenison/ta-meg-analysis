@@ -8,7 +8,7 @@ dataFile = dir(sprintf('%s/%s/mat/*condData.mat', exptDir, sessionDir));
 dataFileName = sprintf('%s/%s/mat/%s', exptDir, sessionDir, dataFile.name);
 figDir = sprintf('%s/%s/figures/ebi_ft', exptDir, sessionDir);
 
-saveFigs = 1;
+saveFigs = 0;
 
 %% load data
 load(dataFileName)

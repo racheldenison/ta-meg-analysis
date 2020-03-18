@@ -37,7 +37,7 @@ ssvefStr = sprintf('%dHz',ssvefFreq);
 % ssvefStr = 'FOI';
 
 plotFigs = 1;
-saveFigs = 1;
+saveFigs = 0;
 saveGroupData = 0;
 writeTextFile = 0;
 saveGroupDataPAAUT = 0; % need to plotFigs to get PAAUT
@@ -175,6 +175,7 @@ groupDataFilePAAUT = sprintf('%s/%s_%s_PAAUT.mat', groupDataDir, figStr, measure
 %% Get data
 for iSubject = 1:nSubjects
     subject = subjects{iSubject};
+    fprintf('\n%s', subject)
     
     sessionDir = subject;
     dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -277,6 +278,17 @@ for iSubject = 1:nSubjects
             groupData.PAAU(:,:,:,iSubject) = A.stfPAAU;
             groupData.PA(:,:,:,iSubject) = A.stfPA;
             groupData.AU(:,:,:,iSubject) = A.stfAU;
+        case 'stfITPC-single'
+            groupData.amps(:,:,:,iSubject) = A.stfITPCAmps(:,tftidx,:);
+            groupData.ampsAtt(:,:,:,iSubject) = A.stfITPCAtt(:,tftidx,:);
+            groupData.ampsPA(:,:,:,iSubject) = A.stfITPCPA;
+            groupData.paDiff(:,:,:,iSubject) = A.stfITPCPADiff(:,tftidx,:);
+            groupData.PAAUT(:,:,:,:,iSubject) = A.stfITPCPAAUT;
+            groupData.PAT(:,:,:,:,iSubject) = A.stfITPCPAT;
+            groupData.AUT(:,:,:,:,iSubject) = A.stfITPCAUT;
+            groupData.PAAU(:,:,:,iSubject) = A.stfITPCPAAU;
+            groupData.PA(:,:,:,iSubject) = A.stfITPCPA;
+            groupData.AU(:,:,:,iSubject) = A.stfITPCAU;
         case 'ts-single'
             % Filter single trials
             filterData = true;
@@ -524,10 +536,10 @@ if plotFigs
             [groupData, A] = rd_plotTADetectDiscrimGroupAmps2(A, measure, subjects, ...
                 groupData, groupMean, groupSte, ...
                 saveFigs, figDir, figStr);
-        case {'tf','stf','stf-single'}
+        case {'tf','stf','stf-single','stfITPC-single'}
             rd_plotTADetectDiscrimGroupTimeFreq(A, measure, ...
                 groupMean, saveFigs, figDir, figStr)
-            if strcmp(measure, 'stf-single') % extra plots
+            if strcmp(measure, 'stf-single') || strcmp(measure, 'stfITPC-single') % extra plots
                 rd_plotTADetectDiscrimGroupTimeFreqSingle(A, measure, ...
                     groupMean, saveFigs, figDir, figStr)
             end
