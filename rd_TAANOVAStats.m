@@ -20,9 +20,11 @@ nTests = numel(names);
 clusterStatsEmp = [];
 maxAbsClusterStatEmp = [];
 CEmp = [];
+clusterWins = [];
 for iTest = 2:nTests
     name = names{iTest};
-    [clusterStatsEmp.(name), maxAbsClusterStatEmp.(name), CEmp.(name)] = rd_clusterStat(statTable.(name), threshTable.(name)<threshVal);
+%     [clusterStatsEmp.(name), maxAbsClusterStatEmp.(name), CEmp.(name)] = rd_clusterStat(statTable.(name), threshTable.(name)<threshVal);
+    [clusterStatsEmp.(name), maxAbsClusterStatEmp.(name), clusterWins.(name)] = rd_clusterSum(statTable.(name), threshTable.(name)<threshVal);
 end
 
 %% null
@@ -44,7 +46,8 @@ for iP = 1:nPerm
     w = statTable.permutation==iP;
     for iTest = 3:nTests
         name = names{iTest};
-        [~, maxAbsClusterStatNull.(name)(iP,1)] = rd_clusterStat(statTable.(name)(w,:), threshTable.(name)(w,:)<threshVal);
+%         [~, maxAbsClusterStatNull.(name)(iP,1)] = rd_clusterStat(statTable.(name)(w,:), threshTable.(name)(w,:)<threshVal);
+        [~, maxAbsClusterStatNull.(name)(iP,1)] = rd_clusterSum(statTable.(name)(w,:), threshTable.(name)(w,:)<threshVal);
     end
 end
 

@@ -5,8 +5,15 @@ dataDir = sprintf('%s/Group/mat', exptDir);
 % dataDir = '/Local/Users/denison/Data/TANoise/MEG/Group/mat';
 % dataDir = '~/Downloads';
 
-load(sprintf('%s/gN10_itpcAtt_20Hz.mat', dataDir))
+collapseSessions = 0;
+
 load(sprintf('%s/gN10_peaks_20Hz.mat', dataDir))
+
+if collapseSessions
+    load(sprintf('%s/gN10_itpcAtt_20Hz.mat', dataDir))
+else
+    load(sprintf('%s/gN10_itpcAtt_20Hz_bySession.mat', dataDir))
+end
 
 t = t(1:6701);
 
@@ -134,63 +141,95 @@ for iSubject = 1:nSubjects
     f = subjectFactors(iSubject);
     p = peaks(iSubject).peaksSelected;
     for iP = 1:numel(p)
-        tidx = find(t==p(iP)-peakWin/2):find(t==p(iP)+peakWin/2); 
-        vals = data(tidx,:,iSubject);
-        peakData(:,:,iP,iSubject) = vals*f; % [time cond peak subject]
+        tidx = find(t==p(iP)-peakWin/2):find(t==p(iP)+peakWin/2);
+        if collapseSessions
+            vals = data(tidx,:,iSubject);
+            peakData(:,:,iP,iSubject) = vals*f; % [time cond peak subject]
+        else
+            vals = data(tidx,:,iSubject,:);
+            peakData(:,:,iP,iSubject,:) = vals*f; % [time cond peak subject session]
+        end
     end
 end
-peakData(:,:,:,subjectFactors==0) = NaN;
+peakData(:,:,:,subjectFactors==0,:) = NaN;
 
 %% plot the peak timeseries
-figure
-for iP = 1:2
-    subplot(1,2,iP)
-    hold on
-    for iSubject = 1:nSubjects
-        plot(peakData(:,1,iP,iSubject),'color',colors(1,:))
-        plot(peakData(:,2,iP,iSubject),'color',colors(2,:))
+if collapseSessions
+    figure
+    for iP = 1:2
+        subplot(1,2,iP)
+        hold on
+        for iSubject = 1:nSubjects
+            plot(peakData(:,1,iP,iSubject),'color',colors(1,:))
+            plot(peakData(:,2,iP,iSubject),'color',colors(2,:))
+        end
+        xlim([1 size(peakData,1)])
     end
-    xlim([1 size(peakData,1)])
+else
+    figure
+    for iSession = 1:2
+        for iP = 1:2
+            subplot(2,2,iP+(iSession-1)*2)
+            hold on
+            for iSubject = 1:nSubjects
+                plot(peakData(:,1,iP,iSubject,iSession),'color',colors(1,:))
+                plot(peakData(:,2,iP,iSubject,iSession),'color',colors(2,:))
+            end
+            xlim([1 size(peakData,1)])
+            if iSession==1
+                title(sprintf('Peak %d', iP))
+            end
+            if iP==1
+                ylabel(sprintf('Session %d', iSession))
+            end
+        end
+    end
 end
 
 %% summarize
 peakDataAve = squeeze(mean(peakData,1));
 peakMean = nanmean(peakDataAve,3);
-peakDataDiff = squeeze(peakDataAve(1,:,:) - peakDataAve(2,:,:));
-peakDataDiffSte = nanstd(peakDataDiff,0,2)./sqrt(nnz(subjectFactors~=0));
+if collapseSessions
+    peakDataDiff = squeeze(peakDataAve(1,:,:) - peakDataAve(2,:,:));
+    peakDataDiffSte = nanstd(peakDataDiff,0,2)./sqrt(nnz(subjectFactors~=0));
+else
+    save(sprintf('%s/gN10_itpcAttPeakVals_20Hz_bySession.mat', dataDir), 'peakData','peakDataAve')
+end
 
 %% plots
-figure
-bar(peakMean')
-xlabel('peak')
-ylabel('ITPC (avearage after flipping)')
-legend('precue T1','precue T2')
-
-figure('Position',[150 200 350 450])
-hold on
-for iCue = 1:2
-    errorbar(1:2, peakMean(iCue,:), peakDataDiffSte, '.', 'MarkerSize', 30)
-end
-ax = gca;
-jitterx(ax);
-ax.XTick = [1 2];
-xlabel('Peak')
-ylabel('ITPC (average after flipping)')
-legend('precue T1','precue T2','Location','best')
-
-figure
-for iP = 1:2
-    subplot(1,2,iP)
+if collapseSessions
+    figure
+    bar(peakMean')
+    xlabel('peak')
+    ylabel('ITPC (avearage after flipping)')
+    legend('precue T1','precue T2')
+    
+    figure('Position',[150 200 350 450])
     hold on
-    plot(squeeze(peakDataAve(1,iP,:)),squeeze(peakDataAve(2,iP,:)),'.','MarkerSize', 30)
-    plot([-1 1],[-1 1],'k')
-    axis square
-    xlabel('precue T1')
-    ylabel('precue T2')
+    for iCue = 1:2
+        errorbar(1:2, peakMean(iCue,:), peakDataDiffSte, '.', 'MarkerSize', 30)
+    end
+    ax = gca;
+    jitterx(ax);
+    ax.XTick = [1 2];
+    xlabel('Peak')
+    ylabel('ITPC (average after flipping)')
+    legend('precue T1','precue T2','Location','best')
+    
+    figure
+    for iP = 1:2
+        subplot(1,2,iP)
+        hold on
+        plot(squeeze(peakDataAve(1,iP,:)),squeeze(peakDataAve(2,iP,:)),'.','MarkerSize', 30)
+        plot([-1 1],[-1 1],'k')
+        axis square
+        xlabel('precue T1')
+        ylabel('precue T2')
+    end
+    
+    figure
+    bar(peakDataDiff')
+    xlabel('Observer')
+    ylabel('ITPC, precue T1 - precue T2')
+    legend('peak 1','peak 2')
 end
-
-figure
-bar(peakDataDiff')
-xlabel('Observer')
-ylabel('ITPC, precue T1 - precue T2')
-legend('peak 1','peak 2')
