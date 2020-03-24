@@ -3,7 +3,7 @@
 %% setup
 exptDir = pathToTANoise('MEG');
 analysisDir = sprintf('%s/Group/mat', exptDir);
-analysisName = 'TANoise_N10_itpc_40Hz';
+analysisName = 'TANoise_N10_itpc_20Hz';
 statName = 'Fval';
 threshName = 'pval';
 threshVal = 0.05;
@@ -56,6 +56,14 @@ clusterPVal = [];
 for iTest = 3:nTests
     name = names{iTest};
     clusterPVal.(name) = nnz(maxAbsClusterStatNull.(name)>maxAbsClusterStatEmp.(name))/nPerm;
+end
+
+%% max cluster window
+maxClusterTWin = [];
+for iTest = 3:nTests
+    name = names{iTest};
+    maxIdx = clusterStatsEmp.(name)==maxAbsClusterStatEmp.(name);
+    maxClusterTWin.(name)(1,:) = t(clusterWins.(name)(maxIdx,:));
 end
 
 %% plot
