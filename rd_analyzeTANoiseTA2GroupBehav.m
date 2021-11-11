@@ -1,7 +1,7 @@
 % rd_analyzeTANoiseTA2GroupBehav.m
 
 %% setup
-expt = 'TA2'; %'TANoise','TA2'
+expt = 'TANoise'; %'TANoise','TA2'
 
 switch expt
     case 'TANoise'
@@ -41,6 +41,10 @@ switch expt
         condNames = {'valid','neutral','invalid'};
 end
 
+analysisDir = sprintf('%s/Group/mat', exptDir);
+analysisName = 'gN10_behavior_workspace';
+saveAnalysis = 1;
+
 % subjects = subjects([1 2 4 5 7 8 10 12 14 16]);
 
 startRuns = ones(1,numel(subjects));
@@ -57,7 +61,7 @@ for iSubject = 1:nSubjects
 end
 
 %% reanalyze data
-targets = unique(behav(1).responseTarget(behav(1).responseTarget~=0));
+targets = unique(behav(1).responseTarget(behav(1).responseTarget~=0 & ~isnan(behav(1).responseTarget)));
 cueValidities = unique(behav(1).cueValidity(~isnan(behav(1).cueValidity)));
 cueValidities = sort(cueValidities,'descend'); % 1=valid, -1=invalid
 
@@ -128,6 +132,14 @@ for iM = 1:nM
     sdim = numel(size(groupData.(m))); % subject dim is always the last dim
     groupMean.(m) = mean(groupData.(m),sdim);
     groupSte.(m) = std(groupData.(m),0,sdim)./sqrt(nSubjects);
+end
+
+%% average sessions
+measures = fields(groupData);
+nM = numel(measures);
+for iM = 1:nM
+    m = measures{iM};
+    groupData2.(m) = (groupData.(m)(:,:,1:2:end) + groupData.(m)(:,:,2:2:end))/2;
 end
 
 %% plot group data
@@ -218,7 +230,12 @@ legend(condNames)
 % valid vs. invalid
 for iM = 1:numel(indivM)
     m = indivM{iM};
-    vi.(m) = squeeze((groupData.(m)(1,:,:)-groupData.(m)(2,:,:)))';
+    vi.(m) = squeeze((groupData2.(m)(1,:,:)-groupData2.(m)(2,:,:)))';
     [h, pstat.(m), ci, stat.(m)] = ttest(vi.(m));
+end
+
+%% save
+if saveAnalysis
+    save(sprintf('%s/%s.mat', analysisDir, analysisName))
 end
 
