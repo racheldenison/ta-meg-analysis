@@ -58,6 +58,14 @@ for iTest = 3:nTests
     clusterPVal.(name) = nnz(maxAbsClusterStatNull.(name)>maxAbsClusterStatEmp.(name))/nPerm;
 end
 
+%% max cluster window
+maxClusterTWin = [];
+for iTest = 3:nTests
+    name = names{iTest};
+    maxIdx = clusterStatsEmp.(name)==maxAbsClusterStatEmp.(name);
+    maxClusterTWin.(name)(1,:) = t(clusterWins.(name)(maxIdx,:));
+end
+
 %% plot
 figure
 for iTest = 3:nTests
